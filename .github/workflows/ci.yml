@@ -57,14 +57,34 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+  helm-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check chart changes
+        id: chart_changes
+        run: |
+          if git diff --name-only HEAD~1 | grep -q "^chart/"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Helm
+        if: steps.chart_changes.outputs.changed == 'true'
         uses: azure/setup-helm@v4
 
       - name: Log in to GHCR for Helm
+        if: steps.chart_changes.outputs.changed == 'true'
         run: |
           helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and push Helm chart
+        if: steps.chart_changes.outputs.changed == 'true'
         run: |
           helm package chart --destination .
           CHART_TGZ="$(ls -1 *.tgz | head -1)"
