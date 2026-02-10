@@ -12,6 +12,9 @@ permissions:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    env:
+      GITOPS_REPO: ${{ vars.GITOPS_REPO }}
+      APP_NAME: ${{ vars.APP_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,3 +56,16 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR for Helm
+        run: |
+          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and push Helm chart
+        run: |
+          helm package chart --destination .
+          CHART_TGZ="$(ls -1 *.tgz | head -1)"
+          helm push "$CHART_TGZ" oci://ghcr.io/${{ github.repository }}-chart
