@@ -57,6 +57,44 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Checkout GitOps repo
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+
+      - name: Update GitOps values
+        if: github.event_name == 'push'
+        run: |
+          VALUES_PATH="gitops/environments/test/values.yaml"
+          mkdir -p "$(dirname "$VALUES_PATH")"
+          if [ ! -f "$VALUES_PATH" ]; then
+            cat <<EOF > "$VALUES_PATH"
+            image:
+              repository: ghcr.io/${{ github.repository }}
+              tag: ${{ github.sha }}
+            EOF
+          fi
+          sed -i -E "s#^([[:space:]]*repository:).*#\\1 ghcr.io/${{ github.repository }}#" "$VALUES_PATH" || true
+          sed -i -E "s#^([[:space:]]*tag:).*#\\1 ${{ github.sha }}#" "$VALUES_PATH" || true
+          git -C gitops status --short
+
+      - name: Commit and push GitOps changes
+        if: github.event_name == 'push'
+        run: |
+          cd gitops
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add environments/test/values.yaml
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: update ${APP_NAME} image tag to ${{ github.sha }}"
+          git push
+
   helm-publish:
     runs-on: ubuntu-latest
     steps:
