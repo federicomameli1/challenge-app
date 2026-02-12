@@ -5,7 +5,6 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/bl4ckj4c/challenge-app
-  tag: 28988c781ec6b678e85ef2a62de7109ae3448068
   pullPolicy: IfNotPresent
 
 containerPort: 80
@@ -14,4 +13,3 @@ service:
   type: NodePort
   port: 80
   targetPort: 80
-  nodePort: 30008
