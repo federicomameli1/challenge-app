@@ -21,7 +21,7 @@ export default function App() {
           validate pipeline updates.
         </p>
         <Button
-          className="bg-red-600 text-white transition active:scale-95 active:shadow-inner hover:bg-red-700"
+          className="bg-yellow-600 text-white transition active:scale-95 active:shadow-inner hover:bg-red-700"
           onClick={() => setShowToast(true)}
         >
           Demo Button
