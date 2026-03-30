@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import App from "./App.jsx";
 
 it("renders the heading", () => {
@@ -9,11 +8,19 @@ it("renders the heading", () => {
   ).toBeInTheDocument();
 });
 
-it("shows a notification when the button is pressed", async () => {
+it("does not render the demo button or helper text", () => {
   render(<App />);
-  const user = userEvent.setup();
+  expect(
+    screen.queryByText(/simple demo page for ci\/cd testing/i)
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /demo button/i })
+  ).not.toBeInTheDocument();
+});
 
-  await user.click(screen.getByRole("button", { name: /demo button/i }));
-
-  expect(screen.getByRole("status")).toHaveTextContent(/button pressed/i);
+it("renders the release dashboard section", () => {
+  render(<App />);
+  expect(
+    screen.getByRole("heading", { name: /release decision dashboard/i })
+  ).toBeInTheDocument();
 });
