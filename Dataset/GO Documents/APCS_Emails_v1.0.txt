@@ -1,0 +1,188 @@
+------------------------------------------------------------
+Subject: [APCS] Backend v1.1.1 available for validation
+From: Luca Bianchi (Backend Developer)
+To: QA Team
+Date: 27-Mar-2026
+
+Hi,
+
+the official Backend release build v1.1.1 is now available for validation.
+
+This build includes:
+- fix for the occupancy percentage calculation issue
+- updated threshold handling for occupancy classification
+
+Please use this version for re-execution of the affected test cases.
+
+Thanks,
+Luca
+------------------------------------------------------------
+
+Subject: RE: [APCS] Backend v1.1.1 available for validation
+From: Marco Rossi (QA Engineer)
+To: Luca Bianchi
+Date: 27-Mar-2026
+
+Hi,
+
+received.
+
+We will re-execute:
+- T-APCS-004
+- T-APCS-006
+
+using the official Backend build v1.1.1 and update the test record accordingly.
+
+Regards,
+Marco
+------------------------------------------------------------
+
+------------------------------------------------------------
+Subject: [APCS] Re-test result for T-APCS-004
+From: Marco Rossi (QA Engineer)
+To: Backend Team, Project Manager
+Date: 28-Mar-2026
+
+Hi,
+
+T-APCS-004 has been re-executed on MOD-APCS-BE v1.1.1.
+
+Result: PASS
+
+No incorrect occupancy percentage values were observed in the tested scenarios.
+
+Regards,
+Marco
+------------------------------------------------------------
+
+Subject: [APCS] Re-test result for T-APCS-006
+From: Giulia Verdi (QA Engineer)
+To: Backend Team, Project Manager
+Date: 28-Mar-2026
+
+Hi,
+
+T-APCS-006 has been re-executed on MOD-APCS-BE v1.1.1.
+
+Result: PASS
+
+The threshold classification for Empty, Light, Medium, High, and Full is now consistent with the configured values.
+
+Regards,
+Giulia
+------------------------------------------------------------
+
+------------------------------------------------------------
+Subject: [APCS] Integration Layer communication remark
+From: Andrea Conti (Integration Engineer)
+To: QA Team, Project Manager
+Date: 28-Mar-2026
+
+Hi,
+
+with reference to T-APCS-009, the intermittent delay observed during communication with the Integration Layer is related to the mocked environment used for testing.
+
+The data exchange completed successfully and no blocking communication issue was identified.
+
+The remark can be retained in the documentation, but it should not prevent promotion to TEST.
+
+Best regards,
+Andrea
+------------------------------------------------------------
+
+------------------------------------------------------------
+Subject: [APCS] HMI and Backend version alignment
+From: Sara Neri (System Engineer)
+To: Team
+Date: 28-Mar-2026
+
+Hi all,
+
+please note that the current TEST baseline is aligned as follows:
+
+- MOD-APCS-EDGE v1.0.0
+- MOD-APCS-BE v1.1.1
+- MOD-APCS-HMI v1.1.1
+
+The HMI statistics functionality has been verified with Backend v1.1.1 and no version dependency issue is currently open in the TEST configuration.
+
+Thanks,
+Sara
+------------------------------------------------------------
+
+------------------------------------------------------------
+Subject: [APCS] Release readiness for TEST promotion
+From: Project Manager
+To: QA Team, Dev Team, System Engineering
+Date: 28-Mar-2026
+
+Hi all,
+
+can you please confirm whether there are any remaining blocking issues for promotion to TEST?
+
+Thanks,
+PM
+------------------------------------------------------------
+
+Subject: RE: [APCS] Release readiness for TEST promotion
+From: Marco Rossi (QA Engineer)
+To: Project Manager
+Date: 28-Mar-2026
+
+Hi,
+
+based on the current test evidence:
+
+- T-APCS-004 has been re-executed and is now PASS on Backend v1.1.1
+- T-APCS-006 has been re-executed and is now PASS on Backend v1.1.1
+- no failing test cases remain in the current TEST baseline
+- T-APCS-009 remains PASS WITH REMARKS, but the issue is not blocking
+
+At this stage, I do not see blocking issues for TEST promotion.
+
+Regards,
+Marco
+------------------------------------------------------------
+
+Subject: RE: [APCS] Release readiness for TEST promotion
+From: Sara Neri (System Engineer)
+To: Project Manager
+Date: 28-Mar-2026
+
+Hi,
+
+I confirm that the TEST configuration is aligned and consistent with the current release candidate.
+
+From a system configuration perspective, the release candidate is ready for TEST promotion.
+
+Thanks,
+Sara
+------------------------------------------------------------
+
+Subject: RE: [APCS] Release readiness for TEST promotion
+From: Project Manager
+To: Team
+Date: 28-Mar-2026
+
+Hi,
+
+thanks for the confirmation.
+
+We will proceed with the TEST promotion workflow and update the VDD accordingly.
+
+Best,
+PM
+------------------------------------------------------------
+Subject: [APCS] Approval for TEST promotion
+From: Release Manager
+To: Project Manager, QA Team, System Engineering
+Date: 28-Mar-2026
+
+Hi,
+
+based on the current test evidence and the aligned TEST configuration, I approve the promotion of APCS-REL-1.1.1 to TEST.
+
+Please proceed with the related release documentation update.
+
+Best regards,
+Release Manager
