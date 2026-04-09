@@ -1,0 +1,57 @@
+------------------------------------------------------------
+Subject: [APCS] Occupancy runtime issue still observed
+From: Marco Rossi (QA Engineer)
+To: Backend Team
+Date: 01-Apr-2026
+
+Hi,
+
+we still observe incorrect occupancy values in edge cases.
+
+The issue is still marked as FAIL and re-test has not been completed.
+
+Regards,
+Marco
+------------------------------------------------------------
+
+Subject: RE: [APCS] Occupancy runtime issue still observed
+From: Luca Bianchi (Backend Developer)
+To: Marco Rossi
+Date: 01-Apr-2026
+
+Hi,
+
+a local workaround exists, but we did not publish a new official build yet.
+
+Known limitation remains open.
+
+Thanks,
+Luca
+------------------------------------------------------------
+
+Subject: [APCS] Release readiness checkpoint
+From: Project Manager
+To: QA Team
+Date: 01-Apr-2026
+
+Hi,
+
+can we proceed with TEST promotion?
+
+Thanks,
+PM
+------------------------------------------------------------
+
+Subject: RE: [APCS] Release readiness checkpoint
+From: Marco Rossi (QA Engineer)
+To: Project Manager
+Date: 01-Apr-2026
+
+Hi,
+
+I would not consider the release ready.
+The blocker is unresolved and test evidence is incomplete.
+
+Regards,
+Marco
+------------------------------------------------------------

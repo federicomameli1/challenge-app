@@ -21,6 +21,6 @@ it("does not render the demo button or helper text", () => {
 it("renders the release dashboard section", () => {
   render(<App />);
   expect(
-    screen.getByRole("heading", { name: /release decision dashboard/i })
+    screen.getByRole("heading", { name: /agent operations console/i })
   ).toBeInTheDocument();
 });

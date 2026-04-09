@@ -1,0 +1,4 @@
+Validation summary:
+- unresolved runtime blocker present
+- re-test evidence missing
+- do not proceed to TEST

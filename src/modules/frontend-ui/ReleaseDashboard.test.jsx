@@ -1,42 +1,85 @@
-/**
- * Frontend UI — Unit Tests
- *
- * TEST-301 through TEST-303
- */
-
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import ReleaseDashboard from "./ReleaseDashboard.jsx";
 
-// TEST-301 — Verify dashboard renders version and verdict (REQ-301)
 describe("Release Dashboard", () => {
-  it("TEST-301: renders the release version and verdict badge", () => {
-    render(<ReleaseDashboard />);
-    expect(screen.getByTestId("verdict-badge")).toBeInTheDocument();
-    // version 1.1.0 appears in multiple spots (badge + footer), just check badge exists
-    expect(screen.getByTestId("verdict-badge").textContent).toMatch(/GO/);
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  // TEST-302 — Verify traceability matrix renders (REQ-302)
-  it("TEST-302: renders the traceability matrix table", async () => {
+  it("renders agent operations console", () => {
+    render(<ReleaseDashboard />);
+    expect(screen.getByTestId("agent-console")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /agent operations console/i })).toBeInTheDocument();
+  });
+
+  it("defaults to GO for Agent 4 with GO documents", () => {
+    render(<ReleaseDashboard />);
+    expect(screen.getByTestId("decision-badge").textContent).toMatch(/GO/);
+  });
+
+  it("switching to HOLD documents yields HOLD decision", async () => {
     render(<ReleaseDashboard />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: /matrix/i }));
-
-    expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(screen.getByText("REQ-101")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /hold documents/i }));
+    expect(screen.getByTestId("decision-badge").textContent).toMatch(/HOLD/);
   });
 
-  // TEST-303 — Verify inconsistency report (REQ-303)
-  it("TEST-303: displays the inconsistency report", async () => {
+  it("switching to Agent 5 still renders reasons and signal table", async () => {
     render(<ReleaseDashboard />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("tab", { name: /issues/i }));
+    await user.click(screen.getByRole("button", { name: /agent 5/i }));
 
-    expect(screen.getByTestId("inconsistency-report")).toBeInTheDocument();
-    expect(screen.getByText(/4 documentation inconsistencies/i)).toBeInTheDocument();
+    expect(screen.getByTestId("reasons-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("signal-table")).toBeInTheDocument();
+  });
+
+  it("creates a custom set from uploaded documents", async () => {
+    render(<ReleaseDashboard />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/set name/i), "My Custom Set");
+
+    const fileInput = screen.getByLabelText(/upload documents/i);
+    const file = new File(
+      ["Subject: Test\nResult: PASS\nNo blocking issues remain."],
+      "custom.txt",
+      { type: "text/plain" }
+    );
+    await user.upload(fileInput, file);
+
+    expect(screen.getByText(/1 file\(s\) selected/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /save set/i }));
+
+    expect(
+      await screen.findByRole("button", { name: /my custom set/i })
+    ).toBeInTheDocument();
+  });
+
+  it("deletes the selected custom set", async () => {
+    render(<ReleaseDashboard />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText(/set name/i), "Disposable Set");
+    const fileInput = screen.getByLabelText(/upload documents/i);
+    const file = new File(["Result: PASS"], "temp.txt", { type: "text/plain" });
+    await user.upload(fileInput, file);
+    await user.click(screen.getByRole("button", { name: /save set/i }));
+
+    expect(
+      await screen.findByRole("button", { name: /disposable set/i })
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /delete selected set/i })
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /disposable set/i })
+    ).not.toBeInTheDocument();
   });
 });

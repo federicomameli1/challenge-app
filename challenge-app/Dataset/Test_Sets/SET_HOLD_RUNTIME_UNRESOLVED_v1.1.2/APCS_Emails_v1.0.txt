@@ -1,0 +1,23 @@
+Subject: [APCS] Occupancy runtime issue still observed
+From: Marco Rossi
+To: Backend Team
+Date: 01-Apr-2026
+
+incorrect occupancy values still observed.
+Issue still marked as FAIL and re-test not completed.
+
+Subject: RE: [APCS] Occupancy runtime issue still observed
+From: Luca Bianchi
+To: Marco Rossi
+Date: 01-Apr-2026
+
+local workaround exists, but no new official build published.
+Known limitation remains open.
+
+Subject: [APCS] Release readiness checkpoint
+From: Marco Rossi
+To: Project Manager
+Date: 01-Apr-2026
+
+I would not consider the release ready.
+Blocker unresolved and test evidence incomplete.
