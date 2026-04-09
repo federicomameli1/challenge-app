@@ -1,0 +1,4 @@
+Module, Planned, Deployed, Mandatory
+backend, v1.1.2, v1.1.2, true
+integration-layer, v1.1.2, v1.1.2, true
+hmi, v1.1.2, v1.1.2, true

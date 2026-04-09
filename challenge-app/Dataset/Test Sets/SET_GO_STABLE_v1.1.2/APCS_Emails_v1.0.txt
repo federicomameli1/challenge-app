@@ -1,0 +1,58 @@
+------------------------------------------------------------
+Subject: [APCS] Backend v1.1.2 release candidate available
+From: Luca Bianchi (Backend Developer)
+To: QA Team
+Date: 01-Apr-2026
+
+Hi,
+
+the official Backend release build v1.1.2 is now available for validation.
+
+Regards,
+Luca
+------------------------------------------------------------
+
+Subject: [APCS] Re-test results completed
+From: Marco Rossi (QA Engineer)
+To: Project Manager, Dev Team
+Date: 02-Apr-2026
+
+Hi,
+
+all previously impacted tests were re-executed on v1.1.2.
+
+Result: PASS
+
+No unresolved blocker remains for TEST promotion.
+
+Regards,
+Marco
+------------------------------------------------------------
+
+Subject: [APCS] Release readiness confirmation
+From: Project Manager
+To: QA Team, System Engineering
+Date: 02-Apr-2026
+
+Hi,
+
+please confirm final readiness for TEST promotion.
+
+Thanks,
+PM
+------------------------------------------------------------
+
+Subject: RE: [APCS] Release readiness confirmation
+From: Sara Neri (System Engineer)
+To: Project Manager
+Date: 02-Apr-2026
+
+Hi,
+
+I confirm configuration alignment and no blocking issue.
+
+Ready for TEST promotion.
+
+Thanks,
+Sara
+------------------------------------------------------------

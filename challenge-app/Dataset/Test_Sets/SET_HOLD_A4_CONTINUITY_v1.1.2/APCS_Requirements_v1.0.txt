@@ -1,0 +1,2 @@
+REQ-APCS-010: Phase 5 must include explicit closure for unresolved Agent4 hard blockers.
+REQ-APCS-011: Promotion is blocked without formal closure evidence.
