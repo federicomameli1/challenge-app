@@ -1,3 +1,0 @@
-Inconsistencies map:
-- A4 unresolved condition listed, no closure artifact reference
-- release cannot be promoted under continuity policy

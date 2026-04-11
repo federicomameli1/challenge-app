@@ -1,3 +1,0 @@
-REQ-APCS-001: Occupancy percentage calculation shall remain stable under rapid updates.
-REQ-APCS-002: Occupancy threshold classification shall be consistent at boundaries.
-REQ-APCS-003: Candidate must not proceed with unresolved runtime blocker.

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, it, expect } from "vitest";
 import ReleaseDashboard from "./ReleaseDashboard.jsx";
@@ -16,7 +16,7 @@ describe("Release Dashboard", () => {
 
   it("defaults to GO for Agent 4 with GO documents", () => {
     render(<ReleaseDashboard />);
-    expect(screen.getByTestId("decision-badge").textContent).toMatch(/GO/);
+    expect(screen.getByTestId("agent-status-agent4").textContent).toMatch(/GO/);
   });
 
   it("switching to HOLD documents yields HOLD decision", async () => {
@@ -24,17 +24,18 @@ describe("Release Dashboard", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: /hold documents/i }));
-    expect(screen.getByTestId("decision-badge").textContent).toMatch(/HOLD/);
+    expect(screen.getByTestId("agent-status-agent4").textContent).toMatch(/HOLD/);
   });
 
-  it("switching to Agent 5 still renders reasons and signal table", async () => {
+  it("renders separate signal summaries for both agents", async () => {
     render(<ReleaseDashboard />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole("button", { name: /agent 5/i }));
 
     expect(screen.getByTestId("reasons-panel")).toBeInTheDocument();
     expect(screen.getByTestId("signal-table")).toBeInTheDocument();
+    expect(screen.getByTestId("signal-summary-agent4")).toBeInTheDocument();
+    expect(screen.getByTestId("signal-summary-agent5")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-status-agent4")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-status-agent5")).toBeInTheDocument();
   });
 
   it("creates a custom set from uploaded documents", async () => {
@@ -78,8 +79,10 @@ describe("Release Dashboard", () => {
       screen.getByRole("button", { name: /delete selected set/i })
     );
 
-    expect(
-      screen.queryByRole("button", { name: /disposable set/i })
-    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /disposable set/i })
+      ).not.toBeInTheDocument();
+    });
   });
 });

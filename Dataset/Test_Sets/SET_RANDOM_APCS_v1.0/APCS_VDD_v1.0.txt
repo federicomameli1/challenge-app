@@ -1,0 +1,9 @@
+APCS VDD
+
+Version: v1.0
+Scope: Mixed readiness snapshot for dashboard testing.
+
+Observations:
+- The release narrative is not internally consistent.
+- The watchdog mismatch should be treated as a blocking issue.
+- The environment is stable enough for analysis, but not for GO.

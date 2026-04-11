@@ -7,12 +7,12 @@ Each set includes:
 - APCS_Module_Version_Inventory_v1.0.txt
 - APCS_Test_Procedure_v1.0.txt
 - APCS_VDD_v1.0.txt
-- APCS_Inconsistencies_map_v1.0.txt
 
 Expected outcomes:
 - SET_GO_STABLE_v1.1.2: GO
 - SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2: HOLD
 - SET_HOLD_A4_CONTINUITY_v1.1.2: HOLD
+- SET_RANDOM_APCS_v1.0: HOLD
 
 General pipeline note:
 - Agent 4 APCS adapter supports document bundles (TXT/DOCX names above).

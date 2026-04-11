@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import goEmailText from "../../../Dataset/GO Documents/APCS_Emails_v1.0.txt?raw";
 import holdEmailText from "../../../Dataset/HOLD Documents/APCS_Emails_v1.0.txt?raw";
 import goStableEmailText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_Emails_v1.0.txt?raw";
@@ -6,19 +6,21 @@ import goStableRequirementsText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v
 import goStableVersionInventoryText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_Module_Version_Inventory_v1.0.txt?raw";
 import goStableTestProcedureText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_Test_Procedure_v1.0.txt?raw";
 import goStableVddText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_VDD_v1.0.txt?raw";
-import goStableInconsistenciesText from "../../../Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_Inconsistencies_map_v1.0.txt?raw";
 import holdRuntimeEmailText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Emails_v1.0.txt?raw";
 import holdRuntimeRequirementsText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Requirements_v1.0.txt?raw";
 import holdRuntimeVersionInventoryText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Module_Version_Inventory_v1.0.txt?raw";
 import holdRuntimeTestProcedureText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Test_Procedure_v1.0.txt?raw";
 import holdRuntimeVddText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_VDD_v1.0.txt?raw";
-import holdRuntimeInconsistenciesText from "../../../Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Inconsistencies_map_v1.0.txt?raw";
 import holdA4EmailText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Emails_v1.0.txt?raw";
 import holdA4RequirementsText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Requirements_v1.0.txt?raw";
 import holdA4VersionInventoryText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Module_Version_Inventory_v1.0.txt?raw";
 import holdA4TestProcedureText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Test_Procedure_v1.0.txt?raw";
 import holdA4VddText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_VDD_v1.0.txt?raw";
-import holdA4InconsistenciesText from "../../../Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Inconsistencies_map_v1.0.txt?raw";
+import randomApcsEmailText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Emails_v1.0.txt?raw";
+import randomApcsRequirementsText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Requirements_v1.0.txt?raw";
+import randomApcsVersionInventoryText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Module_Version_Inventory_v1.0.txt?raw";
+import randomApcsTestProcedureText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Test_Procedure_v1.0.txt?raw";
+import randomApcsVddText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_VDD_v1.0.txt?raw";
 
 const AGENTS = {
   agent4: {
@@ -35,11 +37,25 @@ const AGENTS = {
   },
 };
 
+const AGENT_BACKEND_URL =
+  import.meta.env.VITE_AGENT_BACKEND_URL || "http://127.0.0.1:8001";
+
 const BUILTIN_SETS = [
   {
     id: "go",
     label: "GO Documents",
     source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot: "challenge-app/Dataset/GO Documents",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-001",
+      },
+    },
     documents: [
       {
         name: "APCS_Emails_v1.0.txt",
@@ -52,6 +68,17 @@ const BUILTIN_SETS = [
     id: "hold",
     label: "HOLD Documents",
     source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot: "challenge-app/Dataset/HOLD Documents",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-003",
+      },
+    },
     documents: [
       {
         name: "APCS_Emails_v1.0.txt",
@@ -64,6 +91,17 @@ const BUILTIN_SETS = [
     id: "go-stable-v112",
     label: "SET_GO_STABLE_v1.1.2",
     source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot: "challenge-app/Dataset/Test_Sets/SET_GO_STABLE_v1.1.2",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-008",
+      },
+    },
     documents: [
       {
         name: "APCS_Emails_v1.0.txt",
@@ -93,18 +131,24 @@ const BUILTIN_SETS = [
         filePath: "Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_VDD_v1.0.txt",
         text: goStableVddText,
       },
-      {
-        name: "APCS_Inconsistencies_map_v1.0.txt",
-        filePath:
-          "Dataset/Test_Sets/SET_GO_STABLE_v1.1.2/APCS_Inconsistencies_map_v1.0.txt",
-        text: goStableInconsistenciesText,
-      },
     ],
   },
   {
     id: "hold-runtime-unresolved-v112",
     label: "SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2",
     source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot:
+          "challenge-app/Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-024",
+      },
+    },
     documents: [
       {
         name: "APCS_Emails_v1.0.txt",
@@ -136,18 +180,24 @@ const BUILTIN_SETS = [
           "Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_VDD_v1.0.txt",
         text: holdRuntimeVddText,
       },
-      {
-        name: "APCS_Inconsistencies_map_v1.0.txt",
-        filePath:
-          "Dataset/Test_Sets/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/APCS_Inconsistencies_map_v1.0.txt",
-        text: holdRuntimeInconsistenciesText,
-      },
     ],
   },
   {
     id: "hold-a4-continuity-v112",
     label: "SET_HOLD_A4_CONTINUITY_v1.1.2",
     source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot:
+          "challenge-app/Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-007",
+      },
+    },
     documents: [
       {
         name: "APCS_Emails_v1.0.txt",
@@ -179,11 +229,52 @@ const BUILTIN_SETS = [
           "Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_VDD_v1.0.txt",
         text: holdA4VddText,
       },
+    ],
+  },
+  {
+    id: "random-apcs-v1",
+    label: "SET_RANDOM_APCS_v1.0",
+    source: "built-in",
+    backend: {
+      agent4: {
+        datasetRoot: "challenge-app/Dataset/Test_Sets/SET_RANDOM_APCS_v1.0",
+        scenarioId: "APCS-S4-001",
+        sourceAdapterKind: "apcs_doc_bundle",
+      },
+      agent5: {
+        datasetRoot: "synthetic_data/phase5/v2",
+        scenarioId: "P5V2-024",
+      },
+    },
+    documents: [
       {
-        name: "APCS_Inconsistencies_map_v1.0.txt",
+        name: "APCS_Emails_v1.0.txt",
         filePath:
-          "Dataset/Test_Sets/SET_HOLD_A4_CONTINUITY_v1.1.2/APCS_Inconsistencies_map_v1.0.txt",
-        text: holdA4InconsistenciesText,
+          "Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Emails_v1.0.txt",
+        text: randomApcsEmailText,
+      },
+      {
+        name: "APCS_Requirements_v1.0.txt",
+        filePath:
+          "Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Requirements_v1.0.txt",
+        text: randomApcsRequirementsText,
+      },
+      {
+        name: "APCS_Module_Version_Inventory_v1.0.txt",
+        filePath:
+          "Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Module_Version_Inventory_v1.0.txt",
+        text: randomApcsVersionInventoryText,
+      },
+      {
+        name: "APCS_Test_Procedure_v1.0.txt",
+        filePath:
+          "Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Test_Procedure_v1.0.txt",
+        text: randomApcsTestProcedureText,
+      },
+      {
+        name: "APCS_VDD_v1.0.txt",
+        filePath: "Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_VDD_v1.0.txt",
+        text: randomApcsVddText,
       },
     ],
   },
@@ -195,6 +286,7 @@ const EXPECTED_DECISION_BY_SET_ID = {
   "go-stable-v112": "GO",
   "hold-runtime-unresolved-v112": "HOLD",
   "hold-a4-continuity-v112": "HOLD",
+  "random-apcs-v1": "HOLD",
 };
 
 const CUSTOM_SET_STORAGE_KEY = "hitachi-agent-console-custom-sets";
@@ -219,15 +311,72 @@ function persistCustomSets(sets) {
   localStorage.setItem(CUSTOM_SET_STORAGE_KEY, JSON.stringify(sets));
 }
 
+async function fetchBackendCustomSets() {
+  const response = await fetch(`${AGENT_BACKEND_URL}/datasets/custom-sets`);
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = await response.json();
+  return Array.isArray(data?.items) ? data.items : [];
+}
+
+async function saveCustomSetToBackend(payload) {
+  const response = await fetch(`${AGENT_BACKEND_URL}/datasets/custom-sets`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = typeof data?.detail === "string" ? data.detail : "Unable to save set to backend.";
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+async function deleteCustomSetFromBackend(setId) {
+  const response = await fetch(`${AGENT_BACKEND_URL}/datasets/custom-sets/${encodeURIComponent(setId)}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return;
+    }
+
+    const data = await response.json().catch(() => ({}));
+    const message = typeof data?.detail === "string" ? data.detail : "Unable to delete set from backend.";
+    throw new Error(message);
+  }
+}
+
 function normalizeSetForAnalysis(set) {
   const docs = Array.isArray(set.documents) ? set.documents : [];
   const combinedText = docs.map((d) => String(d.text || "")).join("\n\n");
+  const backend = set.backend || null;
+  const persisted = Boolean(set.persisted);
   return {
     id: set.id,
     label: set.label,
     source: set.source,
     documents: docs,
     text: combinedText,
+    backend:
+      backend ||
+      (set.source === "custom" && persisted
+        ? {
+            agent4: {
+              datasetRoot: `challenge-app/Dataset/Test_Sets/${set.id}`,
+              sourceAdapterKind: "apcs_doc_bundle",
+            },
+          }
+        : null),
+    persisted,
   };
 }
 
@@ -290,6 +439,7 @@ function sanitizeImportedCustomSets(inputSets) {
       id: String(candidate.id || `custom-${Date.now()}-${validSets.length}`),
       label,
       source: "custom",
+      persisted: false,
       documents: normalizedDocs,
     });
   }
@@ -510,6 +660,118 @@ function validateAnalysisSchemaLikePayload(result) {
   return { valid: errors.length === 0, errors };
 }
 
+function normalizeBackendAnalysis(payload, fallbackGate) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const findings = payload?.rule_findings?.findings;
+  const signals = Array.isArray(findings)
+    ? findings.map((f) => ({
+        code: String(f?.code || "unknown"),
+        title: String(f?.code || "unknown")
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (m) => m.toUpperCase()),
+        matched: Boolean(f?.triggered),
+        pattern: String(f?.reason || ""),
+      }))
+    : [];
+
+  const reasons = Array.isArray(payload.reasons)
+    ? payload.reasons.map((reason) => ({
+        code: reason?.rule_code || null,
+        title: String(reason?.title || "Reason"),
+        detail: String(reason?.detail || ""),
+        evidence: Array.isArray(reason?.evidence)
+          ? reason.evidence.map((ev) => ({
+              filePath: String(ev?.file_path || "unknown"),
+              line: ev?.line_start ?? "-",
+              snippet: String(ev?.snippet || ""),
+            }))
+          : [],
+      }))
+    : [];
+
+  const matchedSignals = signals.filter((s) => s.matched);
+
+  return {
+    decision: String(payload.decision || "HOLD").toUpperCase(),
+    confidence: String(payload.confidence || "medium").toLowerCase(),
+    gate: fallbackGate,
+    reasons,
+    matchedSignals,
+    signals,
+  };
+}
+
+function buildBackendRunRequest({
+  agentId,
+  selectedDataset,
+  runOptions,
+}) {
+  // For custom sets, ALWAYS send inline documents to backend, regardless of backendPreset
+  if (selectedDataset?.source === "custom") {
+    const payload = {
+      agent: agentId,
+      dataset_root: `challenge-app/Dataset/Test_Sets/${selectedDataset.id}`,
+      custom_set_label: selectedDataset.label,
+      documents: Array.isArray(selectedDataset.documents)
+        ? selectedDataset.documents.map((doc) => ({
+            name: doc.name,
+            text: doc.text,
+          }))
+        : [],
+      release_id: null,
+      evaluate_all: Boolean(runOptions.evaluateAll),
+      check_label: Boolean(runOptions.checkLabel),
+      labels_path: null,
+      fail_on_label_mismatch: Boolean(runOptions.failOnLabelMismatch),
+      strict_schema: Boolean(runOptions.strictSchema),
+      no_llm: Boolean(runOptions.noLlm),
+    };
+
+    if (!runOptions.evaluateAll) {
+      payload.scenario_id = null;
+    }
+
+    if (agentId === "agent4") {
+      payload.source_adapter_kind = "apcs_doc_bundle";
+    }
+
+    return payload;
+  }
+
+  const backendPreset = selectedDataset?.backend?.[agentId];
+  if (!backendPreset) {
+    return null;
+  }
+
+  const payload = {
+    agent: agentId,
+    dataset_root: backendPreset.datasetRoot,
+    release_id: backendPreset.releaseId || null,
+    evaluate_all: Boolean(runOptions.evaluateAll),
+    check_label: Boolean(runOptions.checkLabel),
+    labels_path: null,
+    fail_on_label_mismatch: Boolean(runOptions.failOnLabelMismatch),
+    strict_schema: Boolean(runOptions.strictSchema),
+    no_llm: Boolean(runOptions.noLlm),
+  };
+
+  if (!runOptions.evaluateAll) {
+    payload.scenario_id = backendPreset.scenarioId;
+  }
+
+  if (agentId === "agent4") {
+    payload.source_adapter_kind =
+      runOptions.sourceAdapterKind === "auto"
+        ? backendPreset.sourceAdapterKind || "auto"
+        : runOptions.sourceAdapterKind;
+  }
+
+  return payload;
+}
+
 export default function ReleaseDashboard() {
   const [customSets, setCustomSets] = useState(() => loadCustomSets());
   const [agentId, setAgentId] = useState("agent4");
@@ -518,15 +780,88 @@ export default function ReleaseDashboard() {
   const [newSetFiles, setNewSetFiles] = useState([]);
   const [createSetError, setCreateSetError] = useState("");
   const [importError, setImportError] = useState("");
+  const [isBackendRunning, setIsBackendRunning] = useState(false);
+  const [backendError, setBackendError] = useState("");
+  const [backendResponse, setBackendResponse] = useState(null);
   const [runOptions, setRunOptions] = useState({
     evaluateAll: false,
     checkLabel: false,
     strictSchema: false,
     failOnLabelMismatch: false,
+    noLlm: true,
     sourceAdapterKind: "auto",
   });
 
   const selectedAgent = AGENTS[agentId];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function syncBackendCustomSets() {
+      try {
+        const localCustomSets = loadCustomSets();
+        const backendSets = await fetchBackendCustomSets();
+
+        const normalizedBackendSets = backendSets.map((set) => ({
+          ...set,
+          persisted: true,
+        }));
+
+        const merged = [...localCustomSets];
+        const existingLabels = new Set(
+          merged.map((set) => String(set.label || "").trim().toLowerCase())
+        );
+
+        for (const set of normalizedBackendSets) {
+          const key = String(set.label || "").trim().toLowerCase();
+          if (existingLabels.has(key)) {
+            continue;
+          }
+          existingLabels.add(key);
+          merged.push(set);
+        }
+
+        const migrated = [];
+        for (const set of merged) {
+          if (set.source !== "custom" || set.persisted || !Array.isArray(set.documents)) {
+            migrated.push(set);
+            continue;
+          }
+
+          try {
+            const created = await saveCustomSetToBackend({
+              label: set.label,
+              documents: set.documents.map((doc) => ({
+                name: doc.name,
+                text: doc.text,
+              })),
+            });
+            migrated.push({
+              ...created,
+              persisted: true,
+            });
+          } catch {
+            migrated.push(set);
+          }
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        persistCustomSets(migrated);
+        setCustomSets(migrated);
+      } catch {
+        // Backend is optional for reading custom sets; keep localStorage fallback.
+      }
+    }
+
+    syncBackendCustomSets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const allSets = useMemo(() => {
     return [...BUILTIN_SETS, ...customSets].map((set) =>
@@ -537,12 +872,64 @@ export default function ReleaseDashboard() {
   const selectedDataset =
     allSets.find((set) => set.id === datasetId) || allSets[0];
 
-  const result = useMemo(
+  const localResult = useMemo(
     () => analyze(agentId, selectedDataset),
     [agentId, selectedDataset]
   );
 
+  const backendRunRequest = useMemo(
+    () =>
+      buildBackendRunRequest({
+        agentId,
+        selectedDataset,
+        runOptions,
+      }),
+    [agentId, selectedDataset, runOptions]
+  );
+
+  const backendDerivedResult = useMemo(() => {
+    if (!backendResponse || backendResponse.mode !== "single") {
+      return null;
+    }
+    return normalizeBackendAnalysis(backendResponse.payload, localResult.gate);
+  }, [backendResponse, localResult.gate]);
+
+  const result = backendDerivedResult || localResult;
+
+  const agentSignalSummaries = useMemo(
+    () =>
+      Object.values(AGENTS).map((agent) => ({
+        ...agent,
+        analysis: analyze(agent.id, selectedDataset),
+      })),
+    [selectedDataset]
+  );
+
+  useEffect(() => {
+    setBackendError("");
+    setBackendResponse(null);
+  }, [agentId, datasetId, runOptions.evaluateAll, runOptions.sourceAdapterKind]);
+
   const singleRunDiagnostics = useMemo(() => {
+    if (backendResponse?.mode === "single") {
+      const evaluation = backendResponse?.payload?.evaluation;
+      return {
+        expectedDecision: evaluation?.expected_decision || null,
+        labelChecked: Boolean(evaluation?.label_check_performed),
+        labelMatch:
+          typeof evaluation?.match === "boolean" ? evaluation.match : null,
+        schema: {
+          valid: !backendResponse?.diagnostics?.schema_error_detected,
+          errors: backendResponse?.diagnostics?.schema_error_detected
+            ? ["schema validation failed"]
+            : [],
+        },
+        simulatedExitCode: backendResponse?.diagnostics?.label_mismatch_detected
+          ? 1
+          : 0,
+      };
+    }
+
     const expectedDecision = EXPECTED_DECISION_BY_SET_ID[selectedDataset.id] || null;
     const labelChecked = runOptions.checkLabel && expectedDecision !== null;
     const labelMatch = labelChecked
@@ -566,6 +953,23 @@ export default function ReleaseDashboard() {
   }, [result, runOptions, selectedDataset.id]);
 
   const evaluateAllSummary = useMemo(() => {
+    if (backendResponse?.mode === "evaluate_all") {
+      const summary = backendResponse?.payload?.summary || {};
+      return {
+        totalScenarios: summary.total_scenarios || 0,
+        goCount: (backendResponse.payload.predictions || []).filter(
+          (p) => p?.decision === "GO"
+        ).length,
+        holdCount: (backendResponse.payload.predictions || []).filter(
+          (p) => p?.decision === "HOLD"
+        ).length,
+        evaluatedLabels: summary.evaluated_scenarios || 0,
+        matched: summary.matched || 0,
+        accuracy:
+          typeof summary.accuracy === "number" ? Number(summary.accuracy) : null,
+      };
+    }
+
     if (!runOptions.evaluateAll) {
       return null;
     }
@@ -594,12 +998,52 @@ export default function ReleaseDashboard() {
           ? Number((matched / withExpected.length).toFixed(4))
           : null,
     };
-  }, [agentId, allSets, runOptions.checkLabel, runOptions.evaluateAll]);
+  }, [agentId, allSets, backendResponse, runOptions.checkLabel, runOptions.evaluateAll]);
 
   const isGo = result.decision === "GO";
 
   function updateRunOption(key, value) {
     setRunOptions((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleRunBackend() {
+    if (!backendRunRequest) {
+      setBackendError(
+        "Backend run is not available for this set. Use built-in mapped sets."
+      );
+      return;
+    }
+
+    setIsBackendRunning(true);
+    setBackendError("");
+
+    try {
+      const response = await fetch(`${AGENT_BACKEND_URL}/agents/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(backendRunRequest),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        const message =
+          typeof data?.detail === "string"
+            ? data.detail
+            : `Backend error (${response.status})`;
+        throw new Error(message);
+      }
+
+      setBackendResponse(data);
+    } catch (error) {
+      setBackendResponse(null);
+      setBackendError(
+        error instanceof Error ? error.message : "Unable to run backend analysis."
+      );
+    } finally {
+      setIsBackendRunning(false);
+    }
   }
 
   async function handleCreateSet(event) {
@@ -635,12 +1079,31 @@ export default function ReleaseDashboard() {
       return;
     }
 
-    const created = {
-      id: `custom-${Date.now()}`,
-      label: name,
-      source: "custom",
-      documents,
+    let created;
+    try {
+      created = await saveCustomSetToBackend({
+        label: name,
+        documents,
+      });
+    } catch (error) {
+      setCreateSetError(
+        error instanceof Error ? error.message : "Unable to save set to backend."
+      );
+      return;
+    }
+
+    created = {
+      ...created,
+      persisted: true,
     };
+    if (created.source === "custom" && !created.backend) {
+      created.backend = {
+        agent4: {
+          datasetRoot: `challenge-app/Dataset/Test_Sets/${created.id}`,
+          sourceAdapterKind: "apcs_doc_bundle",
+        },
+      };
+    }
 
     const updated = [...customSets, created];
     setCustomSets(updated);
@@ -657,10 +1120,24 @@ export default function ReleaseDashboard() {
       return;
     }
 
-    const updated = customSets.filter((set) => set.id !== selectedDataset.id);
-    setCustomSets(updated);
-    persistCustomSets(updated);
-    setDatasetId("go");
+    const removeSet = async () => {
+      try {
+        if (selectedDataset.persisted) {
+          await deleteCustomSetFromBackend(selectedDataset.id);
+        }
+
+        const updated = customSets.filter((set) => set.id !== selectedDataset.id);
+        setCustomSets(updated);
+        persistCustomSets(updated);
+        setDatasetId("go");
+      } catch (error) {
+        setImportError(
+          error instanceof Error ? error.message : "Unable to delete custom set."
+        );
+      }
+    };
+
+    void removeSet();
   }
 
   function handleExportSets() {
@@ -761,15 +1238,31 @@ export default function ReleaseDashboard() {
               Select an agent and a document bundle to inspect deterministic analysis output.
             </p>
           </div>
-          <div
-            data-testid="decision-badge"
-            className={`inline-flex min-w-28 items-center justify-center rounded-full border px-6 py-3 text-base font-extrabold tracking-[0.2em] shadow-sm ${
-              isGo
-                ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-                : "border-rose-200 bg-rose-100 text-rose-800"
-            }`}
-          >
-            {result.decision}
+          <div className="grid min-w-[280px] grid-cols-2 gap-3">
+            {agentSignalSummaries.map((summary) => {
+              const isSelected = agentId === summary.id;
+              const isGoStatus = summary.analysis.decision === "GO";
+
+              return (
+                <button
+                  key={summary.id}
+                  type="button"
+                  onClick={() => setAgentId(summary.id)}
+                  data-testid={`agent-status-${summary.id}`}
+                  className={`flex min-h-[76px] flex-col items-center justify-center rounded-xl border px-4 py-3 text-center shadow-sm transition ${
+                    isGoStatus
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-50"
+                      : "border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-50"
+                  } ${isSelected ? "ring-2 ring-slate-900 ring-offset-2" : ""}`}
+                  aria-label={`${summary.name} ${summary.analysis.decision}`}
+                >
+                  <span className="text-sm font-semibold text-slate-900">{summary.name}</span>
+                  <span className="mt-1 text-sm font-extrabold tracking-[0.3em]">
+                    {summary.analysis.decision}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -857,7 +1350,7 @@ export default function ReleaseDashboard() {
                       updateRunOption("evaluateAll", event.target.checked)
                     }
                   />
-                  evaluate-all
+                  Run all scenarios in the selected dataset
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -867,7 +1360,7 @@ export default function ReleaseDashboard() {
                       updateRunOption("checkLabel", event.target.checked)
                     }
                   />
-                  check-label
+                  Compare each decision with expected labels
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -877,7 +1370,7 @@ export default function ReleaseDashboard() {
                       updateRunOption("strictSchema", event.target.checked)
                     }
                   />
-                  strict-schema
+                  Require valid output schema
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -888,14 +1381,24 @@ export default function ReleaseDashboard() {
                     }
                     disabled={!runOptions.checkLabel}
                   />
-                  fail-on-label-mismatch
+                  Return an error if decision and label differ
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={runOptions.noLlm}
+                    onChange={(event) =>
+                      updateRunOption("noLlm", event.target.checked)
+                    }
+                  />
+                  Use deterministic rules only (no LLM calls)
                 </label>
               </div>
 
               {agentId === "agent4" ? (
                 <div className="mt-3">
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    source-adapter-kind
+                  <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Dataset interpretation mode
                   </label>
                   <select
                     value={runOptions.sourceAdapterKind}
@@ -975,6 +1478,18 @@ export default function ReleaseDashboard() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={handleRunBackend}
+              disabled={isBackendRunning || !backendRunRequest}
+              className={`rounded border px-3 py-1.5 text-xs font-semibold ${
+                isBackendRunning || !backendRunRequest
+                  ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                  : "border-slate-700 bg-slate-900 text-white hover:bg-slate-800"
+              }`}
+            >
+              {isBackendRunning ? "Running..." : "Run Agents"}
+            </button>
+            <button
+              type="button"
               onClick={handleExportCurrentAnalysis}
               className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
             >
@@ -1018,6 +1533,18 @@ export default function ReleaseDashboard() {
           <p className="mt-1 text-xs text-slate-600">
             Simulated exit code: <strong>{singleRunDiagnostics.simulatedExitCode}</strong>
           </p>
+        ) : null}
+        {backendResponse ? (
+          <p className="mt-1 text-xs text-slate-600">
+            Source: <strong>backend</strong> ({backendResponse.mode})
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-slate-500">
+            Source: <strong>local preview</strong>
+          </p>
+        )}
+        {backendError ? (
+          <p className="mt-1 text-xs font-medium text-rose-700">{backendError}</p>
         ) : null}
 
         {evaluateAllSummary ? (
@@ -1096,33 +1623,83 @@ export default function ReleaseDashboard() {
           data-testid="signal-table"
         >
           <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Signal Table
+            Agent Signal Overview
           </h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
-                  <th className="py-2 pr-3">Rule</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2">Pattern</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.signals.map((signal) => (
-                  <tr key={signal.code} className="border-b border-slate-100">
-                    <td className="py-2 pr-3 font-mono text-xs">{signal.code}</td>
-                    <td className="py-2 pr-3">
-                      {signal.matched ? (
-                        <span className="font-semibold text-rose-700">matched</span>
-                      ) : (
-                        <span className="text-emerald-700">clear</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-slate-600">{signal.pattern}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-4">
+            {agentSignalSummaries.map((summary) => {
+              const hasHold = summary.analysis.decision === "HOLD";
+              const matchedCodes = summary.analysis.matchedSignals.map((signal) => signal.code);
+
+              return (
+                <section
+                  key={summary.id}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                  data-testid={`signal-summary-${summary.id}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{summary.name}</p>
+                      <p className="text-xs text-slate-500">{summary.phase}</p>
+                    </div>
+                    <div
+                      className={`rounded-full border px-3 py-1 text-xs font-extrabold tracking-[0.2em] ${
+                        hasHold
+                          ? "border-rose-200 bg-rose-100 text-rose-800"
+                          : "border-emerald-200 bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {summary.analysis.decision}
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs text-slate-600">
+                    Matched hard gates: <strong>{summary.analysis.matchedSignals.length}</strong>
+                  </p>
+
+                  {matchedCodes.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {matchedCodes.map((code) => (
+                        <span
+                          key={`${summary.id}-${code}`}
+                          className="rounded bg-rose-100 px-2 py-1 font-mono text-[11px] text-rose-700"
+                        >
+                          {code}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-emerald-700">No hard gates matched.</p>
+                  )}
+
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-400">
+                          <th className="py-2 pr-3">Rule</th>
+                          <th className="py-2 pr-3">Status</th>
+                          <th className="py-2">Pattern</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summary.analysis.signals.map((signal) => (
+                          <tr key={`${summary.id}-${signal.code}`} className="border-b border-slate-100 last:border-b-0">
+                            <td className="py-2 pr-3 font-mono text-[11px]">{signal.code}</td>
+                            <td className="py-2 pr-3">
+                              {signal.matched ? (
+                                <span className="font-semibold text-rose-700">matched</span>
+                              ) : (
+                                <span className="text-emerald-700">clear</span>
+                              )}
+                            </td>
+                            <td className="py-2 text-slate-600">{signal.pattern}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </article>
       </div>

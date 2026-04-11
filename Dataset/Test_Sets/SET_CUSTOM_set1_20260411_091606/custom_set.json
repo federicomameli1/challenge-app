@@ -1,0 +1,42 @@
+{
+  "id": "SET_CUSTOM_set1_20260411_091606",
+  "label": "set1",
+  "source": "custom",
+  "createdAtUtc": "2026-04-11T09:16:06.391882+00:00",
+  "documents": [
+    {
+      "name": "APCS_Emails_v1.0.txt",
+      "fileName": "APCS_Emails_v1.0.txt"
+    },
+    {
+      "name": "APCS_Module_Version_Inventory_v1.0.txt",
+      "fileName": "APCS_Module_Version_Inventory_v1.0.txt"
+    },
+    {
+      "name": "APCS_Requirements_v1.0.txt",
+      "fileName": "APCS_Requirements_v1.0.txt"
+    },
+    {
+      "name": "APCS_Test_Procedure_v1.0.txt",
+      "fileName": "APCS_Test_Procedure_v1.0.txt"
+    },
+    {
+      "name": "APCS_VDD_v1.0.txt",
+      "fileName": "APCS_VDD_v1.0.txt"
+    },
+    {
+      "name": "phase5_decision_labels.csv",
+      "fileName": "phase5_decision_labels.csv"
+    },
+    {
+      "name": "test_scenarios.csv",
+      "fileName": "test_scenarios.csv"
+    }
+  ],
+  "backend": {
+    "agent4": {
+      "datasetRoot": "challenge-app/Dataset/Test_Sets/SET_CUSTOM_set1_20260411_091606",
+      "sourceAdapterKind": "apcs_doc_bundle"
+    }
+  }
+}

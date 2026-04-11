@@ -1,4 +1,0 @@
-Validation summary:
-- all mandatory tests passed
-- no open blocker
-- release candidate approved for TEST promotion

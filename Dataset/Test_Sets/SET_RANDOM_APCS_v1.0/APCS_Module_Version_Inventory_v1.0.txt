@@ -1,0 +1,11 @@
+APCS Module Version Inventory
+
+Module             Expected   Observed   Status
+Control Core       3.8.1      3.8.1      match
+Runtime Watchdog   2.4.0      2.4.2      mismatch
+UI Bridge          1.9.5      1.9.5      match
+Data Sync          4.0.0      4.0.0      match
+
+Notes:
+- Runtime Watchdog drift is not yet explained.
+- No rollback package has been attached.

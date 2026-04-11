@@ -1,4 +1,0 @@
-Validation summary:
-- execution mostly green
-- continuity closure evidence missing
-- governance status HOLD

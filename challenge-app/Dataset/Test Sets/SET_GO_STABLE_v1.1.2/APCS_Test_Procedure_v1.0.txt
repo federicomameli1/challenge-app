@@ -1,3 +1,0 @@
-T-APCS-004: re-executed on v1.1.2, PASS
-T-APCS-006: re-executed on v1.1.2, PASS
-T-APCS-009: executed with remarks, non-blocking
