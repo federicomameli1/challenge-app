@@ -1,3 +1,0 @@
-Inconsistencies map:
-- no blocking inconsistency detected
-- documentation alignment verified

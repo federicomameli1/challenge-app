@@ -1,0 +1,13 @@
+APCS Test Procedure
+
+1. Deploy the package to the staging workstation.
+2. Run the smoke tests for the control path.
+3. Verify the watchdog recovery path after a forced stop.
+4. Confirm the operator checklist is completed.
+5. Sign off only if no blocking defects remain.
+
+Result summary:
+- Smoke tests: pass
+- Watchdog recovery: fail
+- Operator checklist: pass
+- Final sign-off: pending

@@ -1,2 +1,0 @@
-T-APCS-004: not re-executed, FAIL still open
-T-APCS-006: pending validation

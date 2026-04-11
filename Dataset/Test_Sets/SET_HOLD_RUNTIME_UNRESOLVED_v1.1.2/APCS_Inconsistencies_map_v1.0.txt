@@ -1,3 +1,0 @@
-Inconsistencies map:
-- status drift between local fix and official build publication
-- blocker closure not evidenced

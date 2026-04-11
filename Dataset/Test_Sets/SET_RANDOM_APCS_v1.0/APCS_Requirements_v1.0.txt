@@ -1,0 +1,12 @@
+APCS Requirements Snapshot
+
+R-101: Release approval requires all critical regressions to be closed.
+R-102: Demo environment must be reproducible from the documented steps.
+R-103: Interface alignment must be validated before the cutover.
+R-104: Conflicting status updates must be escalated and resolved.
+
+Current status notes:
+- R-101: partial pass
+- R-102: pass
+- R-103: fail
+- R-104: fail

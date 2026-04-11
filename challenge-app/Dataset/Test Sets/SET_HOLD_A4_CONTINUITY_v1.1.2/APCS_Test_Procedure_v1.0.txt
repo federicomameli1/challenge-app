@@ -1,3 +1,0 @@
-T-APCS-020: PASS
-T-APCS-021: PASS
-Continuity closure check: pending evidence

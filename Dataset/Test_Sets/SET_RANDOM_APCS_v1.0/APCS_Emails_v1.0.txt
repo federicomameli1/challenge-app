@@ -1,0 +1,11 @@
+Subject: Release readiness check - mixed update
+
+Hello team,
+
+This bundle mixes a few signals on purpose for testing the dashboard:
+- Release notes mention the APCS upgrade is approved for Friday 18:00.
+- The support lead also reports one unresolved regression in the runtime watchdog.
+- The operations mailbox confirms the demo environment was recycled successfully.
+- A follow-up note says validation is still blocked by a missing interface alignment.
+
+At the moment the safest interpretation is HOLD until the conflicting items are clarified.
