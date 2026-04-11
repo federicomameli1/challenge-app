@@ -1,11 +1,74 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import ReleaseDashboard from "./ReleaseDashboard.jsx";
 
 describe("Release Dashboard", () => {
+  let backendSets;
+
   beforeEach(() => {
     localStorage.clear();
+    backendSets = [];
+
+    global.fetch = vi.fn(async (input, init = {}) => {
+      const url = String(input);
+      const method = String(init.method || "GET").toUpperCase();
+
+      if (url.endsWith("/datasets/custom-sets") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: backendSets }),
+        };
+      }
+
+      if (url.endsWith("/datasets/custom-sets") && method === "POST") {
+        const body = JSON.parse(String(init.body || "{}"));
+        const created = {
+          id: `SET_CUSTOM_${String(body.label || "set").toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+          label: body.label,
+          source: "custom",
+          persisted: true,
+          documents: (body.documents || []).map((doc) => ({
+            name: doc.name,
+            filePath: `Dataset/Test_Sets/temp/${doc.name}`,
+            text: doc.text,
+          })),
+          backend: {
+            agent4: {
+              datasetRoot: "challenge-app/Dataset/Test_Sets/temp",
+              sourceAdapterKind: "apcs_doc_bundle",
+            },
+          },
+        };
+        backendSets = [...backendSets, created];
+        return {
+          ok: true,
+          status: 200,
+          json: async () => created,
+        };
+      }
+
+      if (url.includes("/datasets/custom-sets/") && method === "DELETE") {
+        const setId = decodeURIComponent(url.split("/").pop() || "");
+        backendSets = backendSets.filter((set) => set.id !== setId);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, id: setId }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      };
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("renders agent operations console", () => {
