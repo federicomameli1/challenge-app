@@ -898,11 +898,20 @@ export default function ReleaseDashboard() {
 
   const agentSignalSummaries = useMemo(
     () =>
-      Object.values(AGENTS).map((agent) => ({
-        ...agent,
-        analysis: analyze(agent.id, selectedDataset),
-      })),
-    [selectedDataset]
+      Object.values(AGENTS).map((agent) => {
+        const localAnalysis = analyze(agent.id, selectedDataset);
+        const useBackend = backendResponse?.mode === "single" && agent.id === agentId;
+        const backendAnalysis = useBackend
+          ? normalizeBackendAnalysis(backendResponse?.payload, localAnalysis.gate)
+          : null;
+
+        return {
+          ...agent,
+          analysis: backendAnalysis || localAnalysis,
+          source: useBackend ? "backend" : "local",
+        };
+      }),
+    [agentId, backendResponse, selectedDataset]
   );
 
   useEffect(() => {
@@ -999,8 +1008,6 @@ export default function ReleaseDashboard() {
           : null,
     };
   }, [agentId, allSets, backendResponse, runOptions.checkLabel, runOptions.evaluateAll]);
-
-  const isGo = result.decision === "GO";
 
   function updateRunOption(key, value) {
     setRunOptions((prev) => ({ ...prev, [key]: value }));
@@ -1543,6 +1550,9 @@ export default function ReleaseDashboard() {
             Source: <strong>local preview</strong>
           </p>
         )}
+        <p className="mt-1 text-xs text-slate-500">
+          Backend endpoint: <strong>{AGENT_BACKEND_URL}</strong>
+        </p>
         {backendError ? (
           <p className="mt-1 text-xs font-medium text-rose-700">{backendError}</p>
         ) : null}
@@ -1654,6 +1664,9 @@ export default function ReleaseDashboard() {
 
                   <p className="mt-3 text-xs text-slate-600">
                     Matched hard gates: <strong>{summary.analysis.matchedSignals.length}</strong>
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-500">
+                    Source: {summary.source}
                   </p>
 
                   {matchedCodes.length > 0 ? (

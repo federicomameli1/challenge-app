@@ -6,6 +6,13 @@ import ReleaseDashboard from "./ReleaseDashboard.jsx";
 describe("Release Dashboard", () => {
   let backendSets;
 
+  async function renderDashboard() {
+    render(<ReleaseDashboard />);
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    });
+  }
+
   beforeEach(() => {
     localStorage.clear();
     backendSets = [];
@@ -71,19 +78,19 @@ describe("Release Dashboard", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders agent operations console", () => {
-    render(<ReleaseDashboard />);
+  it("renders agent operations console", async () => {
+    await renderDashboard();
     expect(screen.getByTestId("agent-console")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /agent operations console/i })).toBeInTheDocument();
   });
 
-  it("defaults to GO for Agent 4 with GO documents", () => {
-    render(<ReleaseDashboard />);
+  it("defaults to GO for Agent 4 with GO documents", async () => {
+    await renderDashboard();
     expect(screen.getByTestId("agent-status-agent4").textContent).toMatch(/GO/);
   });
 
   it("switching to HOLD documents yields HOLD decision", async () => {
-    render(<ReleaseDashboard />);
+    await renderDashboard();
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: /hold documents/i }));
@@ -91,7 +98,7 @@ describe("Release Dashboard", () => {
   });
 
   it("renders separate signal summaries for both agents", async () => {
-    render(<ReleaseDashboard />);
+    await renderDashboard();
 
     expect(screen.getByTestId("reasons-panel")).toBeInTheDocument();
     expect(screen.getByTestId("signal-table")).toBeInTheDocument();
@@ -102,7 +109,7 @@ describe("Release Dashboard", () => {
   });
 
   it("creates a custom set from uploaded documents", async () => {
-    render(<ReleaseDashboard />);
+    await renderDashboard();
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/set name/i), "My Custom Set");
@@ -125,7 +132,7 @@ describe("Release Dashboard", () => {
   });
 
   it("deletes the selected custom set", async () => {
-    render(<ReleaseDashboard />);
+    await renderDashboard();
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/set name/i), "Disposable Set");

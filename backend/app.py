@@ -4,7 +4,6 @@ import json
 import re
 import shutil
 import tempfile
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
@@ -17,8 +16,6 @@ from pydantic import BaseModel, Field, model_validator
 # while using the actual app root for files owned by this backend.
 SUPPORT_ROOT = Path(__file__).resolve().parents[2]
 APP_ROOT = Path(__file__).resolve().parents[1]
-if str(SUPPORT_ROOT) not in sys.path:
-    sys.path.insert(0, str(SUPPORT_ROOT))
 
 from .agent4.lc_pipeline import (  # noqa: E402
     Agent4LCError,
@@ -89,7 +86,23 @@ CUSTOM_SET_MANIFEST_NAME = "custom_set.json"
 def _resolve_repo_path(path_value: str) -> Path:
     p = Path(path_value)
     if not p.is_absolute():
-        p = (SUPPORT_ROOT / p).resolve()
+        parts = list(p.parts)
+        if parts and parts[0].lower() == APP_ROOT.name.lower():
+            p = Path(*parts[1:]) if len(parts) > 1 else Path(".")
+
+        candidate_app = (APP_ROOT / p).resolve()
+        if candidate_app.exists():
+            return candidate_app
+
+        candidate_support_direct = (SUPPORT_ROOT / Path(path_value)).resolve()
+        if candidate_support_direct.exists():
+            return candidate_support_direct
+
+        candidate_support = (SUPPORT_ROOT / p).resolve()
+        if candidate_support.exists():
+            return candidate_support
+
+        p = candidate_app
     return p
 
 
@@ -116,7 +129,7 @@ def _normalize_uploaded_filename(name: str, index: int) -> str:
 
 def _materialize_documents(documents: List[CustomSetDocument], label: str) -> Path:
     temp_dir = Path(
-        tempfile.mkdtemp(prefix=f"hitachi-{_slugify(label or 'custom-set')}-", dir=str(SUPPORT_ROOT))
+        tempfile.mkdtemp(prefix=f"hitachi-{_slugify(label or 'custom-set')}-", dir=str(APP_ROOT))
     )
     for index, document in enumerate(documents):
         file_name = _normalize_uploaded_filename(document.name, index)
@@ -276,49 +289,84 @@ def _schema_error_exists(payload: Dict[str, Any], evaluate_all: bool) -> bool:
 
 
 def _run_agent4(req: AgentRunRequest) -> Dict[str, Any]:
+    temp_dataset_root: Optional[Path] = None
     if req.documents:
-        dataset_root = _materialize_documents(req.documents, req.custom_set_label or req.dataset_root)
+        temp_dataset_root = _materialize_documents(
+            req.documents,
+            req.custom_set_label or req.dataset_root,
+        )
+        dataset_root = temp_dataset_root
     else:
         dataset_root = _resolve_repo_path(req.dataset_root)
 
-    pipeline = LangChainAgent4Pipeline(
-        config=Agent4PipelineConfig(
-            dataset_root=str(dataset_root),
-            source_adapter_kind=(
-                None if req.source_adapter_kind in (None, "auto") else req.source_adapter_kind
+    try:
+        pipeline = LangChainAgent4Pipeline(
+            config=Agent4PipelineConfig(
+                dataset_root=str(dataset_root),
+                source_adapter_kind=(
+                    None if req.source_adapter_kind in (None, "auto") else req.source_adapter_kind
+                ),
+                use_llm_summary=not req.no_llm,
+                strict_schema=False,
             ),
-            use_llm_summary=not req.no_llm,
-            strict_schema=False,
-        ),
-        llm_generate=None,
-    )
-
-    validation = pipeline.validate_dataset()
-    if not validation.get("exists", False):
-        raise HTTPException(status_code=400, detail=f"Dataset root not found: {dataset_root}")
-    missing_required = validation.get("missing_required", [])
-    if missing_required and not req.documents:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Dataset missing required files: {', '.join(missing_required)}",
+            llm_generate=None,
         )
 
-    if req.evaluate_all:
-        predictions = pipeline.assess_all_scenarios()
-        total = len(predictions)
-        schema_valid_count = sum(1 for p in predictions if _safe_schema_valid(p))
-        schema_validity_rate = (schema_valid_count / total) if total else 0.0
+        validation = pipeline.validate_dataset()
+        if not validation.get("exists", False):
+            raise HTTPException(status_code=400, detail=f"Dataset root not found: {dataset_root}")
+        missing_required = validation.get("missing_required", [])
+        if missing_required and not req.documents:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dataset missing required files: {', '.join(missing_required)}",
+            )
 
-        payload: Dict[str, Any] = {
-            "agent": "agent4_langchain_backend",
-            "dataset_root": str(dataset_root),
-            "mode": "evaluate_all",
-            "summary": {
-                "total_scenarios": total,
-                "schema_validity_rate": round(schema_validity_rate, 4),
-            },
-            "predictions": predictions,
-        }
+        if req.evaluate_all:
+            predictions = pipeline.assess_all_scenarios()
+            total = len(predictions)
+            schema_valid_count = sum(1 for p in predictions if _safe_schema_valid(p))
+            schema_validity_rate = (schema_valid_count / total) if total else 0.0
+
+            payload: Dict[str, Any] = {
+                "agent": "agent4_langchain_backend",
+                "dataset_root": str(dataset_root),
+                "mode": "evaluate_all",
+                "summary": {
+                    "total_scenarios": total,
+                    "schema_validity_rate": round(schema_validity_rate, 4),
+                },
+                "predictions": predictions,
+            }
+
+            if req.check_label:
+                labels_path = _labels_path(
+                    dataset_root,
+                    req.labels_path,
+                    "phase4_decision_labels.csv",
+                )
+                evaluation = pipeline.evaluate_against_labels(
+                    predictions=predictions,
+                    labels_csv_path=str(labels_path),
+                )
+                payload["evaluation"] = evaluation
+                payload["rows"] = evaluation.get("rows", [])
+                payload["summary"].update(
+                    {
+                        "evaluated_scenarios": evaluation.get("evaluated_scenarios", 0),
+                        "matched": evaluation.get("matched", 0),
+                        "accuracy": evaluation.get("accuracy", 0.0),
+                        "false_go": evaluation.get("false_go", 0),
+                        "false_hold": evaluation.get("false_hold", 0),
+                    }
+                )
+
+            return payload
+
+        payload = pipeline.assess_scenario(
+            scenario_id=str(req.scenario_id).strip(),
+            release_id=req.release_id,
+        )
 
         if req.check_label:
             labels_path = _labels_path(
@@ -327,90 +375,99 @@ def _run_agent4(req: AgentRunRequest) -> Dict[str, Any]:
                 "phase4_decision_labels.csv",
             )
             evaluation = pipeline.evaluate_against_labels(
-                predictions=predictions,
+                predictions=[payload],
                 labels_csv_path=str(labels_path),
             )
-            payload["evaluation"] = evaluation
-            payload["rows"] = evaluation.get("rows", [])
-            payload["summary"].update(
-                {
-                    "evaluated_scenarios": evaluation.get("evaluated_scenarios", 0),
-                    "matched": evaluation.get("matched", 0),
-                    "accuracy": evaluation.get("accuracy", 0.0),
-                    "false_go": evaluation.get("false_go", 0),
-                    "false_hold": evaluation.get("false_hold", 0),
-                }
-            )
+            row = evaluation.get("rows", [{}])[0] if evaluation.get("rows") else {}
+            payload["evaluation"] = {
+                "label_check_performed": True,
+                "expected_decision": row.get("expected_decision"),
+                "actual_decision": row.get("predicted_decision"),
+                "match": row.get("match"),
+            }
 
         return payload
-
-    payload = pipeline.assess_scenario(
-        scenario_id=str(req.scenario_id).strip(),
-        release_id=req.release_id,
-    )
-
-    if req.check_label:
-        labels_path = _labels_path(
-            dataset_root,
-            req.labels_path,
-            "phase4_decision_labels.csv",
-        )
-        evaluation = pipeline.evaluate_against_labels(
-            predictions=[payload],
-            labels_csv_path=str(labels_path),
-        )
-        row = evaluation.get("rows", [{}])[0] if evaluation.get("rows") else {}
-        payload["evaluation"] = {
-            "label_check_performed": True,
-            "expected_decision": row.get("expected_decision"),
-            "actual_decision": row.get("predicted_decision"),
-            "match": row.get("match"),
-        }
-
-    return payload
+    finally:
+        if temp_dataset_root is not None:
+            shutil.rmtree(temp_dataset_root, ignore_errors=True)
 
 
 def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
+    temp_dataset_root: Optional[Path] = None
     if req.documents:
-        dataset_root = _materialize_documents(req.documents, req.custom_set_label or req.dataset_root)
+        temp_dataset_root = _materialize_documents(
+            req.documents,
+            req.custom_set_label or req.dataset_root,
+        )
+        dataset_root = temp_dataset_root
     else:
         dataset_root = _resolve_repo_path(req.dataset_root)
 
-    pipeline = LangChainAgent5Pipeline(
-        config=Agent5PipelineConfig(
-            dataset_root=str(dataset_root),
-            use_llm_summary=not req.no_llm,
-            strict_schema=False,
-        ),
-        llm_generate=None,
-    )
-
-    validation = pipeline.validate_dataset()
-    if not validation.get("exists", False):
-        raise HTTPException(status_code=400, detail=f"Dataset root not found: {dataset_root}")
-    missing_required = validation.get("missing_required", [])
-    if missing_required:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Dataset missing required files: {', '.join(missing_required)}",
+    try:
+        pipeline = LangChainAgent5Pipeline(
+            config=Agent5PipelineConfig(
+                dataset_root=str(dataset_root),
+                use_llm_summary=not req.no_llm,
+                strict_schema=False,
+            ),
+            llm_generate=None,
         )
 
-    if req.evaluate_all:
-        predictions = pipeline.assess_all_scenarios()
-        total = len(predictions)
-        schema_valid_count = sum(1 for p in predictions if _safe_schema_valid(p))
-        schema_validity_rate = (schema_valid_count / total) if total else 0.0
+        validation = pipeline.validate_dataset()
+        if not validation.get("exists", False):
+            raise HTTPException(status_code=400, detail=f"Dataset root not found: {dataset_root}")
+        missing_required = validation.get("missing_required", [])
+        if missing_required:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dataset missing required files: {', '.join(missing_required)}",
+            )
 
-        payload: Dict[str, Any] = {
-            "agent": "agent5_langchain_backend",
-            "dataset_root": str(dataset_root),
-            "mode": "evaluate_all",
-            "summary": {
-                "total_scenarios": total,
-                "schema_validity_rate": round(schema_validity_rate, 4),
-            },
-            "predictions": predictions,
-        }
+        if req.evaluate_all:
+            predictions = pipeline.assess_all_scenarios()
+            total = len(predictions)
+            schema_valid_count = sum(1 for p in predictions if _safe_schema_valid(p))
+            schema_validity_rate = (schema_valid_count / total) if total else 0.0
+
+            payload: Dict[str, Any] = {
+                "agent": "agent5_langchain_backend",
+                "dataset_root": str(dataset_root),
+                "mode": "evaluate_all",
+                "summary": {
+                    "total_scenarios": total,
+                    "schema_validity_rate": round(schema_validity_rate, 4),
+                },
+                "predictions": predictions,
+            }
+
+            if req.check_label:
+                labels_path = _labels_path(
+                    dataset_root,
+                    req.labels_path,
+                    "phase5_decision_labels.csv",
+                )
+                evaluation = pipeline.evaluate_against_labels(
+                    predictions=predictions,
+                    labels_csv_path=str(labels_path),
+                )
+                payload["evaluation"] = evaluation
+                payload["rows"] = evaluation.get("rows", [])
+                payload["summary"].update(
+                    {
+                        "evaluated_scenarios": evaluation.get("evaluated_scenarios", 0),
+                        "matched": evaluation.get("matched", 0),
+                        "accuracy": evaluation.get("accuracy", 0.0),
+                        "false_go": evaluation.get("false_go", 0),
+                        "false_hold": evaluation.get("false_hold", 0),
+                    }
+                )
+
+            return payload
+
+        payload = pipeline.assess_scenario(
+            scenario_id=str(req.scenario_id).strip(),
+            release_id=req.release_id,
+        )
 
         if req.check_label:
             labels_path = _labels_path(
@@ -419,47 +476,21 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
                 "phase5_decision_labels.csv",
             )
             evaluation = pipeline.evaluate_against_labels(
-                predictions=predictions,
+                predictions=[payload],
                 labels_csv_path=str(labels_path),
             )
-            payload["evaluation"] = evaluation
-            payload["rows"] = evaluation.get("rows", [])
-            payload["summary"].update(
-                {
-                    "evaluated_scenarios": evaluation.get("evaluated_scenarios", 0),
-                    "matched": evaluation.get("matched", 0),
-                    "accuracy": evaluation.get("accuracy", 0.0),
-                    "false_go": evaluation.get("false_go", 0),
-                    "false_hold": evaluation.get("false_hold", 0),
-                }
-            )
+            row = evaluation.get("rows", [{}])[0] if evaluation.get("rows") else {}
+            payload["evaluation"] = {
+                "label_check_performed": True,
+                "expected_decision": row.get("expected_decision"),
+                "actual_decision": row.get("predicted_decision"),
+                "match": row.get("match"),
+            }
 
         return payload
-
-    payload = pipeline.assess_scenario(
-        scenario_id=str(req.scenario_id).strip(),
-        release_id=req.release_id,
-    )
-
-    if req.check_label:
-        labels_path = _labels_path(
-            dataset_root,
-            req.labels_path,
-            "phase5_decision_labels.csv",
-        )
-        evaluation = pipeline.evaluate_against_labels(
-            predictions=[payload],
-            labels_csv_path=str(labels_path),
-        )
-        row = evaluation.get("rows", [{}])[0] if evaluation.get("rows") else {}
-        payload["evaluation"] = {
-            "label_check_performed": True,
-            "expected_decision": row.get("expected_decision"),
-            "actual_decision": row.get("predicted_decision"),
-            "match": row.get("match"),
-        }
-
-    return payload
+    finally:
+        if temp_dataset_root is not None:
+            shutil.rmtree(temp_dataset_root, ignore_errors=True)
 
 
 app = FastAPI(title="Challenge App Agent Backend", version="0.1.0")
