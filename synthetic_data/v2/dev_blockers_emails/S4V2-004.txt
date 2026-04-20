@@ -1,0 +1,14 @@
+Subject: [REL-2026.05.04] DEV readiness discussion
+Time: 2026-03-27T01:58:11+00:00
+From: qa.lead@company.example
+To: release.manager@company.example
+
+No open blockers identified in DEV validation checkpoint.
+Status: NONE
+
+Time: 2026-03-27T02:14:11+00:00
+From: dev.lead@company.example
+To: qa.lead@company.example
+
+Deployment instability reproduced with runtime bootstrap failure.
+Fix not validated yet. Block remains active.

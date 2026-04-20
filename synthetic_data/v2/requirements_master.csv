@@ -1,0 +1,7 @@
+requirement_id,description,priority,module,mandatory_for_phase4,domain_area,verification_hint
+REQ-4A01,Collect telemetry packets from edge nodes every 30 seconds,HIGH,ingestion-gateway,true,ingestion,
+REQ-4A02,Route normalized telemetry into monitoring pipeline,HIGH,event_router,true,routing,Validate queue depth and pipeline handoff
+REQ-4A03,Compute health KPIs and publish alert stream,HIGH,module-b,true,health-monitoring,Validate KPI freshness and event emission
+REQ-4A04,Expose analytics summary endpoint for test dashboard,MEDIUM,analytics-api,true,api,Probe /analytics/summary for expected schema
+REQ-4A05,Trigger warning and critical alarms on threshold breaches,HIGH,alarm_engine,true,alarms,Inject threshold breach and verify notifications
+REQ-4A06,Provide build metadata endpoint with release provenance,MEDIUM,ui-backend,false,metadata,Check build id and release tag traceability

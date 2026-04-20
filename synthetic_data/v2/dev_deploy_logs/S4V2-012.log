@@ -1,0 +1,11 @@
+2026-03-28T09:50:11+00:00 INFO  [orchestrator] Start deployment candidate=REL-2026.05.12 scenario=S4V2-012
+2026-03-28T09:51:11+00:00 INFO  [orchestrator] Environment=DEV
+2026-03-28T09:52:11+00:00 INFO  [registry] Pull images count=6
+2026-03-28T09:53:11+00:00 INFO  [ingestion_gateway] container started
+2026-03-28T09:54:11+00:00 INFO  [event-router] container started
+2026-03-28T09:55:11+00:00 INFO  [monitoring-core] container started
+2026-03-28T09:56:11+00:00 INFO  [analytics-api] container started
+2026-03-28T09:57:11+00:00 INFO  [Alarm Engine] container started
+2026-03-28T09:58:11+00:00 INFO  [UI Backend] container started
+2026-03-28T09:59:11+00:00 WARN  [analytics-api] transient downstream timeout, retrying
+2026-03-28T10:00:11+00:00 INFO  [orchestrator] deployment completed successfully

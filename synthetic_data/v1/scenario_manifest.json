@@ -1,0 +1,30 @@
+{
+  "dataset": "phase4_v1",
+  "generated_at": "2026-03-26T13:23:36+00:00",
+  "seed": 42,
+  "scenario_count": 10,
+  "decision_distribution": {
+    "GO": 2,
+    "HOLD": 8
+  },
+  "policy_reference": {
+    "hold_conditions": [
+      "critical_service_unhealthy",
+      "unresolved_error_or_critical_log",
+      "open_blocker_email",
+      "mandatory_version_mismatch",
+      "unmet_conditional_requirement"
+    ],
+    "go_rule": "GO only when no hold_condition is present"
+  },
+  "files": {
+    "requirements": "requirements_master.csv",
+    "release_calendar": "release_calendar.csv",
+    "versions": "modules_versions.csv",
+    "phase4_versions": "phase4_modules_versions.csv",
+    "labels": "phase4_decision_labels.csv",
+    "deploy_logs": "dev_deploy_logs/",
+    "health_reports": "service_health_reports/",
+    "emails": "dev_blockers_emails/"
+  }
+}

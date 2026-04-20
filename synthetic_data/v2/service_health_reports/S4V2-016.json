@@ -1,0 +1,47 @@
+{
+  "scenario_id": "S4V2-016",
+  "release_id": "REL-2026.05.16",
+  "environment": "DEV",
+  "generated_at": "2026-03-29T02:10:11+00:00",
+  "overall_status": "healthy",
+  "services": [
+    {
+      "service": "Ingestion Gateway",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "Event Router",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "module-b",
+      "status": "healthy",
+      "critical": true,
+      "reason": "ok"
+    },
+    {
+      "service": "Analytics API",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "Alarm Engine",
+      "status": "healthy",
+      "critical": true,
+      "reason": "ok"
+    },
+    {
+      "service": "UI Backend",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    }
+  ],
+  "report_version": "2.0",
+  "collector": "health-aggregator-v2"
+}

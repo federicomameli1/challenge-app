@@ -1,0 +1,97 @@
+scenario_id,release_id,environment,module,planned_version,deployed_version,mandatory_for_phase4,version_match,source_system
+S4V2-001,REL-2026.05.01,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-001,REL-2026.05.01,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-001,REL-2026.05.01,DEV,monitoring_core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-001,REL-2026.05.01,DEV,analytics_api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-001,REL-2026.05.01,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-001,REL-2026.05.01,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,ingestion_gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,event_router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,Monitoring Core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-002,REL-2026.05.02,DEV,ui_backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,Monitoring Core,3.2.0,3.2.0,true,false,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-003,REL-2026.05.03,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,monitoring_core,3.2.0,3.2.0,true,false,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-004,REL-2026.05.04,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,Ingestion Gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,monitoring_core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-005,REL-2026.05.05,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,ingestion_gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,Monitoring Core,3.2.0,3.1.99,true,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,analytics_api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,alarm_engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-006,REL-2026.05.06,DEV,UI Backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,monitoring_core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-007,REL-2026.05.07,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,monitoring-core,3.2.0,3.1.99,true,false,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,alarm_engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-008,REL-2026.05.08,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,monitoring-core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,Analytics API,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,Alarm Engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-009,REL-2026.05.09,DEV,UI Backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,module-b,3.2.0,3.2.0,true,false,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-010,REL-2026.05.10,DEV,ui_backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,Ingestion Gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,event-router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,monitoring-core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,Alarm Engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-011,REL-2026.05.11,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,Ingestion Gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,module-b,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,analytics_api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-012,REL-2026.05.12,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,Ingestion Gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,module-b,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,Analytics API,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-013,REL-2026.05.13,DEV,UI Backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,ingestion-gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,module-b,3.2.0,3.1.99,true,false,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,Analytics API,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-014,REL-2026.05.14,DEV,ui_backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,ingestion_gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,Event Router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,monitoring-core,3.2.0,3.1.99,true,false,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,analytics_api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,alarm-engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-015,REL-2026.05.15,DEV,ui-backend,1.3.0,1.3.0,false,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,ingestion_gateway,1.5.0,1.5.0,true,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,event_router,2.4.2,2.4.2,true,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,Monitoring Core,3.2.0,3.2.0,true,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,analytics-api,2.0.1,2.0.1,true,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,alarm_engine,2.8.0,2.8.0,true,true,pipeline-export-v2
+S4V2-016,REL-2026.05.16,DEV,ui_backend,1.3.0,1.3.1,false,false,pipeline-export-v2

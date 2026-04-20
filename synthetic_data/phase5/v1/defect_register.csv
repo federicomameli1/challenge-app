@@ -1,0 +1,65 @@
+scenario_id,release_id,defect_id,title,severity,status,owner
+P5-001,P5-REL-1.1.0,DF-P5-001,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-002,P5-REL-1.1.1,DF-P5-002,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-003,P5-REL-1.1.2,DF-P5-003,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-004,P5-REL-1.1.3,DF-P5-004,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-005,P5-REL-1.1.0,DF-P5-005,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-005,P5-REL-1.1.0,DF-P5-CRIT-005,Critical deadlock in payment commit path,CRITICAL,OPEN,dev.payment
+P5-006,P5-REL-1.1.1,DF-P5-006,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-007,P5-REL-1.1.2,DF-P5-007,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-008,P5-REL-1.1.3,DF-P5-008,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-008,P5-REL-1.1.3,DF-P5-NONBLOCK-008,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-009,P5-REL-1.1.0,DF-P5-009,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-009,P5-REL-1.1.0,DF-P5-HIGH-009,High severity timeout in auth-token propagation,HIGH,OPEN,dev.auth
+P5-010,P5-REL-1.1.1,DF-P5-010,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-011,P5-REL-1.1.2,DF-P5-011,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-011,P5-REL-1.1.2,DF-P5-CRIT-011,Critical deadlock in payment commit path,CRITICAL,OPEN,dev.payment
+P5-012,P5-REL-1.1.3,DF-P5-012,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-013,P5-REL-1.2.0,DF-P5-013,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-014,P5-REL-1.2.1,DF-P5-014,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-015,P5-REL-1.2.2,DF-P5-015,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-016,P5-REL-1.2.3,DF-P5-016,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-017,P5-REL-1.2.0,DF-P5-017,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-017,P5-REL-1.2.0,DF-P5-HIGH-017,High severity timeout in auth-token propagation,HIGH,OPEN,dev.auth
+P5-018,P5-REL-1.2.1,DF-P5-018,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-018,P5-REL-1.2.1,DF-P5-NONBLOCK-018,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-019,P5-REL-1.2.2,DF-P5-019,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-020,P5-REL-1.2.3,DF-P5-020,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-021,P5-REL-1.2.0,DF-P5-021,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-022,P5-REL-1.2.1,DF-P5-022,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-023,P5-REL-1.2.2,DF-P5-023,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-024,P5-REL-1.2.3,DF-P5-024,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-024,P5-REL-1.2.3,DF-P5-NONBLOCK-024,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-025,P5-REL-1.3.0,DF-P5-025,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-025,P5-REL-1.3.0,DF-P5-NONBLOCK-025,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-026,P5-REL-1.3.1,DF-P5-026,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-027,P5-REL-1.3.2,DF-P5-027,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-028,P5-REL-1.3.3,DF-P5-028,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-028,P5-REL-1.3.3,DF-P5-HIGH-028,High severity timeout in auth-token propagation,HIGH,OPEN,dev.auth
+P5-029,P5-REL-1.3.0,DF-P5-029,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-029,P5-REL-1.3.0,DF-P5-NONBLOCK-029,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-030,P5-REL-1.3.1,DF-P5-030,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-031,P5-REL-1.3.2,DF-P5-031,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-032,P5-REL-1.3.3,DF-P5-032,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-033,P5-REL-1.3.0,DF-P5-033,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-034,P5-REL-1.3.1,DF-P5-034,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-035,P5-REL-1.3.2,DF-P5-035,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-035,P5-REL-1.3.2,DF-P5-NONBLOCK-035,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-036,P5-REL-1.3.3,DF-P5-036,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-037,P5-REL-1.4.0,DF-P5-037,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-037,P5-REL-1.4.0,DF-P5-NONBLOCK-037,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-038,P5-REL-1.4.1,DF-P5-038,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-038,P5-REL-1.4.1,DF-P5-NONBLOCK-038,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-039,P5-REL-1.4.2,DF-P5-039,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-040,P5-REL-1.4.3,DF-P5-040,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-041,P5-REL-1.4.0,DF-P5-041,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-041,P5-REL-1.4.0,DF-P5-CRIT-041,Critical deadlock in payment commit path,CRITICAL,OPEN,dev.payment
+P5-042,P5-REL-1.4.1,DF-P5-042,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-042,P5-REL-1.4.1,DF-P5-NONBLOCK-042,Known UI spacing issue,LOW,OPEN,dev.ui
+P5-043,P5-REL-1.4.2,DF-P5-043,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-044,P5-REL-1.4.3,DF-P5-044,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-045,P5-REL-1.4.0,DF-P5-045,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-046,P5-REL-1.4.1,DF-P5-046,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-046,P5-REL-1.4.1,DF-P5-HIGH-046,High severity timeout in auth-token propagation,HIGH,OPEN,dev.auth
+P5-047,P5-REL-1.4.2,DF-P5-047,Minor tooltip formatting issue,LOW,CLOSED,dev.ui
+P5-048,P5-REL-1.4.3,DF-P5-048,Minor tooltip formatting issue,LOW,CLOSED,dev.ui

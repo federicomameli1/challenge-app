@@ -1,0 +1,73 @@
+scenario_id,release_id,expected_decision,scenario_type,rationale,triggered_conditions,ambiguity_level,requires_agent4_closure
+P5V2-001,P5-REL-2.1.0,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-002,P5-REL-2.1.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,high,false
+P5V2-003,P5-REL-2.1.2,HOLD,HOLD_FAILED_MANDATORY,HOLD due to hard-gate triggers (mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_SINGLE_GATE.,mandatory_requirement_failed_or_blocked,low,false
+P5V2-004,P5-REL-2.1.3,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to hard-gate triggers (mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_SINGLE_GATE.,mandatory_requirement_failed_or_blocked,medium,false
+P5V2-005,P5-REL-2.1.4,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,low,false
+P5V2-006,P5-REL-2.1.5,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,high,false
+P5V2-007,P5-REL-2.1.0,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,high,true
+P5V2-008,P5-REL-2.1.1,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-009,P5-REL-2.1.2,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_MULTI_GATE.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-010,P5-REL-2.1.3,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-011,P5-REL-2.1.4,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-012,P5-REL-2.1.5,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-013,P5-REL-2.2.0,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-014,P5-REL-2.2.1,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,medium,false
+P5V2-015,P5-REL-2.2.2,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-016,P5-REL-2.2.3,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-017,P5-REL-2.2.4,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-018,P5-REL-2.2.5,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-019,P5-REL-2.2.0,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-020,P5-REL-2.2.1,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-021,P5-REL-2.2.2,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,medium,false
+P5V2-022,P5-REL-2.2.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-023,P5-REL-2.2.4,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-024,P5-REL-2.2.5,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class MIXED_BLOCKING_HOLD.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-025,P5-REL-2.3.0,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to hard-gate triggers (mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_SINGLE_GATE.,mandatory_requirement_failed_or_blocked,high,false
+P5V2-026,P5-REL-2.3.1,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-027,P5-REL-2.3.2,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class MIXED_BLOCKING_HOLD.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-028,P5-REL-2.3.3,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5V2-029,P5-REL-2.3.4,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-030,P5-REL-2.3.5,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,low,false
+P5V2-031,P5-REL-2.3.0,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-032,P5-REL-2.3.1,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-033,P5-REL-2.3.2,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-034,P5-REL-2.3.3,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-035,P5-REL-2.3.4,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to hard-gate triggers (mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_SINGLE_GATE.,mandatory_requirement_failed_or_blocked,low,false
+P5V2-036,P5-REL-2.3.5,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-037,P5-REL-2.4.0,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,low,false
+P5V2-038,P5-REL-2.4.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5V2-039,P5-REL-2.4.2,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to hard-gate triggers (mandatory_requirement_failed_or_blocked) under class CLEAR_HOLD_SINGLE_GATE.,mandatory_requirement_failed_or_blocked,high,false
+P5V2-040,P5-REL-2.4.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-041,P5-REL-2.4.4,GO,HOLD_EVIDENCE_INCOMPLETE,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-042,P5-REL-2.4.5,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,medium,false
+P5V2-043,P5-REL-2.4.0,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-044,P5-REL-2.4.1,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class MIXED_BLOCKING_HOLD.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-045,P5-REL-2.4.2,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-046,P5-REL-2.4.3,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,medium,false
+P5V2-047,P5-REL-2.4.4,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,low,false
+P5V2-048,P5-REL-2.4.5,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,medium,false
+P5V2-049,P5-REL-2.5.0,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-050,P5-REL-2.5.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5V2-051,P5-REL-2.5.2,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-052,P5-REL-2.5.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,low,false
+P5V2-053,P5-REL-2.5.4,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-054,P5-REL-2.5.5,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5V2-055,P5-REL-2.5.0,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to hard-gate triggers (mandatory_requirement_uncovered, test_evidence_incomplete) under class CLEAR_HOLD_SINGLE_GATE.",mandatory_requirement_uncovered|test_evidence_incomplete,high,false
+P5V2-056,P5-REL-2.5.1,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class MIXED_BLOCKING_HOLD.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-057,P5-REL-2.5.2,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,high,false
+P5V2-058,P5-REL-2.5.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-059,P5-REL-2.5.4,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-060,P5-REL-2.5.5,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to hard-gate triggers (critical_defect_open, mandatory_requirement_failed_or_blocked) under class MIXED_BLOCKING_HOLD.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5V2-061,P5-REL-2.6.0,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to hard-gate triggers (agent4_unresolved_hard_blocker_unclosed) under class CONFLICTED_EVIDENCE_HOLD.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5V2-062,P5-REL-2.6.1,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-063,P5-REL-2.6.2,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-064,P5-REL-2.6.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-065,P5-REL-2.6.4,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-066,P5-REL-2.6.5,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to hard-gate triggers (critical_defect_open) under class CLEAR_HOLD_SINGLE_GATE.,critical_defect_open,low,false
+P5V2-067,P5-REL-2.6.0,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,medium,false
+P5V2-068,P5-REL-2.6.1,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,medium,false
+P5V2-069,P5-REL-2.6.2,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-070,P5-REL-2.6.3,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,medium,false
+P5V2-071,P5-REL-2.6.4,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope and closure evidence are sufficient.,,high,false
+P5V2-072,P5-REL-2.6.5,HOLD,HOLD_UNMET_RETEST,HOLD due to hard-gate triggers (conditional_retest_unmet) under class CONDITIONAL_GOVERNANCE_HOLD.,conditional_retest_unmet,high,false

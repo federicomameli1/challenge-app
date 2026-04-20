@@ -1,0 +1,15 @@
+Subject: [REL-2026.04.04] Blocker - DEV readiness unresolved
+Time: 2026-03-26T22:28:36+00:00
+From: qa.lead@company.example
+To: release.manager@company.example
+
+Issue remains OPEN.
+Blocking symptom: alarm notifications not propagated under failover.
+Action requested: hold DEV->TEST promotion until fix + retest evidence.
+
+Time: 2026-03-26T22:48:36+00:00
+From: dev.lead@company.example
+To: qa.lead@company.example
+
+Patch under development. No validated fix available yet.
+Status: OPEN BLOCKER

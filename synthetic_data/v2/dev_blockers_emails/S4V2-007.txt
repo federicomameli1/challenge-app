@@ -1,0 +1,15 @@
+Subject: [REL-2026.05.07] DEV readiness discussion
+Time: 2026-03-27T13:58:11+00:00
+From: qa.lead@company.example
+To: release.manager@company.example
+
+Conditional clearance only.
+Retest REQUIRED before DEV->TEST promotion due to updated threshold policy.
+Current state: evidence missing for required retest execution.
+Status: CONDITIONAL_UNMET
+
+Time: 2026-03-27T14:14:11+00:00
+From: dev.lead@company.example
+To: qa.lead@company.example
+
+Retest package prepared, execution pending environment slot.

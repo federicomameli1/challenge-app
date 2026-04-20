@@ -1,0 +1,49 @@
+scenario_id,release_id,expected_decision,scenario_type,rationale,triggered_conditions,ambiguity_level,requires_agent4_closure
+P5-001,P5-REL-1.1.0,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-002,P5-REL-1.1.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5-003,P5-REL-1.1.2,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-004,P5-REL-1.1.3,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_BLOCKED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-005,P5-REL-1.1.0,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to triggered hard gates (critical_defect_open) in scenario class HOLD_OPEN_CRITICAL_DEFECT.,critical_defect_open,low,false
+P5-006,P5-REL-1.1.1,HOLD,HOLD_UNMET_RETEST,HOLD due to triggered hard gates (conditional_retest_unmet) in scenario class HOLD_UNMET_RETEST.,conditional_retest_unmet,low,false
+P5-007,P5-REL-1.1.2,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5-008,P5-REL-1.1.3,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-009,P5-REL-1.1.0,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to triggered hard gates (critical_defect_open, mandatory_requirement_failed_or_blocked) in scenario class MIXED_SIGNAL_HOLD_MULTI.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5-010,P5-REL-1.1.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,medium,false
+P5-011,P5-REL-1.1.2,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to triggered hard gates (critical_defect_open) in scenario class HOLD_OPEN_CRITICAL_DEFECT.,critical_defect_open,low,false
+P5-012,P5-REL-1.1.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-013,P5-REL-1.2.0,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-014,P5-REL-1.2.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5-015,P5-REL-1.2.2,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-016,P5-REL-1.2.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-017,P5-REL-1.2.0,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to triggered hard gates (critical_defect_open, mandatory_requirement_failed_or_blocked) in scenario class MIXED_SIGNAL_HOLD_MULTI.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5-018,P5-REL-1.2.1,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-019,P5-REL-1.2.2,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5-020,P5-REL-1.2.3,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_BLOCKED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-021,P5-REL-1.2.0,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5-022,P5-REL-1.2.1,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-023,P5-REL-1.2.2,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5-024,P5-REL-1.2.3,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-025,P5-REL-1.3.0,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-026,P5-REL-1.3.1,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5-027,P5-REL-1.3.2,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-028,P5-REL-1.3.3,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to triggered hard gates (critical_defect_open, mandatory_requirement_failed_or_blocked) in scenario class MIXED_SIGNAL_HOLD_MULTI.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5-029,P5-REL-1.3.0,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-030,P5-REL-1.3.1,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5-031,P5-REL-1.3.2,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-032,P5-REL-1.3.3,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-033,P5-REL-1.3.0,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,medium,false
+P5-034,P5-REL-1.3.1,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-035,P5-REL-1.3.2,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-036,P5-REL-1.3.3,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true
+P5-037,P5-REL-1.4.0,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-038,P5-REL-1.4.1,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,medium,false
+P5-039,P5-REL-1.4.2,HOLD,HOLD_FAILED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_FAILED_MANDATORY.,mandatory_requirement_failed_or_blocked,low,false
+P5-040,P5-REL-1.4.3,HOLD,HOLD_BLOCKED_MANDATORY,HOLD due to triggered hard gates (mandatory_requirement_failed_or_blocked) in scenario class HOLD_BLOCKED_MANDATORY.,mandatory_requirement_failed_or_blocked,medium,false
+P5-041,P5-REL-1.4.0,HOLD,HOLD_OPEN_CRITICAL_DEFECT,HOLD due to triggered hard gates (critical_defect_open) in scenario class HOLD_OPEN_CRITICAL_DEFECT.,critical_defect_open,low,false
+P5-042,P5-REL-1.4.1,GO,MIXED_SIGNAL_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,high,false
+P5-043,P5-REL-1.4.2,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-044,P5-REL-1.4.3,HOLD,HOLD_UNCOVERED_MANDATORY,"HOLD due to triggered hard gates (mandatory_requirement_uncovered, test_evidence_incomplete) in scenario class HOLD_UNCOVERED_MANDATORY.",mandatory_requirement_uncovered|test_evidence_incomplete,low,false
+P5-045,P5-REL-1.4.0,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-046,P5-REL-1.4.1,HOLD,MIXED_SIGNAL_HOLD_MULTI,"HOLD due to triggered hard gates (critical_defect_open, mandatory_requirement_failed_or_blocked) in scenario class MIXED_SIGNAL_HOLD_MULTI.",critical_defect_open|mandatory_requirement_failed_or_blocked,medium,false
+P5-047,P5-REL-1.4.2,GO,CLEAR_GO,No hard Phase 5 gate triggered; mandatory scope is covered and clear for progression.,,low,false
+P5-048,P5-REL-1.4.3,HOLD,HOLD_AGENT4_CONTINUITY,HOLD due to triggered hard gates (agent4_unresolved_hard_blocker_unclosed) in scenario class HOLD_AGENT4_CONTINUITY.,agent4_unresolved_hard_blocker_unclosed,medium,true

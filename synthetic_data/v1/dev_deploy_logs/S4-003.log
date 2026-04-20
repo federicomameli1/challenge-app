@@ -1,0 +1,13 @@
+2026-03-26T19:23:36+00:00 INFO  [orchestrator] Starting deployment for REL-2026.04.03 (S4-003)
+2026-03-26T19:24:36+00:00 INFO  [orchestrator] Environment=DEV
+2026-03-26T19:25:36+00:00 INFO  [registry] Pulling images for 6 modules
+2026-03-26T19:26:36+00:00 INFO  [ingestion-gateway] Container started
+2026-03-26T19:27:36+00:00 INFO  [event-router] Container started
+2026-03-26T19:28:36+00:00 INFO  [monitoring-core] Container started
+2026-03-26T19:29:36+00:00 INFO  [analytics-api] Container started
+2026-03-26T19:30:36+00:00 INFO  [alarm-engine] Container started
+2026-03-26T19:31:36+00:00 INFO  [ui-backend] Container started
+2026-03-26T19:32:36+00:00 ERROR [monitoring-core] Failed to load runtime rule-set checksum
+2026-03-26T19:33:36+00:00 CRITICAL [monitoring-core] Rule engine failed health bootstrap
+2026-03-26T19:34:36+00:00 INFO  [orchestrator] Auto-retry scheduled
+2026-03-26T19:35:36+00:00 ERROR [orchestrator] Deployment marked unstable after retries

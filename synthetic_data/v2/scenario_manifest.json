@@ -1,0 +1,37 @@
+{
+  "dataset": "phase4_v2",
+  "generated_at": "2026-03-26T13:50:11+00:00",
+  "seed": 4242,
+  "scenario_count": 16,
+  "controls": {
+    "alias_intensity": 0.65,
+    "contradiction_rate": 0.25,
+    "missing_field_rate": 0.08,
+    "ambiguity_bias": 0.35
+  },
+  "decision_distribution": {
+    "GO": 5,
+    "HOLD": 11
+  },
+  "policy_reference": {
+    "hold_conditions": [
+      "critical_service_unhealthy",
+      "unresolved_error_or_critical_log",
+      "open_blocker_email",
+      "mandatory_version_mismatch",
+      "unmet_conditional_requirement"
+    ],
+    "go_rule": "GO only when no hold condition is detected"
+  },
+  "files": {
+    "requirements": "requirements_master.csv",
+    "release_calendar": "release_calendar.csv",
+    "versions": "modules_versions.csv",
+    "phase4_versions": "phase4_modules_versions.csv",
+    "labels": "phase4_decision_labels.csv",
+    "scenario_catalog": "phase4_v2_scenario_catalog.csv",
+    "deploy_logs": "dev_deploy_logs/",
+    "health_reports": "service_health_reports/",
+    "emails": "dev_blockers_emails/"
+  }
+}

@@ -1,0 +1,14 @@
+2026-03-26T17:50:11+00:00 INFO  [orchestrator] Start deployment candidate=REL-2026.05.02 scenario=S4V2-002
+2026-03-26T17:51:11+00:00 INFO  [orchestrator] Environment=DEV
+2026-03-26T17:52:11+00:00 INFO  [registry] Pull images count=6
+2026-03-26T17:53:11+00:00 INFO  [ingestion-gateway] container started
+2026-03-26T17:54:11+00:00 INFO  [event-router] container started
+2026-03-26T17:55:11+00:00 INFO  [module-b] container started
+2026-03-26T17:56:11+00:00 INFO  [analytics_api] container started
+2026-03-26T17:57:11+00:00 INFO  [Alarm Engine] container started
+2026-03-26T17:58:11+00:00 INFO  [ui-backend] container started
+2026-03-26T17:59:11+00:00 WARN  [analytics-api] transient downstream timeout, retrying
+2026-03-26T18:00:11+00:00 ERROR [event-router] temporary handshake failure
+2026-03-26T18:01:11+00:00 INFO  [event-router] recovered after retry
+2026-03-26T18:02:11+00:00 INFO  [orchestrator] partial rollback not required
+2026-03-26T18:03:11+00:00 INFO  [orchestrator] deployment completed successfully
