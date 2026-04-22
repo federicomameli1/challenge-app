@@ -1,0 +1,11 @@
+2026-03-27T07:23:36+00:00 INFO  [orchestrator] Starting deployment for REL-2026.04.07 (S4-007)
+2026-03-27T07:24:36+00:00 INFO  [orchestrator] Environment=DEV
+2026-03-27T07:25:36+00:00 INFO  [registry] Pulling images for 6 modules
+2026-03-27T07:26:36+00:00 INFO  [ingestion-gateway] Container started
+2026-03-27T07:27:36+00:00 INFO  [event-router] Container started
+2026-03-27T07:28:36+00:00 INFO  [monitoring-core] Container started
+2026-03-27T07:29:36+00:00 INFO  [analytics-api] Container started
+2026-03-27T07:30:36+00:00 INFO  [alarm-engine] Container started
+2026-03-27T07:31:36+00:00 INFO  [ui-backend] Container started
+2026-03-27T07:32:36+00:00 WARN  [analytics-api] Retry on transient dependency timeout
+2026-03-27T07:33:36+00:00 INFO  [orchestrator] Deployment completed successfully

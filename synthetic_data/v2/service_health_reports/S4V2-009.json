@@ -1,0 +1,47 @@
+{
+  "scenario_id": "S4V2-009",
+  "release_id": "REL-2026.05.09",
+  "environment": "DEV",
+  "generated_at": "2026-03-27T22:10:11+00:00",
+  "overall_status": "degraded",
+  "services": [
+    {
+      "service": "Ingestion Gateway",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "event-router",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "monitoring_core",
+      "status": "unhealthy",
+      "critical": true,
+      "reason": "readiness probe timeout while fetching runtime rules"
+    },
+    {
+      "service": "analytics-api",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    },
+    {
+      "service": "alarm_engine",
+      "status": "healthy",
+      "critical": true,
+      "reason": "ok"
+    },
+    {
+      "service": "ui-backend",
+      "status": "healthy",
+      "critical": false,
+      "reason": "ok"
+    }
+  ],
+  "report_version": "2.0",
+  "collector": "health-aggregator-v2"
+}

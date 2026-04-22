@@ -1,0 +1,42 @@
+{
+  "dataset_name": "phase5_v1",
+  "generated_at_utc": "2026-04-03T22:09:52+00:00",
+  "generator": "scripts/generate_phase5_dataset_v1.py",
+  "seed": 42,
+  "scenario_count": 48,
+  "parameters": {
+    "ambiguity_rate": 0.2,
+    "missing_field_rate": 0.05,
+    "conflict_rate": 0.05,
+    "continuity_cases_rate": 0.12,
+    "go_hold_ratio": 0.4
+  },
+  "summary": {
+    "go_count": 18,
+    "hold_count": 30,
+    "continuity_cases": 4
+  },
+  "coverage": {
+    "hard_gate_trigger_counts": {
+      "mandatory_requirement_uncovered": 6,
+      "agent4_unresolved_hard_blocker_unclosed": 6,
+      "critical_defect_open": 7,
+      "test_evidence_incomplete": 6,
+      "mandatory_requirement_failed_or_blocked": 14,
+      "conditional_retest_unmet": 1
+    },
+    "all_hard_gates_present": true
+  },
+  "files": [
+    "requirements_master.csv",
+    "test_cases_master.csv",
+    "traceability_matrix.csv",
+    "test_execution_results.csv",
+    "defect_register.csv",
+    "phase5_decision_labels.csv",
+    "phase5_release_calendar.csv",
+    "phase5_manifest.json",
+    "test_analysis_emails/*.txt",
+    "agent4_context/*.json"
+  ]
+}

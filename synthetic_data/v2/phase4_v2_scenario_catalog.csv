@@ -1,0 +1,17 @@
+scenario_id,release_id,taxonomy,ambiguity_level,expected_decision,primary_rules,unhealthy_service,critical_log_error,open_blocker_email,mandatory_version_mismatch,unmet_conditional,non_blocking_warning,recoverable_error,inconsistent_health_narrative
+S4V2-001,REL-2026.05.01,baseline_clean_go,low,GO,,false,false,false,false,false,false,false,false
+S4V2-002,REL-2026.05.02,healthy_with_transient_warning_go,medium,GO,,false,false,false,false,false,true,true,false
+S4V2-003,REL-2026.05.03,critical_service_unhealthy_hold,low,HOLD,critical_service_unhealthy,true,false,false,false,false,false,false,false
+S4V2-004,REL-2026.05.04,unresolved_critical_log_hold,low,HOLD,unresolved_error_or_critical_log,false,true,false,false,false,false,false,false
+S4V2-005,REL-2026.05.05,open_blocker_email_hold,medium,HOLD,open_blocker_email,false,false,true,false,false,true,false,false
+S4V2-006,REL-2026.05.06,mandatory_version_mismatch_hold,low,HOLD,mandatory_version_mismatch,false,false,false,true,false,false,false,false
+S4V2-007,REL-2026.05.07,conditional_unmet_hold,medium,HOLD,unmet_conditional_requirement,false,false,false,false,true,false,false,false
+S4V2-008,REL-2026.05.08,dual_blocker_email_and_version_hold,medium,HOLD,open_blocker_email|mandatory_version_mismatch,false,false,true,true,false,true,false,false
+S4V2-009,REL-2026.05.09,health_plus_log_hold,high,HOLD,critical_service_unhealthy|unresolved_error_or_critical_log,true,true,false,false,false,false,false,true
+S4V2-010,REL-2026.05.10,conditional_plus_warning_hold,high,HOLD,unmet_conditional_requirement,false,false,false,false,true,true,false,false
+S4V2-011,REL-2026.05.11,recoverable_error_go,medium,GO,,false,false,false,false,false,true,true,false
+S4V2-012,REL-2026.05.12,email_noise_go,high,GO,,false,false,false,false,false,true,false,false
+S4V2-013,REL-2026.05.13,open_blocker_with_inconsistent_health_hold,high,HOLD,open_blocker_email,false,false,true,false,false,false,false,true
+S4V2-014,REL-2026.05.14,version_mismatch_with_recovery_logs_hold,medium,HOLD,mandatory_version_mismatch,false,false,false,true,false,false,true,false
+S4V2-015,REL-2026.05.15,three_gate_hold,high,HOLD,unresolved_error_or_critical_log|open_blocker_email|mandatory_version_mismatch,false,true,true,true,false,true,false,false
+S4V2-016,REL-2026.05.16,clean_go_alias_heavy,medium,GO,,false,false,false,false,false,true,false,false

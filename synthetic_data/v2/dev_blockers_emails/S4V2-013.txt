@@ -1,0 +1,15 @@
+Subject: [REL-2026.05.13] DEV readiness discussion
+Time: 2026-03-28T13:58:11+00:00
+From: qa.lead@company.example
+To: release.manager@company.example
+
+Blocker remains OPEN.
+Blocking symptom: alarm notifications do not propagate under failover.
+Action: hold DEV->TEST promotion until fix evidence is attached.
+Status: OPEN BLOCKER
+
+Time: 2026-03-28T14:14:11+00:00
+From: dev.lead@company.example
+To: qa.lead@company.example
+
+Patch is in progress; validated fix not available.

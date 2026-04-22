@@ -1,0 +1,17 @@
+scenario_id,release_id,environment,expected_decision,scenario_type,ambiguity_level,taxonomy,primary_triggered_rules,triggered_conditions,rationale
+S4V2-001,REL-2026.05.01,DEV,GO,CLEAR_GO,low,baseline_clean_go,,,All hard gates pass with clean evidence.
+S4V2-002,REL-2026.05.02,DEV,GO,MIX,medium,healthy_with_transient_warning_go,,,Transient warning present but recovered and non-blocking.
+S4V2-003,REL-2026.05.03,DEV,HOLD,CLEAR_HOLD,low,critical_service_unhealthy_hold,critical_service_unhealthy,critical_service_unhealthy,Critical service unhealthy in DEV.
+S4V2-004,REL-2026.05.04,DEV,HOLD,CLEAR_HOLD,low,unresolved_critical_log_hold,unresolved_error_or_critical_log,unresolved_error_or_critical_log,Unresolved CRITICAL runtime issue in deploy logs.
+S4V2-005,REL-2026.05.05,DEV,HOLD,MIX,medium,open_blocker_email_hold,open_blocker_email,open_blocker_email,Open blocker remains unresolved in email thread.
+S4V2-006,REL-2026.05.06,DEV,HOLD,CLEAR_HOLD,low,mandatory_version_mismatch_hold,mandatory_version_mismatch,mandatory_version_mismatch,Mandatory module version mismatch detected.
+S4V2-007,REL-2026.05.07,DEV,HOLD,MIX,medium,conditional_unmet_hold,unmet_conditional_requirement,unmet_conditional_requirement,Conditional retest requirement remains unmet.
+S4V2-008,REL-2026.05.08,DEV,HOLD,MIX,medium,dual_blocker_email_and_version_hold,open_blocker_email|mandatory_version_mismatch,open_blocker_email|mandatory_version_mismatch,Open blocker and mandatory version mismatch both present.
+S4V2-009,REL-2026.05.09,DEV,HOLD,MIX,high,health_plus_log_hold,critical_service_unhealthy|unresolved_error_or_critical_log,critical_service_unhealthy|unresolved_error_or_critical_log,Critical service unhealthy and unresolved log errors.
+S4V2-010,REL-2026.05.10,DEV,HOLD,MIX,high,conditional_plus_warning_hold,unmet_conditional_requirement,unmet_conditional_requirement,Conditional unmet despite mostly healthy technical signals.
+S4V2-011,REL-2026.05.11,DEV,GO,MIX,medium,recoverable_error_go,,,Error occurred but explicit recovery and successful completion observed.
+S4V2-012,REL-2026.05.12,DEV,GO,MIX,high,email_noise_go,,,No blocker status; email thread noisy but non-blocking.
+S4V2-013,REL-2026.05.13,DEV,HOLD,MIX,high,open_blocker_with_inconsistent_health_hold,open_blocker_email,open_blocker_email,Open blocker is decisive even with partially inconsistent health narrative.
+S4V2-014,REL-2026.05.14,DEV,HOLD,MIX,medium,version_mismatch_with_recovery_logs_hold,mandatory_version_mismatch,mandatory_version_mismatch,"Runtime appears healthy, but mandatory version mismatch blocks promotion."
+S4V2-015,REL-2026.05.15,DEV,HOLD,MIX,high,three_gate_hold,unresolved_error_or_critical_log|open_blocker_email|mandatory_version_mismatch,unresolved_error_or_critical_log|open_blocker_email|mandatory_version_mismatch,Multiple independent hard blockers in the same candidate.
+S4V2-016,REL-2026.05.16,DEV,GO,MIX,medium,clean_go_alias_heavy,,,GO case with heavy module alias drift across artifacts.

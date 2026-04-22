@@ -1,0 +1,11 @@
+scenario_id,release_id,environment,scenario_type,expected_decision,rationale,triggered_conditions
+S4-001,REL-2026.04.01,DEV,CLEAR_GO,GO,"All hard gates passed, only informational logs present.",
+S4-002,REL-2026.04.02,DEV,CLEAR_HOLD,HOLD,Critical service unhealthy in DEV.,critical_service_unhealthy
+S4-003,REL-2026.04.03,DEV,CLEAR_HOLD,HOLD,Unresolved CRITICAL runtime issue in deploy logs.,unresolved_error_or_critical_log
+S4-004,REL-2026.04.04,DEV,CLEAR_HOLD,HOLD,Open blocker remains unresolved in email thread.,open_blocker_email
+S4-005,REL-2026.04.05,DEV,CLEAR_HOLD,HOLD,Mandatory module version mismatch detected.,mandatory_version_mismatch
+S4-006,REL-2026.04.06,DEV,CLEAR_HOLD,HOLD,Conditional release requirement (retest) unmet.,unmet_conditional_requirement
+S4-007,REL-2026.04.07,DEV,MIX,GO,"Non-blocking WARN logs and resolved thread, no hard blockers.",non_blocking_warning
+S4-008,REL-2026.04.08,DEV,MIX,HOLD,Both version mismatch and open blocker present.,open_blocker_email|mandatory_version_mismatch|non_blocking_warning
+S4-009,REL-2026.04.09,DEV,MIX,HOLD,Service unhealthy plus unresolved runtime CRITICAL error.,critical_service_unhealthy|unresolved_error_or_critical_log
+S4-010,REL-2026.04.10,DEV,MIX,HOLD,Conditional unmet despite otherwise healthy deployment.,unmet_conditional_requirement|non_blocking_warning

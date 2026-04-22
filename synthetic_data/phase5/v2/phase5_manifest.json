@@ -1,0 +1,60 @@
+{
+  "dataset_name": "phase5_v2",
+  "generated_at_utc": "2026-04-03T22:12:17+00:00",
+  "generator": "scripts/generate_phase5_dataset_v2.py",
+  "seed": 1042,
+  "scenario_count": 72,
+  "parameters": {
+    "ambiguity_rate": 0.35,
+    "high_ambiguity_rate": 0.18,
+    "missing_field_rate": 0.1,
+    "conflict_rate": 0.15,
+    "continuity_cases_rate": 0.2,
+    "alias_intensity": 0.25,
+    "go_hold_ratio": 0.38
+  },
+  "summary": {
+    "go_count": 31,
+    "hold_count": 41,
+    "continuity_cases": 18,
+    "class_coverage": {
+      "CLEAN_GO": 13,
+      "CLEAR_HOLD_SINGLE_GATE": 19,
+      "CONDITIONAL_GOVERNANCE_HOLD": 7,
+      "CONFLICTED_EVIDENCE_HOLD": 9,
+      "MIXED_NON_BLOCKING_GO": 12,
+      "CLEAR_HOLD_MULTI_GATE": 1,
+      "TRACEABILITY_GAP_HOLD": 6,
+      "MIXED_BLOCKING_HOLD": 5
+    }
+  },
+  "coverage": {
+    "hard_gate_trigger_counts": {
+      "agent4_unresolved_hard_blocker_unclosed": 9,
+      "conditional_retest_unmet": 7,
+      "critical_defect_open": 14,
+      "mandatory_requirement_uncovered": 6,
+      "mandatory_requirement_failed_or_blocked": 11,
+      "test_evidence_incomplete": 6
+    },
+    "all_hard_gates_present": true
+  },
+  "acceptance_checks": {
+    "label_policy_consistency": true,
+    "go_hold_present": true,
+    "required_files_written": true
+  },
+  "files": [
+    "requirements_master.csv",
+    "test_cases_master.csv",
+    "traceability_matrix.csv",
+    "test_execution_results.csv",
+    "defect_register.csv",
+    "phase5_decision_labels.csv",
+    "phase5_release_calendar.csv",
+    "scenario_taxonomy.csv",
+    "phase5_manifest.json",
+    "test_analysis_emails/*.txt",
+    "agent4_context/*.json"
+  ]
+}

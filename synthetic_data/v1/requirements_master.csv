@@ -1,0 +1,7 @@
+requirement_id,description,priority,module,mandatory_for_phase4
+REQ-401,Collect telemetry packets from edge nodes every 30s,HIGH,ingestion-gateway,true
+REQ-402,Route normalized telemetry to monitoring pipeline,HIGH,event-router,true
+REQ-403,Compute health KPIs and publish alarms,HIGH,monitoring-core,true
+REQ-404,Expose analytics summary endpoint for test dashboard,MEDIUM,analytics-api,true
+REQ-405,Trigger warning and critical alarms under threshold breaches,HIGH,alarm-engine,true
+REQ-406,Provide release metadata and build provenance endpoint,MEDIUM,ui-backend,false
