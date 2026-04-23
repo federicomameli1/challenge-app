@@ -1,0 +1,168 @@
+name: Hitachi CI Analysis Draft
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  packages: write
+
+jobs:
+  analyze-pre-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+
+      - name: Run draft Agent 4 CI analysis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          python scripts/run_ci_analysis.py \
+            --phase pre-test \
+            --event-name "${{ github.event_name }}" \
+            --base-ref "${{ github.event.pull_request.base.sha || github.event.before }}" \
+            --head-ref "${{ github.sha }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --use-llm \
+            --write-step-summary \
+            --output-dir artifacts/ci-analysis
+
+      - name: Upload pre-test analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-analysis-pre-test
+          path: artifacts/ci-analysis/pre-test
+
+  approve-test:
+    needs: analyze-pre-test
+    runs-on: ubuntu-latest
+    environment:
+      name: hitachi-test-approval
+    steps:
+      - name: Manual approval gate
+        run: echo "Configure required reviewers on the hitachi-test-approval environment."
+
+  test-and-build:
+    needs: approve-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Placeholder build step
+        run: echo "Re-use the existing image build/push logic from ci.yml here."
+
+      - name: Write stage results summary
+        run: |
+          mkdir -p artifacts/ci-stage-results
+          cat > artifacts/ci-stage-results/test_build_summary.json <<'EOF'
+          {
+            "tests": {
+              "status": "PASS",
+              "command": "npm test"
+            },
+            "build": {
+              "status": "PASS",
+              "command": "draft-build-placeholder"
+            }
+          }
+          EOF
+
+      - name: Upload test/build summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-stage-results
+          path: artifacts/ci-stage-results
+
+  analyze-pre-prod:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+
+      - name: Download pre-test analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-analysis-pre-test
+          path: artifacts/ci-analysis/pre-test
+
+      - name: Download test/build summary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-stage-results
+          path: artifacts/ci-stage-results
+
+      - name: Run draft Agent 5 CI analysis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          python scripts/run_ci_analysis.py \
+            --phase pre-prod \
+            --event-name "${{ github.event_name }}" \
+            --base-ref "${{ github.event.pull_request.base.sha || github.event.before }}" \
+            --head-ref "${{ github.sha }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --use-llm \
+            --write-step-summary \
+            --previous-report artifacts/ci-analysis/pre-test/ci_report.json \
+            --stage-results-json artifacts/ci-stage-results/test_build_summary.json \
+            --output-dir artifacts/ci-analysis
+
+      - name: Upload pre-prod analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-analysis-pre-prod
+          path: artifacts/ci-analysis/pre-prod
+
+  approve-prod:
+    needs: analyze-pre-prod
+    runs-on: ubuntu-latest
+    environment:
+      name: hitachi-prod-approval
+    steps:
+      - name: Manual approval gate
+        run: echo "Configure required reviewers on the hitachi-prod-approval environment."
+
+  deploy-prod:
+    needs: approve-prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder deploy handoff
+        run: echo "Move the existing GitOps prod update logic here after approvals."
