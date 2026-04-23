@@ -47,6 +47,42 @@ TEXT_EXTENSIONS = {
     ".tsx",
 }
 
+MARKER_SCAN_EXTENSIONS = {
+    ".md",
+    ".txt",
+    ".csv",
+    ".yaml",
+    ".yml",
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+}
+
+MARKER_SCAN_IGNORE_PREFIXES = (
+    "Dataset/Test_Sets/",
+    "synthetic_data/",
+    "tests/",
+    "artifacts/",
+    ".github/workflows/drafts/",
+)
+
+MARKER_SCAN_IGNORE_SUFFIXES = (
+    ".test.js",
+    ".test.jsx",
+    ".test.ts",
+    ".test.tsx",
+    ".spec.js",
+    ".spec.jsx",
+    ".spec.ts",
+    ".spec.tsx",
+)
+
+MARKER_SCAN_IGNORE_PATHS = {
+    "scripts/run_ci_analysis.py",
+}
+
 CORE_DOCUMENTS = [
     ".github/workflows/ci.yml",
     "README.md",
@@ -275,6 +311,8 @@ def select_relevant_documents(phase: str, changed_files: Sequence[str]) -> List[
 
     for path in changed_files:
         suffix = Path(path).suffix.lower()
+        if path.startswith(".github/workflows/drafts/"):
+            continue
         if suffix in TEXT_EXTENSIONS or path.startswith(".github/workflows/") or path.startswith("chart/"):
             if repo_file_exists(path):
                 selected.append(normalize_relpath(path))
@@ -286,13 +324,42 @@ def read_text_file(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def should_scan_marker_file(rel_path: str) -> bool:
+    normalized = normalize_relpath(rel_path)
+    if normalized in MARKER_SCAN_IGNORE_PATHS:
+        return False
+    if normalized.startswith(MARKER_SCAN_IGNORE_PREFIXES):
+        return False
+    if normalized.endswith(MARKER_SCAN_IGNORE_SUFFIXES):
+        return False
+    return Path(normalized).suffix.lower() in MARKER_SCAN_EXTENSIONS
+
+
+def marker_line_is_relevant(rel_path: str, line: str) -> bool:
+    normalized = normalize_relpath(rel_path)
+    suffix = Path(normalized).suffix.lower()
+    stripped = line.strip()
+    if not stripped:
+        return False
+
+    if suffix in {".py"}:
+        return stripped.startswith("#")
+    if suffix in {".js", ".jsx", ".ts", ".tsx"}:
+        return stripped.startswith(("//", "/*", "*", "{/*"))
+    if suffix in {".yaml", ".yml"}:
+        return stripped.startswith("#")
+    if suffix in {".json"}:
+        return False
+    return True
+
+
 def scan_blocker_markers(changed_files: Sequence[str]) -> List[Dict[str, Any]]:
     observations: List[Dict[str, Any]] = []
     for rel_path in changed_files:
         path = PROJECT_ROOT / rel_path
         if not path.exists() or not path.is_file():
             continue
-        if path.suffix.lower() not in TEXT_EXTENSIONS:
+        if not should_scan_marker_file(rel_path):
             continue
         try:
             lines = read_text_file(path).splitlines()
@@ -300,6 +367,8 @@ def scan_blocker_markers(changed_files: Sequence[str]) -> List[Dict[str, Any]]:
             continue
 
         for idx, line in enumerate(lines[:400], start=1):
+            if not marker_line_is_relevant(rel_path, line):
+                continue
             for marker, pattern in BLOCKER_MARKERS.items():
                 if not pattern.search(line):
                     continue
@@ -398,6 +467,33 @@ def truncate_text(value: Any, limit: int = 400) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
+
+
+def make_llm_diagnostics_wrapper(
+    llm_generate: Optional[Callable[[str], str]],
+) -> Tuple[Optional[Callable[[str], str]], Dict[str, Any]]:
+    diagnostics: Dict[str, Any] = {
+        "configured": llm_generate is not None,
+        "called": False,
+        "error": None,
+        "raw_response_preview": None,
+        "model": os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-4o-mini",
+    }
+
+    if llm_generate is None:
+        return None, diagnostics
+
+    def wrapped(prompt: str) -> str:
+        diagnostics["called"] = True
+        try:
+            raw = llm_generate(prompt)
+            diagnostics["raw_response_preview"] = truncate_text(raw, 500)
+            return raw
+        except Exception as exc:
+            diagnostics["error"] = truncate_text(f"{type(exc).__name__}: {exc}", 500)
+            raise
+
+    return wrapped, diagnostics
 
 
 def scan_marker_text(
@@ -1200,7 +1296,8 @@ def run_agent4_analysis(
 ) -> Dict[str, Any]:
     from agent4.lc_pipeline import LangChainAgent4Pipeline, LCPipelineConfig
 
-    llm_generate = maybe_get_llm_generate() if use_llm else None
+    base_llm_generate = maybe_get_llm_generate() if use_llm else None
+    llm_generate, llm_diagnostics = make_llm_diagnostics_wrapper(base_llm_generate)
     pipeline = LangChainAgent4Pipeline(
         config=LCPipelineConfig(
             dataset_root=str(dataset_root),
@@ -1212,12 +1309,20 @@ def run_agent4_analysis(
     )
     validation = pipeline.validate_dataset()
     payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
+    llm_diagnostics["decision_type"] = payload.get("decision_type")
+    llm_diagnostics["fallback_suspected"] = bool(
+        use_llm
+        and llm_diagnostics["configured"]
+        and llm_diagnostics["called"]
+        and payload.get("decision_type") != "deterministic_with_llm_summary"
+    )
     return {
         "agent": "agent4",
         "dataset_root": str(dataset_root),
         "scenario_id": scenario_id,
         "release_id": release_id,
         "validation": validation,
+        "llm_diagnostics": llm_diagnostics,
         "payload": payload,
     }
 
@@ -1231,7 +1336,8 @@ def run_agent5_analysis(
 ) -> Dict[str, Any]:
     from agent5.lc_pipeline import LangChainAgent5Pipeline, LCPipelineConfig
 
-    llm_generate = maybe_get_llm_generate() if use_llm else None
+    base_llm_generate = maybe_get_llm_generate() if use_llm else None
+    llm_generate, llm_diagnostics = make_llm_diagnostics_wrapper(base_llm_generate)
     pipeline = LangChainAgent5Pipeline(
         config=LCPipelineConfig(
             dataset_root=str(dataset_root),
@@ -1242,12 +1348,20 @@ def run_agent5_analysis(
     )
     validation = pipeline.validate_dataset()
     payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
+    llm_diagnostics["decision_type"] = payload.get("decision_type")
+    llm_diagnostics["fallback_suspected"] = bool(
+        use_llm
+        and llm_diagnostics["configured"]
+        and llm_diagnostics["called"]
+        and payload.get("decision_type") != "deterministic_with_llm_summary"
+    )
     return {
         "agent": "agent5",
         "dataset_root": str(dataset_root),
         "scenario_id": scenario_id,
         "release_id": release_id,
         "validation": validation,
+        "llm_diagnostics": llm_diagnostics,
         "payload": payload,
     }
 
@@ -1319,6 +1433,8 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
         if isinstance(previous_payload, dict):
             previous_decision = previous_payload.get("decision")
 
+    llm_diagnostics = agent_output.get("llm_diagnostics", {})
+
     return {
         "draft": False,
         "generated_at_utc": utc_now(),
@@ -1349,6 +1465,11 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
         "llm": {
             "requested": args.use_llm,
             "configured": bool(os.environ.get("OPENROUTER_API_KEY")),
+            "model": llm_diagnostics.get("model") or os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-4o-mini",
+            "called": bool(llm_diagnostics.get("called")),
+            "fallback_suspected": bool(llm_diagnostics.get("fallback_suspected")),
+            "error": llm_diagnostics.get("error"),
+            "raw_response_preview": llm_diagnostics.get("raw_response_preview"),
             "agent_decision_type": payload.get("decision_type"),
         },
         "implementation_status": {
@@ -1484,10 +1605,23 @@ def render_markdown(report: Dict[str, Any]) -> str:
                 "",
                 f"- Requested: `{report['llm']['requested']}`",
                 f"- Configured: `{report['llm']['configured']}`",
+                f"- Model: `{report['llm']['model'] or 'n/a'}`",
+                f"- Called: `{report['llm']['called']}`",
                 f"- Agent decision type: `{report['llm']['agent_decision_type'] or 'n/a'}`",
-                "",
             ]
         )
+        if report["llm"].get("fallback_suspected"):
+            lines.append(f"- Fallback suspected: `{report['llm']['fallback_suspected']}`")
+        if report["llm"].get("error"):
+            lines.append(f"- Error: `{report['llm']['error']}`")
+        raw_preview = report["llm"].get("raw_response_preview")
+        if raw_preview and report["llm"].get("fallback_suspected"):
+            lines.append("- Raw response preview:")
+            lines.append("")
+            lines.append("```text")
+            lines.append(str(raw_preview))
+            lines.append("```")
+        lines.append("")
 
     reasons = payload.get("reasons", [])
     if isinstance(reasons, list) and reasons:

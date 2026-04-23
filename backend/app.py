@@ -112,6 +112,19 @@ AGENT_KIND_ALIASES = {
     "evidence_analyst": "agent5",
 }
 
+AGENT_RUNTIME_CONFIG: Dict[str, Dict[str, Any]] = {
+    "agent4": {
+        "error_label": "Agent4",
+        "response_agent": "agent4_langchain_backend",
+        "labels_file": "phase4_decision_labels.csv",
+    },
+    "agent5": {
+        "error_label": "Agent5",
+        "response_agent": "agent5_langchain_backend",
+        "labels_file": "phase5_decision_labels.csv",
+    },
+}
+
 
 def _strip_env_value(raw: str) -> str:
     value = raw.strip()
@@ -707,30 +720,37 @@ def _pipeline_dataset_error(agent_name: str, dataset_root: Path, missing_require
         raise HTTPException(status_code=400, detail=f"Dataset root not found: {dataset_root}")
 
 
-def _build_agent4_pipeline(req: AgentRunRequest, dataset_root: Path) -> LangChainAgent4Pipeline:
-    return LangChainAgent4Pipeline(
-        config=Agent4PipelineConfig(
-            dataset_root=str(dataset_root),
-            source_adapter_kind=_resolve_agent4_source_adapter_kind(req.source_adapter_kind),
-            use_llm_summary=not req.no_llm,
-            strict_schema=bool(req.strict_schema),
-        ),
-        llm_generate=LLM_GENERATE,
-    )
+def _build_agent_pipeline(
+    *,
+    agent: AgentKind,
+    dataset_root: Path,
+    use_llm_summary: bool,
+    strict_schema: bool,
+    source_adapter_kind: Optional[SourceAdapterKind],
+    llm_generate: Optional[Any],
+) -> Any:
+    if agent == "agent4":
+        return LangChainAgent4Pipeline(
+            config=Agent4PipelineConfig(
+                dataset_root=str(dataset_root),
+                source_adapter_kind=_resolve_agent4_source_adapter_kind(source_adapter_kind),
+                use_llm_summary=use_llm_summary,
+                strict_schema=strict_schema,
+            ),
+            llm_generate=llm_generate,
+        )
 
-
-def _build_agent5_pipeline(req: AgentRunRequest, dataset_root: Path) -> LangChainAgent5Pipeline:
     return LangChainAgent5Pipeline(
         config=Agent5PipelineConfig(
             dataset_root=str(dataset_root),
-            use_llm_summary=not req.no_llm,
-            strict_schema=bool(req.strict_schema),
+            use_llm_summary=use_llm_summary,
+            strict_schema=strict_schema,
         ),
-        llm_generate=LLM_GENERATE,
+        llm_generate=llm_generate,
     )
 
 
-def _run_agent4(req: AgentRunRequest) -> Dict[str, Any]:
+def _run_agent(req: AgentRunRequest) -> Dict[str, Any]:
     temp_dataset_root: Optional[Path] = None
     dataset_root = _resolve_repo_path(req.dataset_root)
     if req.documents:
@@ -741,110 +761,19 @@ def _run_agent4(req: AgentRunRequest) -> Dict[str, Any]:
         dataset_root = temp_dataset_root
 
     try:
-        pipeline = _build_agent4_pipeline(req, dataset_root)
-        validation = pipeline.validate_dataset()
-        if not validation.get("exists", False):
-            _pipeline_dataset_error("Agent4", dataset_root, validation.get("missing_required", []))
-
-        scenarios = pipeline.list_scenarios()
-
-        if req.evaluate_all:
-            predictions = pipeline.assess_all_scenarios()
-            total = len(predictions)
-            schema_valid_count = sum(1 for p in predictions if _safe_schema_valid(p))
-            schema_validity_rate = (schema_valid_count / total) if total else 0.0
-
-            payload: Dict[str, Any] = {
-                "agent": "agent4_langchain_backend",
-                "dataset_root": req.dataset_root or str(dataset_root),
-                "mode": "evaluate_all",
-                "available_scenarios": scenarios,
-                "summary": {
-                    "total_scenarios": total,
-                    "schema_validity_rate": round(schema_validity_rate, 4),
-                },
-                "predictions": predictions,
-            }
-
-            if req.check_label:
-                labels_path = _labels_path(
-                    dataset_root,
-                    req.labels_path,
-                    "phase4_decision_labels.csv",
-                )
-                evaluation = pipeline.evaluate_against_labels(
-                    predictions=predictions,
-                    labels_csv_path=str(labels_path),
-                )
-                payload["evaluation"] = evaluation
-                payload["rows"] = evaluation.get("rows", [])
-                payload["summary"].update(
-                    {
-                        "evaluated_scenarios": evaluation.get("evaluated_scenarios", 0),
-                        "missing_predictions": evaluation.get("missing_predictions", 0),
-                        "matched": evaluation.get("matched", 0),
-                        "accuracy": evaluation.get("accuracy", 0.0),
-                        "false_go": evaluation.get("false_go", 0),
-                        "false_hold": evaluation.get("false_hold", 0),
-                        "false_go_rate": evaluation.get("false_go_rate", 0.0),
-                        "false_hold_rate": evaluation.get("false_hold_rate", 0.0),
-                    }
-                )
-
-            return payload
-
-        scenario_id, release_id = _resolve_single_scenario(
-            scenarios,
-            req.scenario_id,
-            req.release_id,
-            agent_name="agent4",
+        runtime = AGENT_RUNTIME_CONFIG[req.agent]
+        pipeline = _build_agent_pipeline(
+            agent=req.agent,
+            dataset_root=dataset_root,
+            use_llm_summary=not req.no_llm,
+            strict_schema=bool(req.strict_schema),
+            source_adapter_kind=req.source_adapter_kind,
+            llm_generate=LLM_GENERATE,
         )
-        payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
-        payload["dataset_root"] = req.dataset_root or str(dataset_root)
-
-        if req.check_label:
-            labels_path = _labels_path(
-                dataset_root,
-                req.labels_path,
-                "phase4_decision_labels.csv",
-            )
-            evaluation = pipeline.evaluate_against_labels(
-                predictions=[payload],
-                labels_csv_path=str(labels_path),
-            )
-            row = evaluation.get("rows", [{}])[0] if evaluation.get("rows") else {}
-            payload["evaluation"] = {
-                "label_check_performed": True,
-                "expected_decision": row.get("expected_decision"),
-                "actual_decision": row.get("predicted_decision"),
-                "match": row.get("match"),
-            }
-
-        return payload
-    finally:
-        if temp_dataset_root is not None:
-            shutil.rmtree(temp_dataset_root, ignore_errors=True)
-
-
-def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
-    temp_dataset_root: Optional[Path] = None
-    dataset_root = _resolve_repo_path(req.dataset_root)
-    if req.documents:
-        temp_dataset_root = _materialize_documents(
-            req.documents,
-            req.custom_set_label or req.dataset_root,
-        )
-        dataset_root = temp_dataset_root
-
-    try:
-        pipeline = _build_agent5_pipeline(req, dataset_root)
         validation = pipeline.validate_dataset()
-        if not validation.get("exists", False):
-            _pipeline_dataset_error("Agent5", dataset_root, validation.get("missing_required", []))
-
         missing_required = validation.get("missing_required", [])
-        if missing_required:
-            _pipeline_dataset_error("Agent5", dataset_root, missing_required)
+        if not validation.get("exists", False) or missing_required:
+            _pipeline_dataset_error(runtime["error_label"], dataset_root, missing_required)
 
         scenarios = pipeline.list_scenarios()
 
@@ -855,7 +784,7 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
             schema_validity_rate = (schema_valid_count / total) if total else 0.0
 
             payload: Dict[str, Any] = {
-                "agent": "agent5_langchain_backend",
+                "agent": runtime["response_agent"],
                 "dataset_root": req.dataset_root or str(dataset_root),
                 "mode": "evaluate_all",
                 "available_scenarios": scenarios,
@@ -870,7 +799,7 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
                 labels_path = _labels_path(
                     dataset_root,
                     req.labels_path,
-                    "phase5_decision_labels.csv",
+                    runtime["labels_file"],
                 )
                 evaluation = pipeline.evaluate_against_labels(
                     predictions=predictions,
@@ -897,7 +826,7 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
             scenarios,
             req.scenario_id,
             req.release_id,
-            agent_name="agent5",
+            agent_name=req.agent,
         )
         payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
         payload["dataset_root"] = req.dataset_root or str(dataset_root)
@@ -906,7 +835,7 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
             labels_path = _labels_path(
                 dataset_root,
                 req.labels_path,
-                "phase5_decision_labels.csv",
+                runtime["labels_file"],
             )
             evaluation = pipeline.evaluate_against_labels(
                 predictions=[payload],
@@ -929,25 +858,14 @@ def _run_agent5(req: AgentRunRequest) -> Dict[str, Any]:
 def _validate_agent(req: AgentInspectRequest) -> Dict[str, Any]:
     dataset_root = _resolve_repo_path(req.dataset_root)
 
-    if req.agent == "agent4":
-        pipeline = LangChainAgent4Pipeline(
-            config=Agent4PipelineConfig(
-                dataset_root=str(dataset_root),
-                source_adapter_kind=_resolve_agent4_source_adapter_kind(req.source_adapter_kind),
-                use_llm_summary=False,
-                strict_schema=False,
-            ),
-            llm_generate=None,
-        )
-    else:
-        pipeline = LangChainAgent5Pipeline(
-            config=Agent5PipelineConfig(
-                dataset_root=str(dataset_root),
-                use_llm_summary=False,
-                strict_schema=False,
-            ),
-            llm_generate=None,
-        )
+    pipeline = _build_agent_pipeline(
+        agent=req.agent,
+        dataset_root=dataset_root,
+        use_llm_summary=False,
+        strict_schema=False,
+        source_adapter_kind=req.source_adapter_kind,
+        llm_generate=None,
+    )
 
     payload = pipeline.validate_dataset()
     payload["resolved_dataset_root"] = str(dataset_root)
@@ -958,25 +876,14 @@ def _validate_agent(req: AgentInspectRequest) -> Dict[str, Any]:
 def _list_agent_scenarios(req: AgentInspectRequest) -> Dict[str, Any]:
     dataset_root = _resolve_repo_path(req.dataset_root)
 
-    if req.agent == "agent4":
-        pipeline = LangChainAgent4Pipeline(
-            config=Agent4PipelineConfig(
-                dataset_root=str(dataset_root),
-                source_adapter_kind=_resolve_agent4_source_adapter_kind(req.source_adapter_kind),
-                use_llm_summary=False,
-                strict_schema=False,
-            ),
-            llm_generate=None,
-        )
-    else:
-        pipeline = LangChainAgent5Pipeline(
-            config=Agent5PipelineConfig(
-                dataset_root=str(dataset_root),
-                use_llm_summary=False,
-                strict_schema=False,
-            ),
-            llm_generate=None,
-        )
+    pipeline = _build_agent_pipeline(
+        agent=req.agent,
+        dataset_root=dataset_root,
+        use_llm_summary=False,
+        strict_schema=False,
+        source_adapter_kind=req.source_adapter_kind,
+        llm_generate=None,
+    )
 
     validation = pipeline.validate_dataset()
     if not validation.get("exists", False):
@@ -1198,7 +1105,7 @@ def agent_options() -> Dict[str, Any]:
 @app.post("/agents/run", response_model=AgentRunResponse)
 def run_agent(req: AgentRunRequest) -> AgentRunResponse:
     try:
-        payload = _run_agent4(req) if req.agent == "agent4" else _run_agent5(req)
+        payload = _run_agent(req)
     except HTTPException:
         raise
     except (Agent4LCError, Agent5LCError) as exc:
