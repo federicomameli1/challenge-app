@@ -378,7 +378,7 @@ export function buildAgentRunRequest({
   agentId,
   selectedDataset,
   runOptions,
-  scenarioIdOverride = null,
+  defaultScenarioId = null,
 }) {
   const backendPreset = selectedDataset?.backend?.[agentId];
   if (!backendPreset) {
@@ -389,7 +389,7 @@ export function buildAgentRunRequest({
     agent: agentId,
     dataset_root: backendPreset.datasetRoot,
     release_id: backendPreset.releaseId || null,
-    evaluate_all: Boolean(runOptions.evaluateAll),
+    evaluate_all: false,
     check_label: Boolean(runOptions.checkLabel),
     labels_path: null,
     fail_on_label_mismatch: Boolean(runOptions.failOnLabelMismatch),
@@ -397,8 +397,9 @@ export function buildAgentRunRequest({
     no_llm: Boolean(runOptions.noLlm),
   };
 
-  if (!payload.evaluate_all && scenarioIdOverride) {
-    payload.scenario_id = scenarioIdOverride;
+  const scenarioId = backendPreset.scenarioId || defaultScenarioId || null;
+  if (scenarioId) {
+    payload.scenario_id = scenarioId;
   }
 
   if (agentId === "agent4") {
@@ -414,7 +415,8 @@ export function buildAgentRunRequest({
 export function buildBrainRunRequest({
   selectedDataset,
   runOptions,
-  scenarioSelection,
+  agent4ScenarioId,
+  agent5ScenarioId,
   allowAgent5AfterAgent4Hold,
 }) {
   const agent4Preset = selectedDataset?.backend?.agent4;
@@ -424,17 +426,17 @@ export function buildBrainRunRequest({
     return null;
   }
 
-  const agent4ScenarioId = scenarioSelection?.agent4 || agent4Preset.scenarioId || null;
-  const agent5ScenarioId = scenarioSelection?.agent5 || agent5Preset.scenarioId || null;
+  const resolvedAgent4ScenarioId = agent4Preset.scenarioId || agent4ScenarioId || null;
+  const resolvedAgent5ScenarioId = agent5Preset.scenarioId || agent5ScenarioId || null;
 
-  if (!agent4ScenarioId || !agent5ScenarioId) {
+  if (!resolvedAgent4ScenarioId || !resolvedAgent5ScenarioId) {
     return null;
   }
 
   return {
-    scenario_id: agent4ScenarioId,
-    agent4_scenario_id: agent4ScenarioId,
-    agent5_scenario_id: agent5ScenarioId,
+    scenario_id: resolvedAgent4ScenarioId,
+    agent4_scenario_id: resolvedAgent4ScenarioId,
+    agent5_scenario_id: resolvedAgent5ScenarioId,
     agent4_dataset_root: agent4Preset.datasetRoot,
     agent5_dataset_root: agent5Preset.datasetRoot,
     agent4_source_adapter_kind: agent4Preset.sourceAdapterKind || null,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import os
 import re
 import shutil
 import sys
@@ -10,6 +11,8 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,6 +52,7 @@ SourceAdapterKind = Literal["auto", "structured_dataset", "apcs_doc_bundle"]
 
 CUSTOM_SET_ROOT = REPO_ROOT / "Dataset" / "Test_Sets"
 CUSTOM_SET_MANIFEST_NAME = "custom_set.json"
+ENV_PATH = REPO_ROOT / ".env"
 
 AGENT4_STRUCTURED_REQUIRED = {
     "requirements_master.csv",
@@ -107,6 +111,127 @@ AGENT_KIND_ALIASES = {
     "test_evidence": "agent5",
     "evidence_analyst": "agent5",
 }
+
+
+def _strip_env_value(raw: str) -> str:
+    value = raw.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def _load_dotenv(path: Path) -> None:
+    if not path.exists():
+        return
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+
+        key, value = stripped.split("=", 1)
+        env_key = key.strip()
+        if not env_key or env_key in os.environ:
+            continue
+        os.environ[env_key] = _strip_env_value(value)
+
+
+def _optional_env(name: str, default: Optional[str] = None) -> Optional[str]:
+    value = os.getenv(name, default)
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or default
+
+
+def _openrouter_headers(api_key: str) -> Dict[str, str]:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    referer = _optional_env("OPENROUTER_HTTP_REFERER")
+    title = _optional_env("OPENROUTER_APP_TITLE")
+    if referer:
+        headers["HTTP-Referer"] = referer
+    if title:
+        headers["X-Title"] = title
+    return headers
+
+
+def _build_llm_generate() -> Optional[Any]:
+    api_key = _optional_env("OPENROUTER_API_KEY")
+    if not api_key:
+        return None
+
+    base_url = _optional_env(
+        "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1/chat/completions"
+    )
+    model = _optional_env("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    timeout_seconds = float(_optional_env("OPENROUTER_TIMEOUT_SECONDS", "45") or "45")
+    max_tokens = int(_optional_env("OPENROUTER_MAX_TOKENS", "700") or "700")
+    temperature = float(_optional_env("OPENROUTER_TEMPERATURE", "0.2") or "0.2")
+    headers = _openrouter_headers(api_key)
+
+    def _generate(prompt: str) -> str:
+        body = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are refining deterministic release-readiness explanations. "
+                        "Return only valid JSON matching the requested schema."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        request = urllib_request.Request(
+            base_url,
+            data=json.dumps(body).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with urllib_request.urlopen(request, timeout=timeout_seconds) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except urllib_error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(
+                "OpenRouter request failed with status "
+                f"{exc.code}: {detail[:400]}"
+            ) from exc
+        except urllib_error.URLError as exc:
+            raise RuntimeError(f"OpenRouter connection failed: {exc.reason}") from exc
+
+        choices = payload.get("choices", [])
+        if not isinstance(choices, list) or not choices:
+            raise RuntimeError("OpenRouter returned no choices.")
+
+        message = choices[0].get("message", {})
+        content = message.get("content")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    text_parts.append(str(item.get("text", "")))
+            joined = "".join(text_parts).strip()
+            if joined:
+                return joined
+
+        raise RuntimeError("OpenRouter returned an unsupported response format.")
+
+    return _generate
+
+
+_load_dotenv(ENV_PATH)
+LLM_GENERATE = _build_llm_generate()
 
 
 def _normalize_identifier(value: str) -> str:
@@ -590,7 +715,7 @@ def _build_agent4_pipeline(req: AgentRunRequest, dataset_root: Path) -> LangChai
             use_llm_summary=not req.no_llm,
             strict_schema=bool(req.strict_schema),
         ),
-        llm_generate=None,
+        llm_generate=LLM_GENERATE,
     )
 
 
@@ -601,7 +726,7 @@ def _build_agent5_pipeline(req: AgentRunRequest, dataset_root: Path) -> LangChai
             use_llm_summary=not req.no_llm,
             strict_schema=bool(req.strict_schema),
         ),
-        llm_generate=None,
+        llm_generate=LLM_GENERATE,
     )
 
 
@@ -889,6 +1014,7 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
         depends_on=(),
         enabled=True,
         metadata={"managed_by": "challenge_app_backend"},
+        llm_generate=LLM_GENERATE,
     )
 
     agent5_stage = build_agent5_stage(
@@ -907,6 +1033,7 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
         metadata={"managed_by": "challenge_app_backend"},
         require_agent4_handoff=True,
         expected_agent4_stage_name="agent4",
+        llm_generate=LLM_GENERATE,
     )
 
     registry.register(agent4_stage)
@@ -976,6 +1103,11 @@ def health() -> Dict[str, Any]:
         "repo_root": str(REPO_ROOT),
         "legacy_core_root": str(LEGACY_CORE_ROOT) if LEGACY_CORE_ROOT.exists() else None,
         "capabilities": ["agent4", "agent5", "brain", "custom-sets"],
+        "llm": {
+            "provider": "openrouter",
+            "configured": LLM_GENERATE is not None,
+            "model": _optional_env("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+        },
         "analysts": list(AGENT_METADATA.values()),
     }
 

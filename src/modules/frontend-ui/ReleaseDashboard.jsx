@@ -22,7 +22,6 @@ import randomApcsVersionInventoryText from "../../../Dataset/Test_Sets/SET_RANDO
 import randomApcsTestProcedureText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_Test_Procedure_v1.0.txt?raw";
 import randomApcsVddText from "../../../Dataset/Test_Sets/SET_RANDOM_APCS_v1.0/APCS_VDD_v1.0.txt?raw";
 import {
-  AGENT_BACKEND_URL,
   buildAgentRunRequest,
   buildBrainRunRequest,
   buildIdleAnalysis,
@@ -66,7 +65,7 @@ const DEFAULT_RUN_OPTIONS = {
   checkLabel: false,
   strictSchema: false,
   failOnLabelMismatch: false,
-  noLlm: true,
+  noLlm: false,
   sourceAdapterKind: "auto",
 };
 
@@ -428,6 +427,7 @@ function createEmptyProfile(supported = false) {
     error: "",
     validation: null,
     scenarios: [],
+    defaultScenarioId: null,
     requestedDatasetRoot: null,
     resolvedDatasetRoot: null,
   };
@@ -438,22 +438,6 @@ function buildInitialProfiles(dataset) {
     agent4: createEmptyProfile(Boolean(dataset?.backend?.agent4)),
     agent5: createEmptyProfile(Boolean(dataset?.backend?.agent5)),
   };
-}
-
-function pickDefaultScenario(currentValue, profile, preset) {
-  const scenarioIds = Array.isArray(profile?.scenarios)
-    ? profile.scenarios
-        .map((item) => String(item?.scenario_id || "").trim())
-        .filter(Boolean)
-    : [];
-
-  if (currentValue && scenarioIds.includes(currentValue)) {
-    return currentValue;
-  }
-  if (preset?.scenarioId) {
-    return preset.scenarioId;
-  }
-  return scenarioIds[0] || null;
 }
 
 function formatTimestamp(value) {
@@ -508,6 +492,9 @@ function decisionBadgeClasses(decision) {
   if (decision === "HOLD") {
     return "border-rose-200 bg-rose-100 text-rose-800";
   }
+  if (decision === "BATCH") {
+    return "border-sky-200 bg-sky-100 text-sky-800";
+  }
   if (decision === "LOADING") {
     return "border-amber-200 bg-amber-100 text-amber-800";
   }
@@ -533,14 +520,17 @@ function supportLabel(profile, run) {
   return "idle";
 }
 
-function scenarioOptionLabel(item) {
-  const scenarioId = String(item?.scenario_id || "").trim();
-  const releaseId = String(item?.release_id || "").trim();
-  return releaseId ? `${scenarioId} · ${releaseId}` : scenarioId;
-}
-
 function stageLabel(stageName) {
   return AGENTS[stageName]?.name || String(stageName || "stage");
+}
+
+function LoadingSpinner({ className = "" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent ${className}`}
+    />
+  );
 }
 
 async function persistImportedSet(candidate) {
@@ -580,13 +570,12 @@ export default function ReleaseDashboard() {
   const [brainRun, setBrainRun] = useState(null);
   const [isAgentRunning, setIsAgentRunning] = useState(false);
   const [isBrainRunning, setIsBrainRunning] = useState(false);
+  const [isCreateSetOpen, setIsCreateSetOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState("analysis");
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [datasetProfiles, setDatasetProfiles] = useState(() =>
     buildInitialProfiles(BUILTIN_SETS[0])
   );
-  const [scenarioSelection, setScenarioSelection] = useState({
-    agent4: BUILTIN_SETS[0].backend?.agent4?.scenarioId || null,
-    agent5: BUILTIN_SETS[0].backend?.agent5?.scenarioId || null,
-  });
 
   const allSets = useMemo(
     () => [...BUILTIN_SETS, ...customSets].map((set) => normalizeSetForAnalysis(set)),
@@ -598,6 +587,20 @@ export default function ReleaseDashboard() {
   const selectedAgent = AGENTS[agentId];
   const selectedProfile = datasetProfiles[agentId] || createEmptyProfile(false);
   const currentRun = agentRuns[agentId] || null;
+  const availableAgentIds = Object.values(AGENTS)
+    .filter((agent) => selectedDataset?.backend?.[agent.id])
+    .map((agent) => agent.id);
+  const selectedAgentIndex = Math.max(availableAgentIds.indexOf(agentId), 0);
+  const previousAgentId =
+    availableAgentIds.length > 1
+      ? availableAgentIds[
+          (selectedAgentIndex - 1 + availableAgentIds.length) % availableAgentIds.length
+        ]
+      : null;
+  const nextAgentId =
+    availableAgentIds.length > 1
+      ? availableAgentIds[(selectedAgentIndex + 1) % availableAgentIds.length]
+      : null;
   const currentAnalysis =
     currentRun?.analysis ||
     buildIdleAnalysis(
@@ -611,8 +614,6 @@ export default function ReleaseDashboard() {
             : "This dataset is not mapped for the selected analyst."
     );
 
-  const currentScenarioOptions = selectedProfile?.scenarios || [];
-  const currentScenarioId = scenarioSelection[agentId] || "";
   const brainAvailable = Boolean(
     selectedDataset?.backend?.agent4 && selectedDataset?.backend?.agent5
   );
@@ -702,14 +703,15 @@ export default function ReleaseDashboard() {
       const nextProfiles = buildInitialProfiles(selectedDataset);
       const nextRuns = {};
 
-      for (const agent of Object.values(AGENTS)) {
+      await Promise.all(
+        Object.values(AGENTS).map(async (agent) => {
         const preset = selectedDataset?.backend?.[agent.id];
         if (!preset) {
           nextProfiles[agent.id] = {
             ...createEmptyProfile(false),
             error: "No backend mapping for this analyst in the selected dataset.",
           };
-          continue;
+          return;
         }
 
         const inspectPayload = {
@@ -738,6 +740,10 @@ export default function ReleaseDashboard() {
             error: scenariosResponse?.error || "",
             validation,
             scenarios,
+            defaultScenarioId:
+              preset.scenarioId ||
+              scenarios.find((item) => item?.scenario_id)?.scenario_id ||
+              null,
             requestedDatasetRoot: preset.datasetRoot,
             resolvedDatasetRoot:
               validation?.resolved_dataset_root ||
@@ -745,19 +751,20 @@ export default function ReleaseDashboard() {
               preset.datasetRoot,
           };
 
-          const bootstrapScenarioId =
-            preset.scenarioId ||
-            scenarios.find((item) => item?.scenario_id)?.scenario_id ||
-            null;
-
           const bootstrapPayload = buildAgentRunRequest({
             agentId: agent.id,
             selectedDataset,
             runOptions: {
               ...DEFAULT_RUN_OPTIONS,
+              // Keep the dashboard bootstrap snappy; the user-triggered run still
+              // defaults to the richer LLM report.
+              noLlm: true,
               sourceAdapterKind: preset.sourceAdapterKind || "auto",
             },
-            scenarioIdOverride: bootstrapScenarioId,
+            defaultScenarioId:
+              preset.scenarioId ||
+              scenarios.find((item) => item?.scenario_id)?.scenario_id ||
+              null,
           });
 
           if (bootstrapPayload) {
@@ -781,29 +788,19 @@ export default function ReleaseDashboard() {
             error: error instanceof Error ? error.message : "Cannot inspect dataset.",
             validation: null,
             scenarios: [],
+            defaultScenarioId: preset.scenarioId || null,
             requestedDatasetRoot: preset.datasetRoot,
             resolvedDatasetRoot: null,
           };
         }
-      }
+        })
+      );
 
       if (cancelled) {
         return;
       }
 
       setDatasetProfiles(nextProfiles);
-      setScenarioSelection((previous) => ({
-        agent4: pickDefaultScenario(
-          previous.agent4,
-          nextProfiles.agent4,
-          selectedDataset?.backend?.agent4
-        ),
-        agent5: pickDefaultScenario(
-          previous.agent5,
-          nextProfiles.agent5,
-          selectedDataset?.backend?.agent5
-        ),
-      }));
       setAgentRuns(nextRuns);
     }
 
@@ -857,8 +854,6 @@ export default function ReleaseDashboard() {
     currentRun?.mode === "evaluate_all" ? currentRun.evaluateAllSummary : null;
   const evaluateAllPredictions =
     currentRun?.mode === "evaluate_all" ? currentRun.predictions : [];
-  const selectedScenarioLabel =
-    currentScenarioOptions.find((item) => item?.scenario_id === currentScenarioId) || null;
   const currentValidationNotes = collectValidationNotes(selectedProfile);
   const brainStageSummary = brainRun?.stages || null;
   const hasEvaluateAllLabelMetrics = Boolean(
@@ -866,6 +861,42 @@ export default function ReleaseDashboard() {
       Array.isArray(currentRun?.payload?.rows) &&
       currentRun.payload.rows.length > 0
   );
+  const isEvaluateAllRun = currentRun?.mode === "evaluate_all";
+  const resultDecision = isEvaluateAllRun
+    ? evaluateAllSummary
+      ? evaluateAllSummary.holdCount > 0 && evaluateAllSummary.goCount > 0
+        ? "BATCH"
+        : evaluateAllSummary.holdCount > 0
+          ? "HOLD"
+          : evaluateAllSummary.goCount > 0
+            ? "GO"
+            : "BATCH"
+      : "BATCH"
+    : currentAnalysis.decision;
+  const resultSummary = isEvaluateAllRun
+    ? evaluateAllSummary
+      ? `${evaluateAllSummary.totalScenarios} scenarios analyzed. GO: ${evaluateAllSummary.goCount}, HOLD: ${evaluateAllSummary.holdCount}.`
+      : "Evaluate-all run loaded from the backend."
+    : currentAnalysis.summary || currentAnalysis.humanAction;
+  const resultConfidence = isEvaluateAllRun
+    ? `${evaluateAllSummary?.totalScenarios ?? 0} scenarios`
+    : currentAnalysis.confidence;
+  const resultDecisionType = isEvaluateAllRun ? "batch_run" : currentAnalysis.decisionType;
+  const resultPolicyVersion = isEvaluateAllRun
+    ? currentRun?.payload?.predictions?.[0]?.policy_version || "n/a"
+    : currentAnalysis.policyVersion || "n/a";
+  const resultUpdatedAt = isEvaluateAllRun
+    ? currentRun?.receivedAt || null
+    : currentAnalysis.timestampUtc;
+  const detailTabs = [
+    {
+      id: "analysis",
+      label: isEvaluateAllRun ? "Scenarios" : "Reasons",
+    },
+    { id: "status", label: "Analyst Status" },
+    { id: "diagnostics", label: "Diagnostics" },
+    { id: "dataset", label: "Dataset" },
+  ];
 
   function updateRunOption(key, value) {
     setRunOptions((previous) => ({
@@ -882,7 +913,7 @@ export default function ReleaseDashboard() {
       agentId,
       selectedDataset,
       runOptions,
-      scenarioIdOverride: runOptions.evaluateAll ? null : currentScenarioId || null,
+      defaultScenarioId: selectedProfile.defaultScenarioId,
     });
 
     if (!payload) {
@@ -912,13 +943,14 @@ export default function ReleaseDashboard() {
     const payload = buildBrainRunRequest({
       selectedDataset,
       runOptions,
-      scenarioSelection,
+      agent4ScenarioId: datasetProfiles.agent4?.defaultScenarioId || null,
+      agent5ScenarioId: datasetProfiles.agent5?.defaultScenarioId || null,
       allowAgent5AfterAgent4Hold,
     });
 
     if (!payload) {
       setBrainError(
-        "Full workflow requires both Release Readiness Analyst and Test Evidence Analyst mappings plus one scenario for each stage."
+        "Full workflow requires both Release Readiness Analyst and Test Evidence Analyst mappings."
       );
       return;
     }
@@ -957,7 +989,7 @@ export default function ReleaseDashboard() {
 
     const name = newSetName.trim();
     if (!name) {
-      setCreateSetError("Set name is required.");
+      setCreateSetError("Dataset name is required.");
       return;
     }
     if (newSetFiles.length === 0) {
@@ -969,7 +1001,7 @@ export default function ReleaseDashboard() {
     if (
       allSets.some((set) => String(set.label || "").trim().toLowerCase() === lowerName)
     ) {
-      setCreateSetError("A set with this name already exists.");
+      setCreateSetError("A dataset with this name already exists.");
       return;
     }
 
@@ -1011,9 +1043,10 @@ export default function ReleaseDashboard() {
       setNewSetFiles([]);
       setCreateSetError("");
       setImportError("");
+      setIsCreateSetOpen(false);
     } catch (error) {
       setCreateSetError(
-        error instanceof Error ? error.message : "Unable to save set to backend."
+        error instanceof Error ? error.message : "Unable to save dataset to backend."
       );
     }
   }
@@ -1034,7 +1067,7 @@ export default function ReleaseDashboard() {
       setDatasetId("go");
     } catch (error) {
       setImportError(
-        error instanceof Error ? error.message : "Unable to delete custom set."
+        error instanceof Error ? error.message : "Unable to delete custom dataset."
       );
     }
   }
@@ -1102,656 +1135,849 @@ export default function ReleaseDashboard() {
     });
   }
 
+  const quickFacts = [
+    {
+      label: "Dataset",
+      value: selectedDataset.label,
+    },
+    {
+      label: "Analyst",
+      value: selectedAgent.name,
+    },
+    {
+      label: "Report mode",
+      value: runOptions.noLlm ? "Rules-only fallback" : "LLM-assisted default",
+    },
+    {
+      label: "Demo mode",
+      value: "Single demo case",
+    },
+  ];
+
   return (
-    <section
-      className="h-full overflow-y-auto px-6 pb-8 pt-5"
-      data-testid="agent-console"
-    >
-      <div className="mx-auto max-w-[1600px] space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className="h-full overflow-hidden px-3 py-3" data-testid="agent-console">
+      <div className="mx-auto flex h-full max-w-[1820px] flex-col gap-3">
+        <header className="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
                 Analyst Operations Console
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
                 Backend-native release workflow
               </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                The dashboard now runs the full Python core directly from{" "}
-                <code>challenge-app</code>, with readable analyst names, real
-                scenario discovery, and orchestration across Phase 4 and Phase 5.
+              <p className="mt-1 text-sm text-slate-600">
+                Pick an analyst, choose a dataset, run the analysis, and inspect results in
+                a compact dashboard instead of a long scrolling page.
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-              <p className="font-semibold text-slate-700">Backend endpoint</p>
-              <p className="mt-1 break-all">{AGENT_BACKEND_URL}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Demo dashboard
+              </p>
             </div>
           </div>
+        </header>
 
-          <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-            <div className="space-y-4">
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Analysts
-                </h3>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {Object.values(AGENTS).map((agent) => {
-                    const unavailable = !selectedDataset?.backend?.[agent.id];
-                    return (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        onClick={() => setAgentId(agent.id)}
-                        disabled={unavailable}
-                        className={`rounded-xl border px-3 py-3 text-left text-sm transition ${
-                          agentId === agent.id
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : unavailable
-                              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                              : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
-                        }`}
-                      >
-                        <p className="font-semibold">{agent.name}</p>
-                        <p className="mt-1 text-xs opacity-80">
-                          {agent.legacyName} · {agent.phase}
-                        </p>
-                      </button>
-                    );
-                  })}
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[300px_minmax(0,1fr)_330px]">
+          <aside className="min-h-0 space-y-4 overflow-y-auto pr-1">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Analysts
+              </p>
+              <div className="mt-3 grid gap-3">
+                {Object.values(AGENTS).map((agent) => {
+                  const unavailable = !selectedDataset?.backend?.[agent.id];
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => setAgentId(agent.id)}
+                      disabled={unavailable}
+                      className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                        agentId === agent.id
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : unavailable
+                            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                            : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
+                      }`}
+                    >
+                      <p className="font-semibold">{agent.name}</p>
+                      <p className="mt-1 text-xs opacity-80">
+                        {agent.phase} · {agent.legacyName}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Datasets
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreateSetError("");
+                      setIsCreateSetOpen(true);
+                    }}
+                    className="rounded-full border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                  >
+                    Upload Document Dataset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelectedSet}
+                    disabled={selectedDataset.source !== "custom"}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                      selectedDataset.source === "custom"
+                        ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                        : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    Delete Selected Dataset
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Evidence Sets
-                </h3>
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {allSets.map((dataset) => (
+              <div className="mt-3 min-h-0 space-y-3 overflow-y-auto pr-1">
+                {allSets.map((dataset) => {
+                  const isSelected = datasetId === dataset.id;
+                  const supportedForAgent = Boolean(dataset?.backend?.[agentId]);
+                  return (
                     <button
                       key={dataset.id}
                       type="button"
                       onClick={() => setDatasetId(dataset.id)}
                       title={dataset.label}
-                      className={`rounded-xl border px-3 py-3 text-left text-sm transition ${
-                        datasetId === dataset.id
-                          ? "border-indigo-700 bg-indigo-50 text-indigo-900"
+                      className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                        isSelected
+                          ? "border-sky-600 bg-sky-50 text-sky-950"
                           : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
                       }`}
                     >
-                      <p className="truncate font-semibold">{dataset.label}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">
-                        {dataset.source === "built-in" ? "Built-in" : "Custom upload"}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{dataset.label}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {dataset.source === "built-in" ? "Built-in dataset" : "Custom dataset"}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                            supportedForAgent
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {supportedForAgent ? "Ready" : "Not mapped"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {importError ? (
+                <p className="mt-3 text-xs font-medium text-rose-700">{importError}</p>
+              ) : null}
+            </div>
+
+          </aside>
+
+          <main className="min-h-0 space-y-4 overflow-y-auto pr-1">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Run Analysis
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Launch the selected analyst with the current dataset. The demo now defaults
+                    to an LLM-written report layered on top of the deterministic rules.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={!runOptions.noLlm}
+                      onChange={(event) => updateRunOption("noLlm", !event.target.checked)}
+                    />
+                    Enable LLM report
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRunBackend}
+                    disabled={isAgentRunning || !selectedProfile.supported}
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold ${
+                      isAgentRunning || !selectedProfile.supported
+                        ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                        : "border border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                    }`}
+                    aria-busy={isAgentRunning ? "true" : "false"}
+                  >
+                    {isAgentRunning ? (
+                      <>
+                        <LoadingSpinner />
+                        Running analysis...
+                      </>
+                    ) : (
+                      "Run Selected Analysis"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="grid gap-3">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                    The demo uses one representative case per dataset, so you can focus on the
+                    result instead of picking internal scenarios.
+                  </div>
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-900">LLM narrative report</p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Recommended for the demo. The rules remain authoritative, while the
+                      model rewrites the outcome into a cleaner stakeholder-ready report.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedOptions((previous) => !previous)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-100"
+                    aria-expanded={showAdvancedOptions ? "true" : "false"}
+                  >
+                    <span>Advanced options</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {showAdvancedOptions ? "Hide" : "Click to open"}
+                    </span>
+                  </button>
+
+                  {showAdvancedOptions ? (
+                    <div className="mt-4 grid gap-3 text-sm text-slate-700">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={runOptions.checkLabel}
+                          onChange={(event) => updateRunOption("checkLabel", event.target.checked)}
+                        />
+                        Compare decisions against benchmark labels
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={runOptions.strictSchema}
+                          onChange={(event) => updateRunOption("strictSchema", event.target.checked)}
+                        />
+                        Require valid output schema
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={runOptions.failOnLabelMismatch}
+                          onChange={(event) =>
+                            updateRunOption("failOnLabelMismatch", event.target.checked)
+                          }
+                          disabled={!runOptions.checkLabel}
+                        />
+                        Return an error if decision and label differ
+                      </label>
+
+                      {agentId === "agent4" ? (
+                        <div>
+                          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Dataset interpretation mode
+                          </label>
+                          <select
+                            value={runOptions.sourceAdapterKind}
+                            onChange={(event) =>
+                              updateRunOption("sourceAdapterKind", event.target.value)
+                            }
+                            className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                          >
+                            <option value="auto">auto</option>
+                            <option value="structured_dataset">structured_dataset</option>
+                            <option value="apcs_doc_bundle">apcs_doc_bundle</option>
+                          </select>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-slate-500">
+                      Click the button above to show schema, label, and adapter controls.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {backendError ? (
+                <p className="mt-3 text-sm font-medium text-rose-700">{backendError}</p>
+              ) : null}
+              {selectedProfile.error ? (
+                <p className="mt-2 text-sm font-medium text-rose-700">{selectedProfile.error}</p>
+              ) : null}
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Current result
+                </p>
+                <button
+                  type="button"
+                  onClick={handleExportCurrentAnalysis}
+                  className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Export Analysis JSON
+                </button>
+              </div>
+              <div
+                className={`relative mt-3 rounded-3xl border border-slate-200 bg-slate-50 p-5 transition ${
+                  isAgentRunning ? "overflow-hidden ring-2 ring-sky-100" : ""
+                }`}
+              >
+                {isAgentRunning ? (
+                  <>
+                    <div className="absolute inset-x-0 top-0 h-1 animate-pulse bg-gradient-to-r from-sky-200 via-sky-500 to-sky-200" />
+                    <div
+                      className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700"
+                      aria-live="polite"
+                    >
+                      <LoadingSpinner className="h-3.5 w-3.5" />
+                      Preparing updated analysis
+                    </div>
+                  </>
+                ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => previousAgentId && setAgentId(previousAgentId)}
+                        disabled={!previousAgentId}
+                        aria-label="Show previous analyst result"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-base font-semibold ${
+                          previousAgentId
+                            ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                            : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
+                        }`}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => nextAgentId && setAgentId(nextAgentId)}
+                        disabled={!nextAgentId}
+                        aria-label="Show next analyst result"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-base font-semibold ${
+                          nextAgentId
+                            ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                            : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
+                        }`}
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-semibold text-slate-900"
+                        data-testid="current-result-analyst-name"
+                      >
+                        {selectedAgent.name}
                       </p>
+                      <p className="mt-1 text-xs text-slate-500">{selectedDataset.label}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`rounded-full border px-3 py-1 font-extrabold tracking-[0.2em] ${decisionBadgeClasses(
+                      resultDecision
+                    )}`}
+                  >
+                    {resultDecision}
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                      {resultDecisionType === "batch_run"
+                        ? "Batch report"
+                        : String(resultDecisionType || "").includes("llm")
+                          ? "LLM-assisted report"
+                          : "Deterministic report"}
+                    </span>
+                    {!runOptions.noLlm ? (
+                      <span className="rounded-full bg-sky-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                        Demo default
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-4 text-xl font-semibold leading-8 text-slate-900">
+                    {resultSummary}
+                  </p>
+                  {!isEvaluateAllRun && !runOptions.noLlm ? (
+                    <p className="mt-3 text-sm text-slate-600">
+                      This central report is the LLM-refined explanation of the deterministic
+                      verdict.
+                    </p>
+                  ) : null}
+                </div>
+                {!isEvaluateAllRun && currentAnalysis.humanAction ? (
+                  <p className="mt-4 text-sm text-slate-600">
+                    Next action: <strong>{currentAnalysis.humanAction}</strong>
+                  </p>
+                ) : null}
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    Confidence: <strong>{resultConfidence}</strong>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    Decision type: <strong>{resultDecisionType}</strong>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    Policy: <strong>{resultPolicyVersion}</strong>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    Updated: <strong>{formatTimestamp(resultUpdatedAt)}</strong>
+                  </div>
+                </div>
+
+                {currentRun?.diagnostics ? (
+                  <p className="mt-4 text-sm text-slate-600">
+                    Schema valid:{" "}
+                    <strong>
+                      {currentRun.diagnostics.schema_error_detected ? "no" : "yes"}
+                    </strong>
+                    {" · "}
+                    mismatch detected:{" "}
+                    <strong>
+                      {currentRun.diagnostics.label_mismatch_detected ? "yes" : "no"}
+                    </strong>
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <article
+              className="flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+              data-testid="reasons-panel"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Detail panels
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Switch between explanation, analyst status, diagnostics, and dataset info.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {detailTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActivePanel(tab.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        activePanel === tab.id
+                          ? "border border-slate-900 bg-slate-900 text-white"
+                          : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      {tab.label}
                     </button>
                   ))}
                 </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportSets}
-                    className="rounded border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    Export Sets
-                  </button>
-                  <label className="cursor-pointer rounded border border-slate-300 bg-white px-2 py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-100">
-                    Import Sets
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleImportSets}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {importError ? (
-                  <p className="mt-2 text-xs font-medium text-rose-700">{importError}</p>
-                ) : null}
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-                  Run Options
-                </h3>
-
-                <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={runOptions.evaluateAll}
-                      onChange={(event) =>
-                        updateRunOption("evaluateAll", event.target.checked)
-                      }
-                    />
-                    Run all scenarios in the selected dataset
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={runOptions.checkLabel}
-                      onChange={(event) =>
-                        updateRunOption("checkLabel", event.target.checked)
-                      }
-                    />
-                    Compare decisions against benchmark labels
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={runOptions.strictSchema}
-                      onChange={(event) =>
-                        updateRunOption("strictSchema", event.target.checked)
-                      }
-                    />
-                    Require valid output schema
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={runOptions.failOnLabelMismatch}
-                      onChange={(event) =>
-                        updateRunOption("failOnLabelMismatch", event.target.checked)
-                      }
-                      disabled={!runOptions.checkLabel}
-                    />
-                    Return an error if decision and label differ
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={runOptions.noLlm}
-                      onChange={(event) =>
-                        updateRunOption("noLlm", event.target.checked)
-                      }
-                    />
-                    Use deterministic rules only
-                  </label>
-                </div>
-
-                {!runOptions.evaluateAll ? (
-                  <div className="mt-3">
-                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Scenario
-                    </label>
-                    <select
-                      value={currentScenarioId}
-                      onChange={(event) =>
-                        setScenarioSelection((previous) => ({
-                          ...previous,
-                          [agentId]: event.target.value,
-                        }))
-                      }
-                      disabled={currentScenarioOptions.length === 0}
-                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm"
-                    >
-                      {currentScenarioOptions.length === 0 ? (
-                        <option value="">No scenario discovered</option>
-                      ) : (
-                        currentScenarioOptions.map((item) => (
-                          <option
-                            key={`${agentId}-${item.scenario_id}`}
-                            value={item.scenario_id}
-                          >
-                            {scenarioOptionLabel(item)}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                ) : null}
-
-                {agentId === "agent4" ? (
-                  <div className="mt-3">
-                    <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Dataset interpretation mode
-                    </label>
-                    <select
-                      value={runOptions.sourceAdapterKind}
-                      onChange={(event) =>
-                        updateRunOption("sourceAdapterKind", event.target.value)
-                      }
-                      className="w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm"
-                    >
-                      <option value="auto">auto</option>
-                      <option value="structured_dataset">structured_dataset</option>
-                      <option value="apcs_doc_bundle">apcs_doc_bundle</option>
-                    </select>
-                  </div>
-                ) : null}
-
-                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                  <p className="font-semibold text-slate-700">Current dataset profile</p>
-                  <p className="mt-1">
-                    {selectedProfile.supported
-                      ? `${selectedProfile.scenarios.length} scenario(s) discovered for ${selectedAgent.name}.`
-                      : "No backend mapping for this analyst in the selected dataset."}
-                  </p>
-                  {selectedProfile.validation?.resolved_dataset_root ? (
-                    <p className="mt-1 break-all">
-                      resolved root:{" "}
-                      <span className="font-mono text-[11px]">
-                        {selectedProfile.validation.resolved_dataset_root}
-                      </span>
-                    </p>
-                  ) : null}
-                  {selectedProfile.error ? (
-                    <p className="mt-2 font-medium text-rose-700">{selectedProfile.error}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-                  {BRAIN_NAME}
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">{BRAIN_DESCRIPTION}</p>
-
-                <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                  <p>
-                    <span className="font-semibold text-slate-700">
-                      {AGENTS.agent4.name} scenario:
-                    </span>{" "}
-                    {scenarioSelection.agent4 || selectedDataset?.backend?.agent4?.scenarioId || "n/a"}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">
-                      {AGENTS.agent5.name} scenario:
-                    </span>{" "}
-                    {scenarioSelection.agent5 || selectedDataset?.backend?.agent5?.scenarioId || "n/a"}
-                  </p>
-                  <label className="mt-1 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={allowAgent5AfterAgent4Hold}
-                      onChange={(event) =>
-                        setAllowAgent5AfterAgent4Hold(event.target.checked)
-                      }
-                    />
-                    Allow Phase 5 to continue even if Phase 4 ends in HOLD
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleRunBrain}
-                  disabled={isBrainRunning || !brainAvailable}
-                  className={`mt-3 w-full rounded px-3 py-2 text-sm font-semibold ${
-                    isBrainRunning || !brainAvailable
-                      ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
-                      : "border border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
-                  }`}
-                >
-                  {isBrainRunning ? "Running Full Workflow..." : "Run Full Workflow"}
-                </button>
-                {!brainAvailable ? (
-                  <p className="mt-2 text-xs text-slate-500">
-                    Full workflow is available only when both analysts are mapped in the selected dataset.
-                  </p>
-                ) : null}
-                {brainError ? (
-                  <p className="mt-2 text-xs font-medium text-rose-700">{brainError}</p>
-                ) : null}
-
-                {brainRun ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
-                    <p className="font-semibold uppercase tracking-wide text-slate-500">
-                      Last orchestration
-                    </p>
-                    <p className="mt-1">
-                      status: <strong>{String(brainRun.status || "unknown").toUpperCase()}</strong>
-                    </p>
-                    <p className="mt-1">
-                      run id: <span className="font-mono">{brainRun.run_id}</span>
-                    </p>
-                    <p className="mt-1">
-                      duration: <strong>{brainRun.duration_ms ?? "n/a"} ms</strong>
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-
-              <form
-                onSubmit={handleCreateSet}
-                className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
-                data-testid="create-set-form"
-              >
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-                  Create New Set
-                </h3>
-                <input
-                  type="text"
-                  aria-label="Set name"
-                  value={newSetName}
-                  onChange={(event) => setNewSetName(event.target.value)}
-                  placeholder="Set name"
-                  className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
-                />
-                <input
-                  type="file"
-                  aria-label="Upload documents"
-                  multiple
-                  accept=".txt,.md,.csv,.json,.log,.docx"
-                  onChange={(event) =>
-                    setNewSetFiles(Array.from(event.target.files || []))
-                  }
-                  className="w-full text-xs text-slate-600"
-                />
-                {newSetFiles.length > 0 ? (
-                  <p className="text-xs text-slate-500">
-                    {newSetFiles.length} file(s) selected
-                  </p>
-                ) : null}
-                <p className="text-xs text-slate-500">
-                  Use APCS text or `.docx` bundles for {AGENTS.agent4.name}, or structured CSV bundles for {AGENTS.agent5.name}. Imported sets are persisted in the backend.
-                </p>
-                {createSetError ? (
-                  <p className="text-xs font-medium text-rose-700">{createSetError}</p>
-                ) : null}
-                <button
-                  type="submit"
-                  className="w-full rounded bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-                >
-                  Save Set
-                </button>
-                <div className="rounded-lg bg-white p-3 text-xs text-slate-600">
-                  <p className="mb-1 font-semibold text-slate-700">Selected analyst</p>
-                  <p>{selectedAgent.description}</p>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                {selectedAgent.name} · {selectedAgent.legacyName} · {selectedAgent.phase}
-              </p>
-              <h3 className="mt-1 text-2xl font-semibold text-slate-900">
-                {selectedDataset.label}
-              </h3>
-              <p className="mt-2 text-sm text-slate-600">
-                {currentRun?.mode === "evaluate_all"
-                  ? "Evaluate-all run loaded from the backend."
-                  : currentAnalysis.summary || currentAnalysis.humanAction}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleRunBackend}
-                disabled={isAgentRunning || !selectedProfile.supported}
-                className={`rounded border px-3 py-1.5 text-xs font-semibold ${
-                  isAgentRunning || !selectedProfile.supported
-                    ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                    : "border-slate-700 bg-slate-900 text-white hover:bg-slate-800"
-                }`}
-              >
-                {isAgentRunning ? "Running..." : "Run Selected Analysis"}
-              </button>
-              <button
-                type="button"
-                onClick={handleExportCurrentAnalysis}
-                className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Export Analysis JSON
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteSelectedSet}
-                disabled={selectedDataset.source !== "custom"}
-                className={`rounded border px-3 py-1.5 text-xs font-semibold ${
-                  selectedDataset.source === "custom"
-                    ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                    : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                }`}
-              >
-                Delete Selected Set
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-            <span
-              className={`rounded-full border px-3 py-1 font-extrabold tracking-[0.2em] ${decisionBadgeClasses(
-                currentAnalysis.decision
-              )}`}
-            >
-              {currentAnalysis.decision}
-            </span>
-            <span>
-              confidence: <strong>{currentAnalysis.confidence}</strong>
-            </span>
-            <span>
-              decision type: <strong>{currentAnalysis.decisionType}</strong>
-            </span>
-            <span>
-              policy: <strong>{currentAnalysis.policyVersion || "n/a"}</strong>
-            </span>
-            <span>
-              updated: <strong>{formatTimestamp(currentAnalysis.timestampUtc)}</strong>
-            </span>
-          </div>
-
-          {currentRun?.mode === "single" && currentAnalysis.humanAction ? (
-            <p className="mt-3 text-sm text-slate-700">
-              Next action: <strong>{currentAnalysis.humanAction}</strong>
-            </p>
-          ) : null}
-
-          {currentEvaluation?.label_check_performed ? (
-            <p className="mt-2 text-xs text-slate-600">
-              Label check: expected <strong>{currentEvaluation.expected_decision}</strong> ·
-              match <strong> {currentEvaluation.match ? "yes" : "no"}</strong>
-            </p>
-          ) : null}
-
-          {currentRun?.diagnostics ? (
-            <p className="mt-1 text-xs text-slate-600">
-              Schema valid:{" "}
-              <strong>
-                {currentRun.diagnostics.schema_error_detected ? "no" : "yes"}
-              </strong>
-              {" · "}
-              mismatch detected:{" "}
-              <strong>
-                {currentRun.diagnostics.label_mismatch_detected ? "yes" : "no"}
-              </strong>
-            </p>
-          ) : null}
-
-          {selectedProfile.supported ? (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-              <p className="font-semibold uppercase tracking-wide text-slate-500">
-                Dataset inspection
-              </p>
-              <p className="mt-1">
-                requested:{" "}
-                <span className="font-mono">{selectedProfile.requestedDatasetRoot}</span>
-              </p>
-              {selectedProfile.resolvedDatasetRoot ? (
-                <p className="mt-1">
-                  resolved:{" "}
-                  <span className="font-mono">{selectedProfile.resolvedDatasetRoot}</span>
-                </p>
-              ) : null}
-              <p className="mt-1">
-                scenarios discovered: <strong>{selectedProfile.scenarios.length}</strong>
-                {selectedScenarioLabel && !runOptions.evaluateAll ? (
-                  <>
-                    {" · "}selected: <strong>{scenarioOptionLabel(selectedScenarioLabel)}</strong>
-                  </>
-                ) : null}
-              </p>
-              {currentValidationNotes.length > 0 ? (
-                <ul className="mt-2 space-y-1 text-slate-600">
-                  {currentValidationNotes.map((note) => (
-                    <li key={note}>{note}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-
-          {backendError ? (
-            <p className="mt-2 text-xs font-medium text-rose-700">{backendError}</p>
-          ) : null}
-
-          {evaluateAllSummary ? (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-              <p className="font-semibold uppercase tracking-wide text-slate-500">
-                evaluate-all summary
-              </p>
-              <p className="mt-1">
-                total: <strong>{evaluateAllSummary.totalScenarios}</strong> · GO:{" "}
-                <strong>{evaluateAllSummary.goCount}</strong> · HOLD:{" "}
-                <strong>{evaluateAllSummary.holdCount}</strong>
-              </p>
-              <p className="mt-1">
-                schema validity rate:{" "}
-                <strong>
-                  {evaluateAllSummary.schemaValidityRate === null
-                    ? "n/a"
-                    : evaluateAllSummary.schemaValidityRate}
-                </strong>
-              </p>
-              {hasEvaluateAllLabelMetrics ? (
-                <p className="mt-1">
-                  labels: <strong>{evaluateAllSummary.evaluatedLabels}</strong> · matched:{" "}
-                  <strong>{evaluateAllSummary.matched}</strong> · accuracy:{" "}
-                  <strong>
-                    {evaluateAllSummary.accuracy === null
-                      ? "n/a"
-                      : evaluateAllSummary.accuracy}
-                  </strong>
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <ul className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-            {selectedDataset.documents.map((doc) => (
-              <li key={doc.filePath} className="rounded bg-slate-100 px-2 py-1">
-                {doc.name}
-              </li>
-            ))}
-          </ul>
-        </header>
-
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-          <article
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            data-testid="reasons-panel"
-          >
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              {currentRun?.mode === "evaluate_all" ? "Scenario Results" : "Reasons & Evidence"}
-            </h4>
-
-            {currentRun?.mode === "evaluate_all" ? (
-              evaluateAllPredictions.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                        <th className="py-2 pr-3">Scenario</th>
-                        <th className="py-2 pr-3">Decision</th>
-                        <th className="py-2 pr-3">Confidence</th>
-                        <th className="py-2 pr-3">Label</th>
-                        <th className="py-2">Summary</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {evaluateAllPredictions.map((item) => (
-                        <tr key={item.scenarioId} className="border-b border-slate-100 last:border-b-0">
-                          <td className="py-2 pr-3 font-mono text-xs">{item.scenarioId}</td>
-                          <td className="py-2 pr-3 font-semibold">{item.decision}</td>
-                          <td className="py-2 pr-3 text-slate-600">{item.confidence}</td>
-                          <td className="py-2 pr-3 text-slate-600">
-                            {item.expectedDecision ? (
-                              <span>
-                                {item.expectedDecision} ·{" "}
-                                <strong>{item.labelMatch ? "match" : "mismatch"}</strong>
+              <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                {activePanel === "analysis" ? (
+                  isEvaluateAllRun ? (
+                    evaluateAllPredictions.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                              <th className="py-2 pr-3">Scenario</th>
+                              <th className="py-2 pr-3">Decision</th>
+                              <th className="py-2 pr-3">Confidence</th>
+                              <th className="py-2 pr-3">Label</th>
+                              <th className="py-2">Summary</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {evaluateAllPredictions.map((item) => (
+                              <tr
+                                key={item.scenarioId}
+                                className="border-b border-slate-100 last:border-b-0"
+                              >
+                                <td className="py-2 pr-3 font-mono text-xs">{item.scenarioId}</td>
+                                <td className="py-2 pr-3 font-semibold">{item.decision}</td>
+                                <td className="py-2 pr-3 text-slate-600">{item.confidence}</td>
+                                <td className="py-2 pr-3 text-slate-600">
+                                  {item.expectedDecision ? (
+                                    <span>
+                                      {item.expectedDecision} ·{" "}
+                                      <strong>{item.labelMatch ? "match" : "mismatch"}</strong>
+                                    </span>
+                                  ) : (
+                                    "n/a"
+                                  )}
+                                </td>
+                                <td className="py-2 text-slate-600">{item.summary || "n/a"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">No evaluate-all predictions returned.</p>
+                    )
+                  ) : currentAnalysis.reasons.length > 0 ? (
+                    <div className="space-y-4">
+                      {currentAnalysis.reasons.map((reason) => (
+                        <div
+                          key={`${reason.title}-${reason.code || "reason"}`}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900">{reason.title}</p>
+                            {reason.code ? (
+                              <span className="rounded bg-white px-2 py-0.5 font-mono text-xs text-slate-600">
+                                {reason.code}
                               </span>
-                            ) : (
-                              "n/a"
-                            )}
-                          </td>
-                          <td className="py-2 text-slate-600">{item.summary || "n/a"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No evaluate-all predictions returned.</p>
-              )
-            ) : currentAnalysis.reasons.length > 0 ? (
-              <div className="space-y-4">
-                {currentAnalysis.reasons.map((reason) => (
-                  <div
-                    key={`${reason.title}-${reason.code || "reason"}`}
-                    className="rounded-xl border border-slate-200 p-4"
-                  >
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900">{reason.title}</p>
-                      {reason.code ? (
-                        <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
-                          {reason.code}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-slate-600">{reason.detail || "No additional detail."}</p>
+                            ) : null}
+                          </div>
+                          <p className="text-sm text-slate-600">
+                            {reason.detail || "No additional detail."}
+                          </p>
 
-                    {reason.evidence.length > 0 ? (
-                      <ul className="mt-3 space-y-2 text-xs text-slate-600">
-                        {reason.evidence.map((evidence, index) => (
-                          <li
-                            key={`${reason.title}-${index}`}
-                            className="rounded-lg bg-slate-50 p-3"
-                          >
-                            <p className="font-mono text-[11px] text-slate-500">
-                              {evidence.filePath}:{evidence.line}
+                          {reason.evidence.length > 0 ? (
+                            <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                              {reason.evidence.map((evidence, index) => (
+                                <li
+                                  key={`${reason.title}-${index}`}
+                                  className="rounded-xl border border-slate-200 bg-white p-3"
+                                >
+                                  <p className="font-mono text-[11px] text-slate-500">
+                                    {evidence.filePath}:{evidence.line}
+                                  </p>
+                                  <p className="mt-1">{evidence.snippet || "No snippet available."}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">{currentAnalysis.summary}</p>
+                  )
+                ) : null}
+
+                {activePanel === "status" ? (
+                  <article className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                      Analyst Status
+                    </h4>
+                    <div className="grid gap-4">
+                      {agentStatusSummaries.map((summary) => (
+                        <section
+                          key={summary.id}
+                          className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="break-words text-sm font-semibold text-slate-900">
+                                {summary.name}
+                              </p>
+                              <p className="break-words text-xs text-slate-500">
+                                {summary.legacyName} · {summary.phase}
+                              </p>
+                            </div>
+                            <div
+                              className={`rounded-full border px-3 py-1 text-xs font-extrabold tracking-[0.2em] ${decisionBadgeClasses(
+                                summary.decision
+                              )}`}
+                            >
+                              {summary.decision}
+                            </div>
+                          </div>
+
+                          <p className="mt-3 text-xs text-slate-600">
+                            Source: <strong>{summary.source}</strong>
+                          </p>
+                          <p className="mt-1 text-xs text-slate-600">
+                            Matched hard gates:{" "}
+                            <strong>{summary.analysis.matchedSignals.length}</strong>
+                          </p>
+                          {summary.analysis.summary ? (
+                            <p className="mt-2 break-words text-xs text-slate-600">
+                              {summary.analysis.summary}
                             </p>
-                            <p className="mt-1">{evidence.snippet || "No snippet available."}</p>
-                          </li>
-                        ))}
-                      </ul>
+                          ) : null}
+                        </section>
+                      ))}
+                    </div>
+                  </article>
+                ) : null}
+
+                {activePanel === "diagnostics" ? (
+                  <div className="space-y-4">
+                    {currentEvaluation?.label_check_performed ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        Label check: expected <strong>{currentEvaluation.expected_decision}</strong> ·
+                        match <strong> {currentEvaluation.match ? "yes" : "no"}</strong>
+                      </div>
+                    ) : null}
+
+                    {evaluateAllSummary ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-800">Evaluate-all summary</p>
+                        <p className="mt-2">
+                          Total <strong>{evaluateAllSummary.totalScenarios}</strong> · GO{" "}
+                          <strong>{evaluateAllSummary.goCount}</strong> · HOLD{" "}
+                          <strong>{evaluateAllSummary.holdCount}</strong>
+                        </p>
+                        <p className="mt-1">
+                          Schema validity rate:{" "}
+                          <strong>
+                            {evaluateAllSummary.schemaValidityRate === null
+                              ? "n/a"
+                              : evaluateAllSummary.schemaValidityRate}
+                          </strong>
+                        </p>
+                        {hasEvaluateAllLabelMetrics ? (
+                          <p className="mt-1">
+                            Labels <strong>{evaluateAllSummary.evaluatedLabels}</strong> · matched{" "}
+                            <strong>{evaluateAllSummary.matched}</strong> · accuracy{" "}
+                            <strong>
+                              {evaluateAllSummary.accuracy === null
+                                ? "n/a"
+                                : evaluateAllSummary.accuracy}
+                            </strong>
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {currentAnalysis.coverageMetrics ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-800">Coverage metrics</p>
+                        <ul className="mt-2 space-y-1">
+                          {Object.entries(currentAnalysis.coverageMetrics).map(([key, value]) => (
+                            <li key={key}>
+                              {key}: <strong>{String(value)}</strong>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {currentAnalysis.crossPhaseContinuityFlags ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-800">Cross-phase continuity</p>
+                        <ul className="mt-2 space-y-1">
+                          {Object.entries(currentAnalysis.crossPhaseContinuityFlags).map(
+                            ([key, value]) => (
+                              <li key={key}>
+                                {key}:{" "}
+                                <strong>
+                                  {Array.isArray(value) ? value.join(", ") || "[]" : String(value)}
+                                </strong>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {currentAnalysis.missingArtifacts.length > 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-800">Missing artifacts</p>
+                        <ul className="mt-2 space-y-1">
+                          {currentAnalysis.missingArtifacts.map((item) => (
+                            <li key={item} className="font-mono text-xs">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {brainStageSummary ? (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p className="font-semibold text-slate-800">Last orchestration stages</p>
+                        <ul className="mt-2 space-y-1">
+                          {Object.entries(brainStageSummary).map(([stageName, stage]) => (
+                            <li key={stageName}>
+                              {stageLabel(stageName)}:{" "}
+                              <strong>{String(stage?.status || "unknown").toUpperCase()}</strong>
+                              {stage?.decision ? <> · decision <strong>{stage.decision}</strong></> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {!currentEvaluation?.label_check_performed &&
+                    !evaluateAllSummary &&
+                    !currentAnalysis.coverageMetrics &&
+                    !currentAnalysis.crossPhaseContinuityFlags &&
+                    currentAnalysis.missingArtifacts.length === 0 &&
+                    !brainStageSummary ? (
+                      <p className="text-sm text-slate-500">No extra diagnostics available for this run.</p>
                     ) : null}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">{currentAnalysis.summary}</p>
-            )}
-          </article>
+                ) : null}
 
-          <div className="space-y-5">
+                {activePanel === "dataset" ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {quickFacts.map((fact) => (
+                        <div key={fact.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                            {fact.label}
+                          </p>
+                          <p className="mt-2 text-sm font-medium text-slate-800">{fact.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <p className="font-semibold text-slate-800">Dataset inspection</p>
+                      <p className="mt-2 break-words">
+                        requested root:{" "}
+                        <span className="font-mono">{selectedProfile.requestedDatasetRoot || "n/a"}</span>
+                      </p>
+                      {selectedProfile.resolvedDatasetRoot ? (
+                        <p className="mt-1 break-words">
+                          resolved root:{" "}
+                          <span className="font-mono">{selectedProfile.resolvedDatasetRoot}</span>
+                        </p>
+                      ) : null}
+                      <p className="mt-1">
+                        demo mapping:{" "}
+                        <strong>{selectedProfile.supported ? "available" : "not available"}</strong>
+                      </p>
+                      {currentValidationNotes.length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {currentValidationNotes.map((note) => (
+                            <li key={note}>{note}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-800">Included documents</p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                        {selectedDataset.documents.map((doc) => (
+                          <span key={doc.filePath} className="rounded-full bg-white px-3 py-1.5">
+                            {doc.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          </main>
+
+          <aside className="min-h-0 space-y-4 overflow-y-auto pr-1">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+                {BRAIN_NAME}
+              </h3>
+              <p className="mt-2 text-sm text-slate-600">{BRAIN_DESCRIPTION}</p>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p>
+                  The coordinator runs the default demo case for the selected dataset across
+                  Phase 4 and Phase 5.
+                </p>
+                <label className="mt-3 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={allowAgent5AfterAgent4Hold}
+                    onChange={(event) =>
+                      setAllowAgent5AfterAgent4Hold(event.target.checked)
+                    }
+                  />
+                  Allow Phase 5 to continue even if Phase 4 ends in HOLD
+                </label>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRunBrain}
+                disabled={isBrainRunning || !brainAvailable}
+                className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold ${
+                  isBrainRunning || !brainAvailable
+                    ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                    : "border border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                }`}
+                aria-busy={isBrainRunning ? "true" : "false"}
+              >
+                {isBrainRunning ? (
+                  <>
+                    <LoadingSpinner />
+                    Running full workflow...
+                  </>
+                ) : (
+                  "Run Full Workflow"
+                )}
+              </button>
+
+              {!brainAvailable ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  Full workflow is available only when both analysts are mapped in the selected dataset.
+                </p>
+              ) : null}
+              {brainError ? (
+                <p className="mt-2 text-xs font-medium text-rose-700">{brainError}</p>
+              ) : null}
+
+              {brainRun ? (
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-800">Last orchestration</p>
+                  <p className="mt-2">
+                    Status: <strong>{String(brainRun.status || "unknown").toUpperCase()}</strong>
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
             <article
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
               data-testid="signal-table"
             >
               <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Analyst Status
               </h4>
-              <div className="grid gap-4">
+              <div className="space-y-3">
                 {agentStatusSummaries.map((summary) => (
                   <section
                     key={summary.id}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                    className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     data-testid={`signal-summary-${summary.id}`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-semibold text-slate-900">
                           {summary.name}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="break-words text-xs text-slate-500">
                           {summary.legacyName} · {summary.phase}
                         </p>
                       </div>
@@ -1764,135 +1990,94 @@ export default function ReleaseDashboard() {
                         {summary.decision}
                       </div>
                     </div>
-
                     <p className="mt-3 text-xs text-slate-600">
                       Source: <strong>{summary.source}</strong>
                     </p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      Matched hard gates:{" "}
-                      <strong>{summary.analysis.matchedSignals.length}</strong>
-                    </p>
-
                     {summary.analysis.summary ? (
-                      <p className="mt-2 text-xs text-slate-600">{summary.analysis.summary}</p>
-                    ) : null}
-
-                    {summary.analysis.signals.length > 0 ? (
-                      <div className="mt-3 overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400">
-                              <th className="py-2 pr-3">Rule</th>
-                              <th className="py-2 pr-3">Status</th>
-                              <th className="py-2">Pattern</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {summary.analysis.signals.map((signal) => (
-                              <tr
-                                key={`${summary.id}-${signal.code}`}
-                                className="border-b border-slate-100 last:border-b-0"
-                              >
-                                <td className="py-2 pr-3 font-mono text-[11px]">
-                                  {signal.code}
-                                </td>
-                                <td className="py-2 pr-3">
-                                  {signal.matched ? (
-                                    <span className="font-semibold text-rose-700">
-                                      matched
-                                    </span>
-                                  ) : (
-                                    <span className="text-emerald-700">clear</span>
-                                  )}
-                                </td>
-                                <td className="py-2 text-slate-600">{signal.pattern}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-xs text-slate-500">
-                        {summary.profile.error || "No rule findings loaded yet."}
+                      <p className="mt-2 break-words text-xs text-slate-600">
+                        {summary.analysis.summary}
                       </p>
-                    )}
+                    ) : null}
                   </section>
                 ))}
               </div>
             </article>
-
-            {(currentAnalysis.coverageMetrics ||
-              currentAnalysis.crossPhaseContinuityFlags ||
-              currentAnalysis.missingArtifacts.length > 0 ||
-              brainStageSummary) && (
-              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Diagnostics & Continuity
-                </h4>
-
-                {currentAnalysis.coverageMetrics ? (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-700">Coverage metrics</p>
-                    <ul className="mt-2 space-y-1">
-                      {Object.entries(currentAnalysis.coverageMetrics).map(([key, value]) => (
-                        <li key={key}>
-                          {key}: <strong>{String(value)}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {currentAnalysis.crossPhaseContinuityFlags ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-700">Cross-phase continuity</p>
-                    <ul className="mt-2 space-y-1">
-                      {Object.entries(currentAnalysis.crossPhaseContinuityFlags).map(
-                        ([key, value]) => (
-                          <li key={key}>
-                            {key}:{" "}
-                            <strong>
-                              {Array.isArray(value) ? value.join(", ") || "[]" : String(value)}
-                            </strong>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {currentAnalysis.missingArtifacts.length > 0 ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-700">Missing artifacts</p>
-                    <ul className="mt-2 space-y-1">
-                      {currentAnalysis.missingArtifacts.map((item) => (
-                        <li key={item} className="font-mono text-[11px]">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {brainStageSummary ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-700">Last orchestration stages</p>
-                    <ul className="mt-2 space-y-1">
-                      {Object.entries(brainStageSummary).map(([stageName, stage]) => (
-                        <li key={stageName}>
-                          {stageLabel(stageName)}:{" "}
-                          <strong>{String(stage?.status || "unknown").toUpperCase()}</strong>
-                          {stage?.decision ? <> · decision <strong>{stage.decision}</strong></> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </article>
-            )}
-          </div>
+          </aside>
         </div>
       </div>
+
+      {isCreateSetOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4">
+          <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Upload Document Dataset
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Add your own evidence bundle without leaving the dashboard.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateSetOpen(false)}
+                className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateSet}
+              className="mt-5 space-y-3"
+              data-testid="create-set-form"
+            >
+              <input
+                type="text"
+                aria-label="Dataset name"
+                value={newSetName}
+                onChange={(event) => setNewSetName(event.target.value)}
+                placeholder="Dataset name"
+                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              />
+              <input
+                type="file"
+                aria-label="Upload documents"
+                multiple
+                accept=".txt,.md,.csv,.json,.log,.docx"
+                onChange={(event) =>
+                  setNewSetFiles(Array.from(event.target.files || []))
+                }
+                className="w-full text-xs text-slate-600"
+              />
+              {newSetFiles.length > 0 ? (
+                <p className="text-xs text-slate-500">{newSetFiles.length} file(s) selected</p>
+              ) : null}
+              <p className="text-xs text-slate-500">
+                Use APCS text or `.docx` bundles for {AGENTS.agent4.name}, or structured CSV bundles for {AGENTS.agent5.name}. Uploaded datasets are persisted in the backend.
+              </p>
+              {createSetError ? (
+                <p className="text-xs font-medium text-rose-700">{createSetError}</p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                >
+                  Save Dataset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateSetOpen(false)}
+                  className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

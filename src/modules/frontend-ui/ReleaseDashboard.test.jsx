@@ -386,6 +386,13 @@ describe("Release Dashboard", () => {
     });
   });
 
+  it("defaults to the LLM report mode for the demo", async () => {
+    await renderDashboard();
+
+    expect(screen.getByLabelText(/enable llm report/i)).toBeChecked();
+    expect(screen.getByText(/recommended for the demo/i)).toBeInTheDocument();
+  });
+
   it("switching to HOLD documents refreshes the baseline decision", async () => {
     await renderDashboard();
     const user = userEvent.setup();
@@ -406,11 +413,28 @@ describe("Release Dashboard", () => {
     expect(screen.getByTestId("signal-summary-agent5")).toBeInTheDocument();
   });
 
+  it("lets you switch current result with arrow controls", async () => {
+    await renderDashboard();
+    const user = userEvent.setup();
+
+    expect(screen.getByTestId("current-result-analyst-name")).toHaveTextContent(
+      /release readiness analyst/i
+    );
+
+    await user.click(screen.getByRole("button", { name: /show next analyst result/i }));
+
+    expect(screen.getByTestId("current-result-analyst-name")).toHaveTextContent(
+      /test evidence analyst/i
+    );
+  });
+
   it("creates and deletes a custom set", async () => {
     await renderDashboard();
     const user = userEvent.setup();
 
-    await user.type(screen.getByLabelText(/set name/i), "My Custom Set");
+    await user.click(screen.getByRole("button", { name: /upload document dataset/i }));
+
+    await user.type(screen.getByLabelText(/dataset name/i), "My Custom Dataset");
 
     const fileInput = screen.getByLabelText(/upload documents/i);
     const file = new File(
@@ -422,19 +446,19 @@ describe("Release Dashboard", () => {
 
     expect(screen.getByText(/1 file\(s\) selected/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /save set/i }));
+    await user.click(screen.getByRole("button", { name: /save dataset/i }));
 
     expect(
-      await screen.findByRole("button", { name: /my custom set/i })
+      await screen.findByRole("button", { name: /my custom dataset/i })
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: /delete selected set/i })
+      screen.getByRole("button", { name: /delete selected dataset/i })
     );
 
     await waitFor(() => {
       expect(
-        screen.queryByRole("button", { name: /my custom set/i })
+        screen.queryByRole("button", { name: /my custom dataset/i })
       ).not.toBeInTheDocument();
     });
   });
@@ -446,6 +470,6 @@ describe("Release Dashboard", () => {
     await user.click(screen.getByRole("button", { name: /run full workflow/i }));
 
     expect(await screen.findByText(/^Last orchestration$/i)).toBeInTheDocument();
-    expect(screen.getByText(/brain-test-run/i)).toBeInTheDocument();
+    expect(screen.getByText(/status:/i)).toBeInTheDocument();
   });
 });
