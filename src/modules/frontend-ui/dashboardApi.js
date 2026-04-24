@@ -1,5 +1,5 @@
 export const AGENT_BACKEND_URL =
-  import.meta.env.VITE_AGENT_BACKEND_URL || "http://127.0.0.1:8001";
+  import.meta.env.VITE_AGENT_BACKEND_URL || "/api";
 
 const AGENT_GATES = {
   agent4: "Phase 4",

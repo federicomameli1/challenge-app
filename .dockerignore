@@ -5,3 +5,9 @@ npm-debug.log
 .DS_Store
 .git
 .gitignore
+.env
+.github
+docs
+scripts
+tests
+WORKLOG_SUMMARY.md
