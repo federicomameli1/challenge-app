@@ -16,10 +16,30 @@ COPY Dataset ./Dataset
 RUN npm run build
 
 # Runtime stage
-FROM nginx:alpine
+FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+COPY agent4 ./agent4
+COPY agent5 ./agent5
+COPY backend ./backend
+COPY brain ./brain
+COPY Dataset ./Dataset
+COPY synthetic_data ./synthetic_data
+COPY docker/run_combined.py ./docker/run_combined.py
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["python", "docker/run_combined.py"]

@@ -7,12 +7,7 @@ npm-debug.log
 .gitignore
 .env
 .github
-agent4
-agent5
-backend
-brain
 docs
 scripts
-synthetic_data
 tests
 WORKLOG_SUMMARY.md

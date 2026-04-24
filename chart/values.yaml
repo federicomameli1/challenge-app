@@ -17,3 +17,5 @@ service:
   targetPort: 80
   # Leave unset to let Kubernetes auto-assign a NodePort.
   # nodePort: 30080
+
+env: []
