@@ -536,4 +536,4 @@ jobs:
         run: |
           helm package chart --destination .
           CHART_TGZ="$(ls -1 *.tgz | head -1)"
-          helm push "$CHART_TGZ" oci://ghcr.io/${{ github.repository }}
+          helm push "$CHART_TGZ" oci://ghcr.io/${{ github.repository_owner }}
