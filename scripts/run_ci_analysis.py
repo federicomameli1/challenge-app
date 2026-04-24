@@ -477,7 +477,7 @@ def make_llm_diagnostics_wrapper(
         "called": False,
         "error": None,
         "raw_response_preview": None,
-        "model": os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-4o-mini",
+        "model": os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-oss-20b:free",
     }
 
     if llm_generate is None:
@@ -1465,7 +1465,7 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
         "llm": {
             "requested": args.use_llm,
             "configured": bool(os.environ.get("OPENROUTER_API_KEY")),
-            "model": llm_diagnostics.get("model") or os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-4o-mini",
+            "model": llm_diagnostics.get("model") or os.environ.get("OPENROUTER_MODEL", "").strip() or "openai/gpt-oss-20b:free",
             "called": bool(llm_diagnostics.get("called")),
             "fallback_suspected": bool(llm_diagnostics.get("fallback_suspected")),
             "error": llm_diagnostics.get("error"),

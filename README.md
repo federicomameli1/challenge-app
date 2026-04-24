@@ -48,7 +48,7 @@ Create or update the root `.env` file and set:
 
 ```env
 OPENROUTER_API_KEY=your_key_here
-OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_MODEL=openai/gpt-oss-20b:free
 ```
 
 The backend auto-loads `.env` on startup. If `OPENROUTER_API_KEY` is missing, the app still runs and falls back to deterministic summaries even when LLM summaries are requested.
