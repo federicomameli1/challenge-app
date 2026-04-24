@@ -42,6 +42,17 @@ From the `challenge-app` root:
 uvicorn backend.app:app --reload --host 0.0.0.0 --port 8001
 ```
 
+### Configure OpenRouter for LLM summaries
+
+Create or update the root `.env` file and set:
+
+```env
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_MODEL=openai/gpt-4o-mini
+```
+
+The backend auto-loads `.env` on startup. If `OPENROUTER_API_KEY` is missing, the app still runs and falls back to deterministic summaries even when LLM summaries are requested.
+
 ### Core HTTP endpoints
 
 - `GET /health`

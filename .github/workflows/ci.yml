@@ -10,10 +10,70 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   packages: write
 
 jobs:
+  analyze-pre-test:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+
+      - name: Run Agent 4 CI analysis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          python scripts/run_ci_analysis.py \
+            --phase pre-test \
+            --event-name "${{ github.event_name }}" \
+            --event-payload "$GITHUB_EVENT_PATH" \
+            --base-ref "${{ github.event.pull_request.base.sha || github.event.before }}" \
+            --head-ref "${{ github.sha }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --use-llm \
+            --write-step-summary \
+            --output-dir artifacts/ci-analysis
+
+      - name: Upload pre-test analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-analysis-pre-test
+          path: artifacts/ci-analysis/pre-test
+
+  approve-test:
+    needs: analyze-pre-test
+    if: github.event_name == 'push' || github.event_name == 'release'
+    runs-on: ubuntu-latest
+    environment:
+      name: hitachi-test-approval
+    steps:
+      - name: Manual approval gate
+        run: echo "Approved for TEST progression."
+
   test-and-build:
+    needs:
+      - analyze-pre-test
+      - approve-test
+    if: >
+      always() &&
+      needs.analyze-pre-test.result == 'success' &&
+      (
+        (github.event_name == 'pull_request' && github.event.action != 'closed') ||
+        ((github.event_name == 'push' || github.event_name == 'release') && needs.approve-test.result == 'success')
+      )
     runs-on: ubuntu-latest
     env:
       GITOPS_REPO: ${{ vars.GITOPS_REPO }}
@@ -40,18 +100,38 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        id: test_step
+        continue-on-error: true
         run: npm test
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+        if: >
+          steps.test_step.outcome == 'success' &&
+          (
+            github.event_name == 'push' ||
+            github.event_name == 'release' ||
+            (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+          )
         uses: docker/setup-buildx-action@v3
 
       - name: Set up QEMU
-        if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+        if: >
+          steps.test_step.outcome == 'success' &&
+          (
+            github.event_name == 'push' ||
+            github.event_name == 'release' ||
+            (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+          )
         uses: docker/setup-qemu-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+        if: >
+          steps.test_step.outcome == 'success' &&
+          (
+            github.event_name == 'push' ||
+            github.event_name == 'release' ||
+            (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+          )
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -59,8 +139,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
-        if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+        if: >
+          steps.test_step.outcome == 'success' &&
+          (
+            github.event_name == 'push' ||
+            github.event_name == 'release' ||
+            (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+          )
         id: build
+        continue-on-error: true
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -72,8 +159,60 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Write stage results summary
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.test_step.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          mkdir -p artifacts/ci-stage-results
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          def map_status(value: str) -> str:
+              normalized = (value or "").strip().lower()
+              mapping = {
+                  "success": "PASS",
+                  "failure": "FAIL",
+                  "cancelled": "BLOCKED",
+                  "skipped": "NOT_RUN",
+              }
+              return mapping.get(normalized, "NOT_RUN")
+
+          payload = {
+              "tests": {
+                  "status": map_status(os.environ.get("TEST_OUTCOME")),
+                  "outcome": os.environ.get("TEST_OUTCOME", ""),
+                  "command": "npm test",
+              },
+              "build": {
+                  "status": map_status(os.environ.get("BUILD_OUTCOME")),
+                  "outcome": os.environ.get("BUILD_OUTCOME", ""),
+                  "command": "docker/build-push-action@v6",
+                  "image_tag": os.environ.get("IMAGE_TAG", ""),
+              },
+          }
+
+          output_path = Path("artifacts/ci-stage-results/test_build_summary.json")
+          output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload test/build summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-stage-results
+          path: artifacts/ci-stage-results
+
       - name: Checkout GitOps repo
-        if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
+        if: >
+          steps.build.outcome == 'success' &&
+          (
+            github.event_name == 'push' ||
+            (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false)
+          )
         uses: actions/checkout@v4
         with:
           repository: ${{ env.GITOPS_REPO }}
@@ -81,7 +220,7 @@ jobs:
           path: gitops
 
       - name: Update GitOps values
-        if: (github.event_name == 'push' || github.event_name == 'release') && steps.build.outcome == 'success'
+        if: github.event_name == 'push' && steps.build.outcome == 'success'
         run: |
           VALUES_PATH="gitops/environments/${{ env.VALUES_ENV }}/values.yaml"
           mkdir -p "$(dirname "$VALUES_PATH")"
@@ -105,7 +244,7 @@ jobs:
           git -C gitops status --short
 
       - name: Commit and push GitOps changes
-        if: (github.event_name == 'push' || github.event_name == 'release') && steps.build.outcome == 'success'
+        if: github.event_name == 'push' && steps.build.outcome == 'success'
         run: |
           cd gitops
           git config user.name "github-actions[bot]"
@@ -172,8 +311,172 @@ jobs:
           git commit -m "chore: update ${APP_NAME} PR-${{ github.event.pull_request.number }} values"
           git push
 
+      - name: Enforce test and build status
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.test_step.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          REQUIRE_BUILD: ${{ github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.repo.fork == false) }}
+        run: |
+          if [ "${TEST_OUTCOME}" != "success" ]; then
+            echo "Tests did not pass (${TEST_OUTCOME})."
+            exit 1
+          fi
+
+          if [ "${REQUIRE_BUILD}" = "true" ] && [ "${BUILD_OUTCOME}" != "success" ]; then
+            echo "Image build/push did not pass (${BUILD_OUTCOME})."
+            exit 1
+          fi
+
+  analyze-pre-prod:
+    needs:
+      - analyze-pre-test
+      - test-and-build
+    if: >
+      github.event_name == 'release' &&
+      always() &&
+      needs.analyze-pre-test.result == 'success' &&
+      needs.test-and-build.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        run: pip install -r backend/requirements.txt
+
+      - name: Download pre-test analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-analysis-pre-test
+          path: artifacts/ci-analysis/pre-test
+
+      - name: Download test/build summary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-stage-results
+          path: artifacts/ci-stage-results
+
+      - name: Run Agent 5 CI analysis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+        run: |
+          python scripts/run_ci_analysis.py \
+            --phase pre-prod \
+            --event-name "${{ github.event_name }}" \
+            --event-payload "$GITHUB_EVENT_PATH" \
+            --base-ref "${{ github.event.pull_request.base.sha || github.event.before }}" \
+            --head-ref "${{ github.sha }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --use-llm \
+            --write-step-summary \
+            --previous-report artifacts/ci-analysis/pre-test/ci_report.json \
+            --stage-results-json artifacts/ci-stage-results/test_build_summary.json \
+            --output-dir artifacts/ci-analysis
+
+      - name: Upload pre-prod analysis artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-analysis-pre-prod
+          path: artifacts/ci-analysis/pre-prod
+
+  approve-prod:
+    needs: analyze-pre-prod
+    if: github.event_name == 'release' && needs.analyze-pre-prod.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: hitachi-prod-approval
+    steps:
+      - name: Manual approval gate
+        run: echo "Approved for PROD progression."
+
+  deploy-prod:
+    needs:
+      - approve-prod
+      - test-and-build
+    if: github.event_name == 'release' && needs.approve-prod.result == 'success' && needs.test-and-build.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GITOPS_REPO: ${{ vars.GITOPS_REPO }}
+      APP_NAME: ${{ vars.APP_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+      VALUES_ENV: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag for release
+        run: |
+          echo "IMAGE_TAG=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+
+      - name: Update GitOps values
+        run: |
+          VALUES_PATH="gitops/environments/${{ env.VALUES_ENV }}/values.yaml"
+          mkdir -p "$(dirname "$VALUES_PATH")"
+
+          if [ ! -f "$VALUES_PATH" ]; then
+            printf '%s\n' \
+              "image:" \
+              "  repository: ghcr.io/${{ github.repository }}" \
+              "  tag: ${{ env.IMAGE_TAG }}" \
+              "  pullPolicy: IfNotPresent" \
+              > "$VALUES_PATH"
+          fi
+
+          sed -i -E "s#^([[:space:]]*repository:).*#\\1 ghcr.io/${{ github.repository }}#" "$VALUES_PATH" || true
+          sed -i -E "s#^([[:space:]]*tag:).*#\\1 ${{ env.IMAGE_TAG }}#" "$VALUES_PATH" || true
+
+          if ! grep -qE '^[[:space:]]*pullPolicy:' "$VALUES_PATH"; then
+            printf '%s\n' "  pullPolicy: IfNotPresent" >> "$VALUES_PATH"
+          fi
+
+          git -C gitops status --short
+
+      - name: Commit and push GitOps changes
+        run: |
+          cd gitops
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "environments/${{ env.VALUES_ENV }}/values.yaml"
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update ${APP_NAME} image tag to ${{ env.IMAGE_TAG }}"
+          git push
+
+  cleanup-pr-preview:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
+    env:
+      GITOPS_REPO: ${{ vars.GITOPS_REPO }}
+      APP_NAME: ${{ vars.APP_NAME }}
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+
       - name: Delete GitOps PR environment
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.fork == false
         run: |
           PR_DIR="gitops/environments/dev/pr-${{ github.event.pull_request.number }}"
           if [ -d "$PR_DIR" ]; then
@@ -182,7 +485,6 @@ jobs:
           git -C gitops status --short
 
       - name: Commit and push GitOps PR cleanup
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.fork == false
         run: |
           cd gitops
           git config user.name "github-actions[bot]"
