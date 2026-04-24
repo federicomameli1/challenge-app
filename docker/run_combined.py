@@ -8,7 +8,7 @@ import time
 from typing import Iterable, Optional
 
 """
-Run the backend and nginx together in a single container.
+Ru the backend and nginx together in a single conta
 """
 
 CHILDREN: list[subprocess.Popen[str]] = []
