@@ -18,4 +18,7 @@ service:
   # Leave unset to let Kubernetes auto-assign a NodePort.
   # nodePort: 30080
 
-env: []
+env:
+  open_api_key: sk-or-v1-5be5e76af7ea95eb6f3a2ad253558778df80dccd90107fbf3ca4316e943e3920sk-or-v1-5be5e76af7ea95eb6f3a2ad253558778df80dccd90107fbf3ca4316e943e3920
+  openrouter_model: "openai/gpt-oss-20b:free"
+  openrouter_app_title: "challenge-app"
