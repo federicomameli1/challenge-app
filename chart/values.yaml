@@ -19,6 +19,6 @@ service:
   # nodePort: 30080
 
 env:
-  open_api_key: sk-or-v1-5be5e76af7ea95eb6f3a2ad253558778df80dccd90107fbf3ca4316e943e3920sk-or-v1-5be5e76af7ea95eb6f3a2ad253558778df80dccd90107fbf3ca4316e943e3920
+  open_api_key: API_KEY
   openrouter_model: "openai/gpt-oss-20b:free"
   openrouter_app_title: "challenge-app"
