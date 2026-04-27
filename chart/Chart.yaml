@@ -1,6 +1,6 @@
 apiVersion: v2
-name: challenge-app-chart
+appVersion: 1.0.0
 description: Helm chart for the Hitachi challenge app
+name: challenge-app-chart
 type: application
-version: 0.1.2
-appVersion: "1.0.0"
+version: 0.1.3
