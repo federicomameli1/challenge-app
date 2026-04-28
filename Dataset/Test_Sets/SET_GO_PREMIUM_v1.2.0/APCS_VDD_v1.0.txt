@@ -1,0 +1,74 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.2.0
+Release: v1.2.0
+Date issued: 15-Apr-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+The v1.2.0 release candidate has completed the validation campaign
+with full PASS coverage on the mandatory regression set. The single
+hard blocker carried over from v1.1.2 (BLK-2026-017, occupancy
+calculation under rapid updates) has been closed with explicit
+evidence (CLOSURE-EVID-2026-017). No new defects were opened during
+the campaign. The release is recommended for TEST promotion.
+
+----------------------------------------------------------------
+2. Scope & evidence inventory
+----------------------------------------------------------------
+
+In scope:
+  - Backend, integration-layer, hmi (mandatory modules)
+  - Auth-proxy, metrics-agent (non-mandatory but exercised)
+
+Evidence inventory:
+  - Test execution log (Jenkins job #4179)
+  - Signed manifest with SHA256 hashes
+  - Continuity closure record CLOSURE-EVID-2026-017
+  - QA non-blocking remarks ledger QA-NOTE-2026-058
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  Mandatory tests       : 47/47 PASS
+  Functional regression : 0 FAIL, 0 BLOCKED
+  Non-functional        : within target (latency p95 312 ms)
+  Open critical defects : 0
+  Open Agent4 blockers  : 0 (BLK-2026-017 closed with evidence)
+  Configuration drift   : none across DEV/INT/STG
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+The continuity gate from the previous v1.1.2 review is closed.
+Closure was countersigned by Backend Tech Lead and QA Lead on
+13-Apr-2026. The closure evidence is attached to the gate record
+and was independently reviewed by the QA Lead on 15-Apr-2026.
+
+No governance hold remains. No conflicting stakeholder position
+was raised during the campaign.
+
+----------------------------------------------------------------
+5. Risks & residual remarks
+----------------------------------------------------------------
+
+Two pre-existing non-blocking remarks are carried forward into the
+TEST promotion:
+  - T-APCS-009 occasional 250 ms publish jitter on idle channel.
+  - T-APCS-014 cosmetic HMI label spacing.
+Both are tracked under QA-NOTE-2026-058 and are scheduled for
+cleanup in the v1.3.0 grooming cycle. Neither affects functional
+correctness or the promotion gate.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+All mandatory tests passed. No open blocker. No version drift.
+Continuity closure is explicit and countersigned. The release
+candidate is approved for TEST promotion.
+
+Sign-off: Project Manager, QA Lead, CM Lead - 15-Apr-2026.

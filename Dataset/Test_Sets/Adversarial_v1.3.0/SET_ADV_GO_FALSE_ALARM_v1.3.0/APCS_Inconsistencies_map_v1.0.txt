@@ -1,0 +1,49 @@
+APCS Inconsistencies Map - Release v1.3.0
+Document ID: APCS-INC-1.3.0
+Generated: 03-May-2026
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: T-APCS-004 final status
+  Sources:
+    - Email 02-May 08:14 (Marco Rossi): FAIL preliminare
+    - Email 02-May 11:02 (Luca Bianchi): root cause = TEA, re-run PASS
+    - Email 02-May 14:35 (Marco Rossi): conferma PASS, ticket chiuso
+    - Test Procedure: PASS finale (50/50 dopo bench rigenerato)
+    - VDD section 3: 7/7 PASS
+    - Requirements REQ-APCS-001: PASS
+  Status: CONSISTENT (final verdict)
+  Caveat: la prima email di apertura (08:14) è informativa storica e
+  NON rappresenta lo stato finale. La cronologia è risolutiva.
+
+Check 2: Continuity carry-over
+  Sources: QA Lead email, Test Procedure section 3, VDD section 4
+  Reported value: nessun carry-over (BLK-2026-017 chiuso al ciclo prec.)
+  Status: CONSISTENT
+
+Check 3: Module versions
+  Sources: MVI, Emails (Sara Neri)
+  Status: CONSISTENT (tutti i moduli a v1.3.0 in tutti gli env)
+
+Check 4: TEA archiviazione
+  Sources: Email 14:35, Test Procedure (INV-2026-091), VDD section 2,
+           Requirements REQ-APCS-301
+  Status: CONSISTENT (tutti i documenti classificano l'evento come
+                     test environment artifact, non product defect)
+
+Check 5: Promotion authorization
+  Sources: PM email 03-May 16:00, VDD section 6
+  Reported value: APPROVED
+  Status: CONSISTENT
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+Nessuna inconsistenza nel verdetto finale. Le occorrenze di linguaggio
+"blocker / fail / unresolved" presenti nelle email iniziali si
+riferiscono al pre-triage e sono superate dalla risoluzione documentata
+nelle email successive dello stesso thread. Tutti i documenti convergono
+su GO.

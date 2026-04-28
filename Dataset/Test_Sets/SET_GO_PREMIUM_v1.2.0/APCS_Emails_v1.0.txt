@@ -1,0 +1,99 @@
+Subject: [APCS] Release candidate v1.2.0 - build artifacts published
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: QA Team; Release Engineering
+Cc: Project Manager
+Date: 14-Apr-2026 09:12
+
+Team,
+
+build artifacts for the v1.2.0 release candidate have been promoted to the
+shared registry under tag apcs-rc-1.2.0+build.4179. SHA256 checksums attached
+to the build manifest match the signed Jenkins record (job #4179). Backend,
+integration-layer and hmi were rebuilt on the same toolchain (gcc 13.2,
+node 20.12.2) to guarantee binary determinism.
+
+Validation can begin against build.4179. No additional rebuilds are scheduled
+unless QA reports a regression.
+
+Best regards,
+Luca
+
+---
+
+Subject: RE: [APCS] Release candidate v1.2.0 - build artifacts published
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Luca Bianchi
+Cc: QA Team; Project Manager
+Date: 14-Apr-2026 14:48
+
+Luca,
+
+QA has finished the regression sweep on build.4179 across the three
+environments (DEV, INT, STG). All 47 mandatory test cases were re-executed.
+Result: 47 PASS / 0 FAIL / 0 BLOCKED. The two known minor remarks from
+the previous gate (T-APCS-009 occasional 250ms publish jitter, and
+T-APCS-014 cosmetic HMI label spacing) are still present but explicitly
+classified as non-blocking by the QA Lead with reference QA-NOTE-2026-058.
+
+No new defects opened. No regression on previously failing test T-APCS-004
+which was the v1.1.2 blocker - it is now PASS in 30/30 consecutive runs
+under the rapid-update load profile.
+
+Marco
+
+---
+
+Subject: RE: [APCS] Release candidate v1.2.0 - build artifacts published
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: Luca Bianchi; Marco Rossi
+Date: 14-Apr-2026 16:05
+
+Configuration management report for v1.2.0:
+
+- Module Version Inventory aligned across DEV/INT/STG (see attachment).
+- All deployed components match the planned manifest.
+- Integration-layer signed handshake verified against the new schema v3.
+- HMI bundle hash matches the artifact registry.
+
+There is no open blocker, no unresolved runtime defect, and no pending
+governance item. Configuration is locked for promotion. From a CM
+standpoint we are aligned and ready for TEST promotion.
+
+Sara
+
+---
+
+Subject: RE: [APCS] Release candidate v1.2.0 - Agent4 continuity gate
+From: QA Lead <qa.lead@apcs.example>
+To: Project Manager
+Cc: Sara Neri; Marco Rossi
+Date: 15-Apr-2026 08:30
+
+Continuity check vs previous gate v1.1.2:
+
+- The Agent4 hard blocker BLK-2026-017 (occupancy calculation under rapid
+  updates) was formally closed on 13-Apr-2026 with closure evidence
+  CLOSURE-EVID-2026-017 attached to the ticket. Closure was countersigned
+  by Backend Tech Lead and QA Lead.
+- The continuity item from the previous gate is therefore resolved with
+  explicit closure evidence. No open carry-over remains.
+
+Recommendation: proceed with TEST promotion.
+
+QA Lead
+
+---
+
+Subject: [APCS] Promotion authorization v1.2.0
+From: Project Manager <pm@apcs.example>
+To: All
+Date: 15-Apr-2026 11:00
+
+Based on the converging confirmations from QA, CM and the continuity
+review, I authorize the TEST promotion for v1.2.0 on 16-Apr-2026 at 09:00.
+
+There is no open blocker. All mandatory regressions have been re-executed
+and pass. Continuity from v1.1.2 is closed with explicit evidence.
+
+Project Manager

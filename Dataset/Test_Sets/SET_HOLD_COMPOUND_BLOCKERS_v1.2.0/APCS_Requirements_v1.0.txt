@@ -1,0 +1,64 @@
+APCS Requirements - Release v1.2.0
+Document ID: APCS-REQ-1.2.0
+Author: Systems Engineering
+Last revision: 21-Apr-2026
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly under
+rapid passenger count updates (25 evt/s sustained for 5 minutes).
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-004
+
+REQ-APCS-002: Backend shall classify occupancy levels consistently
+around configured threshold boundaries.
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-006
+
+REQ-APCS-003: Integration layer publishing shall complete without
+ordering anomalies that affect the calculation in the rapid-update path.
+  Module: integration-layer
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-004 (ordering invariant), T-APCS-009
+
+----------------------------------------------------------------
+Governance requirements
+----------------------------------------------------------------
+
+REQ-APCS-010: Phase 5 must include explicit closure for unresolved
+Agent4 hard blockers carried over from previous gates.
+  Module: governance
+  Priority: HIGH
+  Mandatory: true
+
+REQ-APCS-011: Promotion is blocked without formal closure evidence
+attached to each carried-over blocker.
+
+REQ-APCS-012: Workarounds applied locally on test benches do not
+constitute release evidence. Fixes must be incorporated in a new
+official build before they can be considered effective.
+
+REQ-APCS-013: Promotion is blocked while any mandatory test case is in
+"pending validation" state.
+
+----------------------------------------------------------------
+Status snapshot (as of 24-Apr-2026 09:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  FAIL    - T-APCS-004 still failing on rapid-update path.
+REQ-APCS-002  PENDING - T-APCS-006 not re-executed on build.4222.
+REQ-APCS-003  PARTIAL - root cause confirmed in integration-layer; local
+                        workaround proves the fix but no new official
+                        version was generated.
+REQ-APCS-010  FAIL    - BLK-2026-017 carried over without closure.
+REQ-APCS-011  FAIL    - no formal closure evidence attached.
+REQ-APCS-012  FAIL    - the fix exists only as a local debounce on the
+                        test bench, not in any signed manifest.
+REQ-APCS-013  FAIL    - T-APCS-006 in pending validation.

@@ -1,0 +1,44 @@
+APCS Inconsistencies Map - Release v1.2.0
+Document ID: APCS-INC-1.2.0
+Generated: 15-Apr-2026
+
+Purpose: cross-document consistency check across emails, requirements,
+module versions, test procedure and VDD.
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: Release identifier consistency
+  Sources: Emails, MVI, Test Procedure, VDD, Requirements
+  Reported value: v1.2.0 (apcs-rc-1.2.0+build.4179)
+  Status: CONSISTENT
+
+Check 2: Build hash consistency
+  Sources: MVI, Emails (build.4179), Test Procedure header
+  Status: CONSISTENT
+
+Check 3: Mandatory test count
+  Sources: Test Procedure summary (47), VDD section 3 (47/47)
+  Status: CONSISTENT
+
+Check 4: Continuity closure
+  Sources: QA Lead email (CLOSURE-EVID-2026-017),
+           VDD section 4, Test Procedure section 3
+  Status: CONSISTENT - all three reference the same closure record.
+
+Check 5: Open blocker count
+  Sources: Emails, VDD, Test Procedure
+  Reported value: 0
+  Status: CONSISTENT
+
+Check 6: Non-blocking remarks ledger
+  Sources: Emails (QA-NOTE-2026-058), Test Procedure, VDD section 5
+  Status: CONSISTENT - the same two remarks are listed in all three.
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+No inconsistencies detected. No conflicting stakeholder position.
+The evidence set is internally aligned.

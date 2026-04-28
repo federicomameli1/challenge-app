@@ -1,0 +1,69 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.1.0
+Release: v1.1.0
+Date issued: 10-Apr-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+The v1.1.0 promotion gate cannot be cleared. The production-equivalent
+environment is still running backend v1.0.0 while the planned manifest
+declares v1.1.0. As a result, functional evidence collected on the
+mismatched environment is not admissible for TEST promotion. Two
+governance requirements (REQ-APCS-201, REQ-APCS-202) are violated.
+
+The recommendation is to HOLD until a new official backend build is
+deployed across all environments, after which the regression must be
+re-executed.
+
+----------------------------------------------------------------
+2. Scope & evidence inventory
+----------------------------------------------------------------
+
+In scope:
+  - backend, integration-layer, hmi (mandatory)
+  - auth-proxy, metrics-agent (non-mandatory)
+
+Evidence inventory:
+  - Module Version Inventory snapshot (10-Apr-2026 12:00 UTC)
+  - Test execution log on STG
+  - Stakeholder communication thread (Operations, QA, CM, PM)
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  Admissible PASS         : 1 (integration only)
+  Pending validation      : 5 (require aligned environment)
+  Governance violations   : 2 (REQ-APCS-201, REQ-APCS-202)
+  Open blockers           : 1 (backend version drift on STG/PROD)
+  Configuration drift     : YES, backend planned v1.1.0 vs deployed v1.0.0
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+The previous gate continuity items cannot be re-evaluated until the
+backend version drift is closed. The signed manifest does not constitute
+proof of alignment because the deployment record contradicts the manifest.
+
+----------------------------------------------------------------
+5. Risks
+----------------------------------------------------------------
+
+  - Risk: misleading evidence. Functional regression on STG was executed
+    against v1.0.0 backend; results are not representative of v1.1.0.
+  - Risk: promotion under drift. Promoting v1.1.0 while production is
+    still using v1.0.0 would create a known-mismatch state.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+HOLD. Generate a new official backend build aligned to v1.1.0, deploy
+it to STG and PROD, then re-execute T-APCS-004, T-APCS-006 and the
+remaining functional regression. Re-issue this VDD against the aligned
+environment.
+
+Sign-off: pending - HOLD acknowledged by Project Manager on 10-Apr-2026.

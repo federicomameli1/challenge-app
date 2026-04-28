@@ -1,0 +1,83 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.3.3
+Release: v1.3.3
+Date issued: 19-May-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+La regression funzionale del ciclo v1.3.3 è verde (47/47 PASS, soak 6h
+stabile, manifest e ambienti allineati). La promotion gate NON è
+cleared per ragioni di continuity:
+
+  - Il sign-off iniziale del 18-May citava CLOSURE-EVID-2026-031 come
+    chiusura di BLK-2026-017. Quella evidence appartiene in realtà al
+    ticket OPS-2026-031 (memory leak metrics-agent) e non a
+    BLK-2026-017.
+  - Il QA Lead, in fase di verifica, ha rilevato il mismatch.
+  - L'autore del sign-off (Marco Rossi) ha confermato l'errore di copia
+    e ha ritirato formalmente la parte continuity del proprio sign-off.
+  - BLK-2026-017 risulta ancora OPEN sull'archive ticketing.
+
+Per REQ-APCS-601 e REQ-APCS-602 la continuity gate non è cleared.
+
+----------------------------------------------------------------
+2. Trappola di traceability (lettura obbligatoria)
+----------------------------------------------------------------
+
+L'errore documentato in questo bundle è di tipo cross-reference:
+una stringa identificativa apparentemente plausibile
+(CLOSURE-EVID-2026-031) viene presentata come closure di un ticket
+(BLK-2026-017) di cui in realtà non è la closure. Il sistema di analisi
+deve verificare che gli ID citati come closure evidence corrispondano
+effettivamente al ticket dichiarato, e non limitarsi a rilevare la
+presenza testuale di una stringa "CLOSURE-EVID-*".
+
+Indizi diagnostici nel bundle:
+  - Email QA Lead 19-May 10:00: ricostruisce il mismatch.
+  - Email Marco Rossi 19-May 14:22: si auto-corregge.
+  - Email Operations 19-May 16:00: conferma che i due ticket sono
+    distinti e non fungibili.
+  - MVI sezione carry-over: documenta che BLK-2026-017 è OPEN e che
+    CLOSURE-EVID-2026-031 appartiene a OPS-2026-031.
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  Functional               : 47/47 PASS
+  Continuity gate          : NOT CLOSED
+  Carry-over open          : 1 (BLK-2026-017)
+  Configuration drift      : nessuno
+  Open product defects     : 1 (BLK-2026-017, carry-over)
+  PM authorization         : non emessa
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+REQ-APCS-601 violato (closure evidence non appartenente al ticket).
+REQ-APCS-602 violato (verifica QA Lead ha riscontrato il mismatch).
+REQ-APCS-603 attivato (correzione formale di un sign-off precedente).
+
+----------------------------------------------------------------
+5. Risks
+----------------------------------------------------------------
+
+  - Risk di promotion sotto carry-over OPEN.
+  - Risk di precedente di by-pass: accettare l'ID errato come closure
+    indebolirebbe la regola di traceability per i cicli successivi.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+HOLD. Azioni richieste:
+  1. Promuovere effettivamente la fix-candidate di BLK-2026-017 ad
+     uno stato closed con evidence dedicata.
+  2. Generare CLOSURE-EVID-2026-XXX collegata a BLK-2026-017.
+  3. Rieseguire il continuity check con il nuovo riferimento.
+  4. Rieseguire i test correlati a BLK-2026-017 sulla build.
+
+Sign-off: NON EMESSO. Promotion non autorizzata in data 19-May-2026.

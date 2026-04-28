@@ -1,0 +1,22 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.2.0
+Generated: 14-Apr-2026 18:40 UTC
+Source of truth: artifact registry tag apcs-rc-1.2.0+build.4179
+
+Module             Planned     Deployed    Mandatory   Build hash (short)   Status
+backend            v1.2.0      v1.2.0      true        a91f3c2              match
+integration-layer  v1.2.0      v1.2.0      true        7d4b8e1              match
+hmi                v1.2.0      v1.2.0      true        c5e2a09              match
+auth-proxy         v1.2.0      v1.2.0      false       2f8b6d4              match
+metrics-agent      v1.2.0      v1.2.0      false       9a1c7e3              match
+
+Environment alignment:
+  DEV  : all five modules at v1.2.0
+  INT  : all five modules at v1.2.0
+  STG  : all five modules at v1.2.0
+
+Notes:
+  - No version drift across environments.
+  - No module is running an older or alternate version.
+  - The signed manifest from Jenkins job #4179 was verified by CM (Sara Neri).
+  - No rollback package was needed.

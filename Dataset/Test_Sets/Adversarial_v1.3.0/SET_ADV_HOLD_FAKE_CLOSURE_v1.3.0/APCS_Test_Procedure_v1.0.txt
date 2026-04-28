@@ -1,0 +1,66 @@
+APCS Test Procedure - Release v1.3.3
+Document ID: APCS-TP-1.3.3
+Test campaign window: 16-May-2026 to 18-May-2026
+Build under test: apcs-rc-1.3.3+build.4801
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Manifest signature                                 PASS
+  1.2 Module version alignment                           PASS
+  1.3 Continuity carry-over identification               COMPLETED
+       Carry-over identificati: BLK-2026-017 (da v1.1.2 in poi).
+
+----------------------------------------------------------------
+Section 2: regression
+----------------------------------------------------------------
+
+  Mandatory tests : 47
+  Eseguiti        : 47
+  PASS            : 47
+  FAIL            : 0
+  Soak 6 h        : stabile
+
+  Verdetto funzionale: VERDE.
+
+----------------------------------------------------------------
+Section 3: continuity gate verification
+----------------------------------------------------------------
+
+  Initial assertion (Marco Rossi, 18-May 09:30):
+    Closure evidence dichiarata per BLK-2026-017:
+    CLOSURE-EVID-2026-031.
+
+  Verification (QA Lead, 19-May 10:00):
+    Lookup di CLOSURE-EVID-2026-031 sull'archive ticketing.
+    Risultato: la evidence è collegata a OPS-2026-031, non a
+    BLK-2026-017.
+    Lookup di BLK-2026-017:
+      Stato : OPEN
+      Ultima nota: 28-Apr-2026 (fix-candidate failed soak test)
+      Closure evidence collegata: NESSUNA.
+
+  Reconciliation (Marco Rossi, 19-May 14:22):
+    Sign-off del 18-May ritirato per la sola parte continuity.
+    Errore: copia di ID dal foglio "ultime closure del mese"
+    senza ricontrollo del mapping ticket→evidence.
+    BLK-2026-017 confermato OPEN.
+
+  Verdetto continuity gate:
+    REQ-APCS-601: FAIL (closure evidence non collegata al ticket)
+    REQ-APCS-602: FAIL rilevato e poi corretto dalla verifica QA Lead
+    REQ-APCS-603: TRIGGER attivato (correzione formale del sign-off)
+    Status: NON CHIUSA
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Functional verdict       : 47/47 PASS
+  Continuity gate          : NOT CLOSED
+  Carry-over open          : 1 (BLK-2026-017)
+  Stakeholder consensus    : convergente su HOLD (Marco si è corretto,
+                             QA Lead conferma, Operations supporta)
+  Final sign-off           : NON EMESSO
+                             Promotion gate: NON CLEARED

@@ -1,0 +1,98 @@
+Subject: [APCS] v1.3.3 - regression chiusa
+From: Marco Rossi <marco.rossi@apcs.example>
+To: QA Team
+Cc: Project Manager
+Date: 18-May-2026 09:30
+
+Team,
+
+regression su build apcs-rc-1.3.3+build.4801 chiusa. Risultato:
+
+  Mandatory tests: 47/47 PASS
+  Soak: 6h stabile
+  Continuity gate (BLK-2026-017): chiuso con evidence
+  CLOSURE-EVID-2026-031.
+
+Procedo a sign-off.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.3.3 - regression chiusa
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: Marco Rossi
+Date: 18-May-2026 11:18
+
+Manifest e ambienti allineati. Nessuna non conformità CM.
+
+Sara
+
+---
+
+Subject: RE: [APCS] v1.3.3 - continuity check
+From: QA Lead <qa.lead@apcs.example>
+To: Project Manager
+Cc: Marco Rossi
+Date: 19-May-2026 10:00
+
+PM,
+
+ho riguardato la closure evidence dichiarata da Marco. Il riferimento
+CLOSURE-EVID-2026-031 esiste nel sistema di ticketing, ma è la closure
+evidence dell'incident OPS-2026-031 (memory leak metrics-agent),
+chiuso il 04-May, NON di BLK-2026-017 (occupancy under rapid updates).
+
+Ho verificato manualmente sull'archive ticketing:
+  - BLK-2026-017 risulta ancora in stato OPEN.
+  - L'ultima nota su BLK-2026-017 è del 28-Apr e segnala che la
+    fix-candidate aveva fallito un test di soak; non sono state
+    aggiunte note successive.
+  - Nessun documento CLOSURE-EVID-* è effettivamente collegato a
+    BLK-2026-017.
+
+Sospetto che Marco abbia copiato l'ID closure dal ticket sbagliato.
+Prima della promotion serve la closure effettiva di BLK-2026-017,
+non quella di OPS-2026-031.
+
+QA Lead
+
+---
+
+Subject: RE: [APCS] v1.3.3 - continuity check
+From: Marco Rossi <marco.rossi@apcs.example>
+To: QA Lead
+Cc: Project Manager; Sara Neri
+Date: 19-May-2026 14:22
+
+QA Lead, hai ragione, mi scuso per l'errore di copia. Ho preso l'ID dal
+foglio "ultime closure del mese" senza ricontrollare il mapping.
+
+Verifico subito: BLK-2026-017 risulta effettivamente OPEN. Non c'è una
+closure-evidence collegata. La fix-candidate del 28-Apr era ancora in
+review e nessuno l'ha promossa.
+
+In sintesi: la mia email del 18-May è errata sulla parte di continuity.
+Il resto (47/47 PASS, soak stabile) resta valido, ma la continuity
+gate NON è chiusa per questo ciclo. Mi correggo formalmente.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.3.3 - continuity check
+From: Operations <ops@apcs.example>
+To: Project Manager
+Cc: QA Lead; Marco Rossi
+Date: 19-May-2026 16:00
+
+Confermo dal nostro lato: OPS-2026-031 (memory leak metrics-agent) e
+BLK-2026-017 (occupancy under rapid updates) sono ticket diversi, su
+moduli diversi, di severity diversa. Non sono fungibili.
+
+La promotion di v1.3.3 con BLK-2026-017 ancora OPEN ricadrebbe nello
+stesso scenario del v1.1.2 (continuity unresolved). Da Operations
+suggeriamo HOLD.
+
+Operations

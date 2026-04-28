@@ -1,0 +1,66 @@
+APCS Inconsistencies Map - Release v1.3.3
+Document ID: APCS-INC-1.3.3
+Generated: 19-May-2026
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: Closure evidence ↔ ticket mapping
+  Sources:
+    - Email Marco Rossi 18-May 09:30: BLK-2026-017 closed con
+      CLOSURE-EVID-2026-031.
+    - Email QA Lead 19-May 10:00: CLOSURE-EVID-2026-031 appartiene a
+      OPS-2026-031, non a BLK-2026-017.
+    - MVI carry-over: idem.
+    - Email Operations 19-May 16:00: idem, ticket non fungibili.
+    - Email Marco Rossi 19-May 14:22: si auto-corregge.
+  Status: INCONSISTENT (asserzione iniziale vs. realtà ticketing)
+  Detail: la stringa CLOSURE-EVID-2026-031 esiste, ma è la closure di
+  un ticket diverso. Lo stato vero di BLK-2026-017 è OPEN.
+
+Check 2: Stato di BLK-2026-017
+  Sources:
+    - Email iniziale: dichiarato CLOSED
+    - Verifica QA Lead: OPEN
+    - Auto-correzione Marco Rossi: OPEN
+    - MVI: OPEN
+    - VDD section 1: OPEN
+  Status: la prima asserzione è ERRATA, le altre quattro sono
+  CONSISTENT su OPEN.
+  Verdetto: lo stato vero è OPEN.
+
+Check 3: Functional regression
+  Sources: tutti i documenti
+  Reported value: 47/47 PASS
+  Status: CONSISTENT
+
+Check 4: Promotion recommendation
+  Sources: VDD section 6, Test Procedure section 4
+  Reported value: HOLD
+  Status: CONSISTENT
+  Caveat: il bundle contiene una iniziale dichiarazione di chiusura
+  che, se letta in isolamento, farebbe pensare a GO. La risoluzione
+  cronologica del thread porta tutti gli stakeholder su HOLD.
+
+----------------------------------------------------------------
+Trappole per analizzatore automatico
+----------------------------------------------------------------
+
+  - Pattern di traceability errato: la presenza di una stringa
+    CLOSURE-EVID-* non implica chiusura del ticket dichiarato. Serve
+    verifica del binding evidence↔ticket.
+  - Ordinamento temporale: la prima email dichiara closure, le
+    successive la smentiscono. Un sistema che pesa solo la prima
+    affermazione (o l'ultima, senza contesto) può sbagliare verdetto.
+  - Convergenza tardiva: la posizione finale di tutti gli stakeholder
+    è coerente su HOLD, ma il bundle contiene esplicitamente una
+    asserzione iniziale opposta che non viene cancellata, solo
+    corretta da successive.
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+Una inconsistenza di traceability rilevata e documentata. Stato finale
+del bundle: HOLD per continuity non chiusa (BLK-2026-017 OPEN).

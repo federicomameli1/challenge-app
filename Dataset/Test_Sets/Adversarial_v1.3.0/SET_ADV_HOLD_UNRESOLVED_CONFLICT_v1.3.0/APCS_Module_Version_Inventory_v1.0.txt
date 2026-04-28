@@ -1,0 +1,36 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.3.2
+Generated: 11-May-2026 18:00 UTC
+Source of truth: artifact registry tag apcs-rc-1.3.2+build.4720
+
+Module             Planned   Deployed   Mandatory   Build hash    Status
+backend            v1.3.2    v1.3.2     true        e7c3f04       match
+integration-layer  v1.3.2    v1.3.2     true        c81a7d6       match
+hmi                v1.3.2    v1.3.2     true        d2e9b30       match
+auth-proxy         v1.3.2    v1.3.2     false       a17c4f8       match
+metrics-agent      v1.3.2    v1.3.2     false       9f0d2a5       match
+
+Environment alignment:
+  DEV         : tutti i moduli a v1.3.2
+  INT         : tutti i moduli a v1.3.2
+  STG         : tutti i moduli a v1.3.2
+  PROD-MIRROR : tutti i moduli a v1.3.2 (allineamento runtime confermato)
+
+----------------------------------------------------------------
+Operational telemetry (informativa)
+----------------------------------------------------------------
+
+Modulo backend - consumo memoria steady state:
+  v1.3.1 (ciclo precedente)   : 1.40 GB
+  v1.3.2 (corrente)           : 1.93 GB
+  Delta                       : +38%
+  Headroom su nodi PROD       : ~2.10 GB
+  Margine residuo             : 170 MB (vs 700 MB del ciclo precedente)
+
+Tracking ticket aperto: OPS-2026-204 (sizing review backend v1.3.2),
+stato OPEN, owner Operations.
+
+Note:
+  - Configuration management non rileva non conformità di versione.
+  - Il rischio operativo è documentato dalla telemetria ma non rientra
+    in nessun mandatory test della suite v1.3.2.

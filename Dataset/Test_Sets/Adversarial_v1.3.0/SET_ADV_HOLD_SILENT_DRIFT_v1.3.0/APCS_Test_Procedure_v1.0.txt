@@ -1,0 +1,66 @@
+APCS Test Procedure - Release v1.3.1
+Document ID: APCS-TP-1.3.1
+Test campaign window: 06-May-2026 to 07-May-2026
+Build under test: apcs-rc-1.3.1+build.4612
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Manifest signature                                 PASS
+  1.2 MVI manifest-side alignment                        PASS
+  1.3 Runtime hash health-check (PROD-MIRROR backend)    PARZIALE
+       2/3 nodi coincidono col manifest, 1/3 a build precedente.
+       Riferimento: CM-2026-073.
+
+----------------------------------------------------------------
+Section 2: regression
+----------------------------------------------------------------
+
+  Tests pianificati come mandatory : 47
+  Tests eseguiti                   : 47
+
+  Verdetti:
+    T-APCS-004  PASS
+    T-APCS-005  PASS
+    T-APCS-006  PASS
+    T-APCS-007  PASS
+    T-APCS-009  PASS
+    T-APCS-010  PASS
+    T-APCS-014  PASS
+    ... (38 ulteriori test mandatory) ...
+    T-APCS-031  cosmetic remark (label spacing) - non-blocking
+    T-APCS-038  cosmetic remark (timezone formatting) - non-blocking
+
+  Conteggio finale:
+    PASS               : 45
+    Cosmetic remarks   : 2
+    Strict PASS rate   : 45 / 47 = 95.74%
+
+  Conformità a REQ-APCS-401:
+    REQ-APCS-401 richiede 47/47 PASS oppure deroga PM formalizzata
+    su ticket. Allo stato corrente la deroga NON è formalizzata.
+    Verdetto: NON CONFORME.
+
+----------------------------------------------------------------
+Section 3: governance & runtime alignment
+----------------------------------------------------------------
+
+  Runtime hash check (REQ-APCS-402)
+    Drift osservato sul nodo #2 backend di PROD-MIRROR
+    (manifest b4f2e91 vs runtime a91f3c2).
+    Verdetto: NON CONFORME, ticket CM-2026-073 OPEN.
+
+  CM ticket gate (REQ-APCS-403)
+    CM-2026-073 OPEN, non chiuso, non derogato.
+    Verdetto: NON CONFORME.
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Functional verdict       : verde (45 PASS + 2 cosmetic)
+  Governance verdict       : 3 non conformità formali
+                             (REQ-APCS-401, REQ-APCS-402, REQ-APCS-403)
+  Final sign-off           : NON APPROVATO finché le 3 non conformità
+                             non sono chiuse o esplicitamente derogate.

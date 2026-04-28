@@ -1,0 +1,69 @@
+APCS Inconsistencies Map - Release v1.3.1
+Document ID: APCS-INC-1.3.1
+Generated: 07-May-2026
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: Mandatory tests count
+  Sources:
+    - Email Marco Rossi 06-May 16:30: 45/47 PASS, 2 cosmetic
+    - Test Procedure section 2: 45 PASS / 2 cosmetic / 47 total
+    - Requirements: tests planned 47, executed 47, PASS 45
+    - VDD section 3: PASS 45/47
+  Status: NUMERICAMENTE CONSISTENT
+  Caveat: 45/47 viola REQ-APCS-401 in assenza di deroga PM. La deroga
+  non è citata in nessun documento.
+
+Check 2: Manifest hash backend
+  Sources:
+    - MVI: b4f2e91
+    - Operations email 07-May 14:48: hash dichiarato b4f2e91
+    - Email Sara Neri 07-May 17:05: conferma manifest b4f2e91
+  Status: CONSISTENT (manifest)
+
+Check 3: Runtime hash backend
+  Sources:
+    - Operations email 07-May 14:48: nodo #2 a91f3c2
+    - MVI sezione Runtime observations: nodo #2 a91f3c2
+    - Email Sara Neri: conferma drift
+  Status: CONSISTENT (telemetria)
+
+Check 4: Concordanza fra manifest e runtime
+  Sources: MVI tabella principale ("match") vs MVI Runtime observations
+           (drift su nodo #2)
+  Status: INCONSISTENT
+  Detail: la tabella principale dichiara "match" ma la sezione runtime
+  della stessa MVI documenta che il nodo #2 di PROD-MIRROR riporta una
+  build precedente. Questa è la inconsistenza chiave: lettori del solo
+  riassunto tabellare la perdono, lettori dell'intero documento la
+  trovano. REQ-APCS-402 è violato.
+
+Check 5: CM ticket
+  Sources: Sara Neri email, MVI, Test Procedure section 3, VDD section 4
+  Reported value: CM-2026-073 OPEN, non derogato
+  Status: CONSISTENT (tutti i documenti riportano lo stato OPEN)
+
+Check 6: Promotion recommendation
+  Sources: VDD section 6, Test Procedure section 4
+  Reported value: HOLD
+  Status: CONSISTENT
+  Caveat: nessuna email del thread usa esplicitamente la parola "HOLD"
+  o "blocker". Il verdetto HOLD emerge dal cumulo di non conformità di
+  governance, non da un'email autorizzativa esplicita. Lettori
+  superficiali del solo thread email possono concludere erroneamente GO.
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+Una inconsistenza strutturale fra MVI tabella e MVI runtime osservato.
+Tre non conformità di governance non chiuse (REQ-APCS-401, 402, 403).
+Nessuna deroga PM formalizzata. Verdetto: HOLD.
+
+Trappola per analizzatori automatici: il bundle non contiene parole
+trigger come "fail", "blocker", "unresolved", "production is still
+using v1.0.0". Il drift è espresso solo come differenza fra hash
+esadecimali e come stato OPEN di un ticket CM. Il sistema deve fare
+ragionamento cross-document, non match lessicale.

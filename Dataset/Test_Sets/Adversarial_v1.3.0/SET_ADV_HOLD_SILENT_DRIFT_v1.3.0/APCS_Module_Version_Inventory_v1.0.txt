@@ -1,0 +1,47 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.3.1
+Generated: 07-May-2026 09:00 UTC (manifest-derived)
+Source of truth: artifact registry tag apcs-rc-1.3.1+build.4612
+
+Module             Planned   Deployed   Mandatory   Manifest hash   Status
+backend            v1.3.1    v1.3.1     true        b4f2e91         match
+integration-layer  v1.3.1    v1.3.1     true        c81a7d6         match
+hmi                v1.3.1    v1.3.1     true        d2e9b30         match
+auth-proxy         v1.3.1    v1.3.1     false       a17c4f8         match
+metrics-agent      v1.3.1    v1.3.1     false       9f0d2a5         match
+
+----------------------------------------------------------------
+IMPORTANTE - lettura della tabella
+----------------------------------------------------------------
+
+La colonna "Status" è calcolata confrontando "Planned" e "Deployed"
+secondo il manifest del registry, NON eseguendo un health-check runtime
+sui nodi del cluster. Per la dichiarazione runtime vedere la sezione
+"Runtime observations".
+
+----------------------------------------------------------------
+Runtime observations (PROD-MIRROR, telemetria health-check)
+----------------------------------------------------------------
+
+Modulo backend:
+  Hash dichiarato (manifest)  : b4f2e91
+  Hash osservato sul nodo #1  : b4f2e91   (coincide)
+  Hash osservato sul nodo #2  : a91f3c2   (NON coincide - build precedente)
+  Hash osservato sul nodo #3  : b4f2e91   (coincide)
+
+Tracking ticket CM aperto: CM-2026-073
+Stato CM-2026-073: OPEN, non risolto, non derogato.
+
+Modulo integration-layer, hmi, auth-proxy, metrics-agent:
+  Tutti i nodi del cluster riportano hash coincidente con il manifest.
+
+----------------------------------------------------------------
+Note
+----------------------------------------------------------------
+
+- La rolling deploy del backend ha lasciato nodo #2 a una build
+  precedente. La tabella MVI sopra dichiara "match" perché legge il
+  manifest, non lo stato runtime.
+- Per REQ-APCS-402 questo costituisce drift fra dichiarato e deployato.
+- Il signed manifest è formalmente corretto, ma non riflette lo stato
+  effettivo del cluster.

@@ -1,0 +1,79 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.3.1
+Release: v1.3.1
+Date issued: 07-May-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+La validation campaign su build.4612 ha prodotto un quadro
+funzionalmente verde (45 PASS + 2 remarks cosmetici) ma ha rivelato
+tre non conformità di governance che impediscono la promotion gate
+nello stato attuale:
+
+  - REQ-APCS-401: 45/47 PASS senza deroga PM formalizzata.
+  - REQ-APCS-402: drift hash backend manifest=b4f2e91 vs runtime=a91f3c2
+                  su 1 nodo di PROD-MIRROR.
+  - REQ-APCS-403: ticket CM-2026-073 aperto e non derogato.
+
+Il manifest è formalmente firmato e corretto. La tabella MVI dichiara
+"match" perché generata dal manifest, ma non riflette lo stato runtime.
+Tutte le segnalazioni sono documentate ma il PM non ha ancora emesso
+deroga formale, quindi la promotion non può procedere.
+
+----------------------------------------------------------------
+2. Scope & evidence
+----------------------------------------------------------------
+
+  - Test execution log: 47 mandatory tests eseguiti.
+  - Manifest signed: tutti i 5 moduli a v1.3.1.
+  - Runtime telemetria: 1 nodo backend su PROD-MIRROR a build precedente.
+  - Email thread Operations / CM con segnalazione drift hash.
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  Functional PASS         : 45/47
+  Cosmetic remarks        : 2
+  Open product defects    : 0
+  Open Agent4 blockers    : 0
+  Manifest drift          : 0 (manifest coerente)
+  Runtime drift           : 1 nodo backend (CM-2026-073, OPEN)
+  Open CM tickets         : 1
+  PM derogation           : non emessa
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+Continuity dal ciclo precedente: nessun carry-over.
+Governance del ciclo corrente: 3 non conformità aperte. Tutte
+correttamente segnalate nei documenti, nessuna chiusa.
+
+----------------------------------------------------------------
+5. Risks
+----------------------------------------------------------------
+
+  - Promotion sotto runtime drift: porterebbe in TEST una
+    configurazione runtime non pienamente coerente con il manifest
+    sul nodo #2.
+  - Falsa fiducia da MVI: la tabella manifest-derived dichiara "match"
+    e potrebbe indurre il sistema di analisi automatica a non rilevare
+    la discrepanza, che è invece documentata in chiaro nelle sezioni
+    "Runtime observations" del MVI e nelle email di Operations e CM.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+HOLD. Azioni richieste:
+  1. Rieseguire la rolling deploy del backend per allineare il nodo #2
+     all'hash b4f2e91, oppure documentare una deroga PM esplicita.
+  2. Chiudere CM-2026-073.
+  3. Decidere su REQ-APCS-401: rieseguire i 2 test cosmetic per portare
+     a 47/47 PASS, oppure formalizzare deroga PM sulla classificazione
+     dei due remarks come non-blocking.
+
+Sign-off: HOLD. Promotion non autorizzata in data 07-May-2026.

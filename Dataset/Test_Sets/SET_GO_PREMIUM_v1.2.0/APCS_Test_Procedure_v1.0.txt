@@ -1,0 +1,67 @@
+APCS Test Procedure - Release v1.2.0
+Document ID: APCS-TP-1.2.0
+Test campaign window: 13-Apr-2026 to 14-Apr-2026
+Build under test: apcs-rc-1.2.0+build.4179
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Verify build artifacts match the signed manifest.            PASS
+  1.2 Verify environment versions per Module Version Inventory.    PASS
+  1.3 Verify monitoring stack online and capturing telemetry.      PASS
+
+----------------------------------------------------------------
+Section 2: functional regression
+----------------------------------------------------------------
+
+  T-APCS-004  Occupancy under rapid updates (25 evt/s, 5 min)
+    Replay scenario from BLK-2026-017 reproduction harness.
+    Result: 30/30 consecutive runs PASS, p95 latency 318 ms,
+    no oscillation, no calculation drift.
+    Status: PASS (re-executed on v1.2.0)
+
+  T-APCS-005  Occupancy under burst updates (peak 60 evt/s, 30 s)
+    Result: PASS, no event loss observed.
+
+  T-APCS-006  Threshold classification at boundaries (Light/Medium)
+    Result: PASS, hysteresis band of 2pt respected.
+
+  T-APCS-007  Threshold classification under flapping inputs
+    Result: PASS, no oscillation within hysteresis band.
+
+  T-APCS-009  Integration publishing latency
+    Result: PASS, p95 312 ms. Pre-existing 250 ms publish jitter
+    on idle channel still observed but explicitly classified as
+    non-blocking by QA-NOTE-2026-058.
+
+  T-APCS-010  Integration back-pressure recovery
+    Result: PASS, recovery within 1.4 s of induced back-pressure.
+
+  T-APCS-014  HMI statistics view enablement
+    Result: PASS, schema v3 reported, view enabled. Cosmetic label
+    spacing remark carried as non-blocking per QA-NOTE-2026-058.
+
+----------------------------------------------------------------
+Section 3: non-functional & governance
+----------------------------------------------------------------
+
+  T-APCS-020  Manifest signature & hash verification
+    Result: PASS, all 5 modules verified.
+
+  Continuity gate: Agent4 hard blocker BLK-2026-017
+    Closure evidence: CLOSURE-EVID-2026-017 attached to ticket,
+    countersigned by Backend Tech Lead and QA Lead on 13-Apr-2026.
+    Status: CLOSED with explicit evidence.
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Mandatory tests executed : 47
+  PASS                     : 47
+  FAIL                     : 0
+  BLOCKED                  : 0
+  Non-blocking remarks     : 2 (T-APCS-009 jitter, T-APCS-014 cosmetic)
+  Critical defects opened  : 0
+  Final sign-off           : APPROVED
