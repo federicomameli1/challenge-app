@@ -1,0 +1,21 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.2.0
+Generated: 24-Apr-2026 08:45 UTC
+Source of truth: artifact registry tag apcs-rc-1.2.0+build.4222
+
+Module             Planned   Deployed   Mandatory   Status
+backend            v1.2.0    v1.2.0     true        match
+integration-layer  v1.2.0    v1.2.0     true        match (without fix)
+hmi                v1.2.0    v1.2.0     true        match
+auth-proxy         v1.2.0    v1.2.0     false       match
+metrics-agent      v1.2.0    v1.2.0     false       match
+
+Notes:
+  - All modules in build.4222 match planned versions across DEV, INT, STG.
+  - However, the integration-layer ordering fix identified during T-APCS-004
+    investigation is NOT part of build.4222. It exists only as a local
+    debounce patch on the QA test bench. A new official version of the
+    integration-layer carrying the fix has NOT yet been generated.
+  - Therefore, although all rows are "match" in the literal version sense,
+    the build is functionally not aligned with the validated remediation.
+  - No rollback package was attached.

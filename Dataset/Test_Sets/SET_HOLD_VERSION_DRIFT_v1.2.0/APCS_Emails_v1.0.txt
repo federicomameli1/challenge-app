@@ -1,0 +1,92 @@
+Subject: [APCS] v1.1.0 release candidate handoff to QA
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: QA Team
+Cc: Project Manager; Operations
+Date: 09-Apr-2026 10:18
+
+Team,
+
+the v1.1.0 release candidate is built and tagged in the registry. The
+plan of record is to promote v1.1.0 to TEST this week. QA can begin
+validation against build apcs-rc-1.1.0+build.3812.
+
+Best,
+Luca
+
+---
+
+Subject: RE: [APCS] v1.1.0 release candidate handoff to QA
+From: Operations <ops@apcs.example>
+To: Luca Bianchi
+Cc: Project Manager; QA Team
+Date: 09-Apr-2026 15:42
+
+Luca,
+
+flagging a configuration concern. Production is still using v1.0.0 on the
+backend node and the rollout window for v1.1.0 has not been scheduled yet
+with the change advisory board. The integration-layer and hmi were
+upgraded to v1.1.0 last sprint, so we currently have a mixed deployment.
+
+Until the backend is aligned, we cannot consider the production state
+representative of v1.1.0. Please confirm when backend is moved to v1.1.0
+in the new official version, otherwise validation evidence collected on
+the production-equivalent environment will be misleading.
+
+Operations
+
+---
+
+Subject: RE: [APCS] v1.1.0 release candidate handoff to QA
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Operations
+Cc: Project Manager; Luca Bianchi
+Date: 10-Apr-2026 09:05
+
+Confirming Operations' point. The production backend is still using v1.0.0
+while the manifest claims v1.1.0. This is a known limitation of the current
+gate. QA started the regression sweep but the results on the staging mirror
+are not fully available in prod because the backend version on prod does
+not match. We did not yet generate a new official version for backend
+that aligns with v1.1.0 across all environments.
+
+I would not consider the release ready for TEST promotion in this state.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.1.0 release candidate handoff to QA
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: Operations; Marco Rossi; Luca Bianchi
+Date: 10-Apr-2026 14:20
+
+CM perspective:
+
+The Module Version Inventory shows backend planned at v1.1.0 but deployed
+at v1.0.0 in the production-equivalent environment. Integration-layer and
+HMI are at v1.1.0 as planned. This is a real version mismatch and the
+manifest signature does not cover the cross-environment alignment because
+backend has not been re-deployed yet.
+
+Recommendation: do not promote until backend is rebuilt and re-deployed
+across all environments at the same version. The current state is not
+acceptable for TEST promotion.
+
+Sara
+
+---
+
+Subject: [APCS] Promotion decision v1.1.0
+From: Project Manager <pm@apcs.example>
+To: All
+Date: 10-Apr-2026 17:00
+
+Based on the converging concerns from Operations, QA and CM, I am placing
+the v1.1.0 promotion on HOLD. The blocking item is the backend version
+drift between the production-equivalent environment (v1.0.0) and the
+planned manifest (v1.1.0). A new official build aligning all environments
+is required before we can re-evaluate.
+
+Project Manager

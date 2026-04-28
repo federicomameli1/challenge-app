@@ -1,0 +1,73 @@
+APCS Requirements - Release v1.2.0
+Document ID: APCS-REQ-1.2.0
+Author: Systems Engineering
+Last revision: 13-Apr-2026
+
+Scope: requirements traced for the v1.2.0 promotion gate. Each requirement
+maps to at least one mandatory test case in APCS_Test_Procedure_v1.0 and
+to the validation evidence summarized in APCS_VDD_v1.0.
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly under
+rapid passenger count updates of up to 25 events/second sustained for
+5 minutes, with end-to-end latency p95 below 350 ms.
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-004, T-APCS-005
+
+REQ-APCS-002: Backend shall classify occupancy levels (Empty / Light /
+Medium / Heavy / Full) consistently around the configured threshold
+boundaries, with no oscillation within a 2 percentage-point hysteresis band.
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-006, T-APCS-007
+
+REQ-APCS-003: Integration layer publishing shall complete within 500 ms
+p95 in the production-equivalent environment, and shall not be blocked by
+backend back-pressure for more than 3 consecutive seconds.
+  Module: integration-layer
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-009, T-APCS-010
+
+REQ-APCS-004: HMI statistics view shall be available only when the
+backend reports schema version greater than or equal to 3, and shall fall
+back to a degraded read-only view otherwise.
+  Module: hmi
+  Priority: MEDIUM
+  Mandatory: true
+  Traces to: T-APCS-014
+
+----------------------------------------------------------------
+Non-functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-101: Deployment shall be reproducible from a signed manifest;
+all artifact SHA256 hashes shall be verifiable against the registry.
+  Module: integration-layer
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-020
+
+REQ-APCS-102: Promotion shall not proceed with any open critical or
+unresolved Agent4 hard blocker; explicit closure evidence is required.
+  Module: governance
+  Priority: HIGH
+  Mandatory: true
+  Traces to: VDD section 4
+
+----------------------------------------------------------------
+Status snapshot (as of 15-Apr-2026 10:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  PASS  - 30/30 consecutive runs under rapid updates
+REQ-APCS-002  PASS  - boundary scan with 2pt hysteresis verified
+REQ-APCS-003  PASS  - p95 publish 312 ms (target 500 ms)
+REQ-APCS-004  PASS  - schema version v3 reported, view enabled
+REQ-APCS-101  PASS  - manifest signed, hashes verified
+REQ-APCS-102  PASS  - BLK-2026-017 closed with evidence CLOSURE-EVID-2026-017

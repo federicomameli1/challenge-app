@@ -1,0 +1,119 @@
+Subject: [APCS] v1.2.0 release candidate - validation kickoff
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: QA Team
+Cc: Project Manager
+Date: 21-Apr-2026 09:00
+
+Team,
+
+build apcs-rc-1.2.0+build.4222 is available for validation. The plan is
+to clear the gate by Friday 25-Apr.
+
+Best,
+Luca
+
+---
+
+Subject: RE: [APCS] v1.2.0 release candidate - validation kickoff
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Backend Team
+Cc: QA Team; Luca Bianchi
+Date: 22-Apr-2026 11:48
+
+Bad news on the rapid-update path. Running T-APCS-004 against build.4222
+we still see incorrect occupancy values during the first 30 seconds of
+the 25 evt/s sustained load. The defect was supposed to be closed by
+the v1.1.2 hotfix but reproduction harness shows the issue still
+affecting the rapid-update window.
+
+This is the same family as BLK-2026-017 from the previous gate. The
+issue is still marked as FAIL and re-test was not completed because the
+team decided to investigate before re-running the full battery.
+
+Status: blocker, unresolved.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.2.0 release candidate - validation kickoff
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: Marco Rossi
+Cc: QA Team; Project Manager
+Date: 22-Apr-2026 17:30
+
+Marco,
+
+we have a local workaround applied on the test bench (a debounce window
+of 80 ms at the publisher boundary) but no new official build was
+published with that change. The workaround proves the root cause is in
+the integration-layer event ordering, not in the backend, but we did not
+yet generate a new official version of the integration-layer to ship
+the fix.
+
+Known limitation remains open. Please do not consider the workaround as
+release evidence.
+
+Luca
+
+---
+
+Subject: [APCS] Continuity review v1.2.0
+From: QA Lead <qa.lead@apcs.example>
+To: Project Manager
+Cc: Marco Rossi; Luca Bianchi
+Date: 23-Apr-2026 10:15
+
+Continuity check vs previous gate:
+
+- Agent4 unresolved blocker BLK-2026-017 was carried over from v1.1.2.
+  No explicit closure evidence has been attached. Closure confirmation
+  should be provided before promotion.
+- The new finding from T-APCS-004 on build.4222 reactivates the same
+  failure family. This means continuity was effectively never closed in
+  prod-representative conditions.
+
+Until continuity closure is explicit and supported by a re-test of
+T-APCS-004 on a new official build, please keep HOLD.
+
+QA Lead
+
+---
+
+Subject: RE: [APCS] Continuity review v1.2.0
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: QA Lead
+Date: 23-Apr-2026 16:40
+
+CM perspective: the integration-layer fix from Luca's local workaround
+is not part of the manifest. The manifest covers build.4222 only. If we
+ship build.4222 we ship without the fix; if we incorporate the fix we
+need a new official version.
+
+In addition, T-APCS-006 (threshold classification) is still pending
+validation - it has not been re-executed yet on build.4222 since the
+team paused the campaign after the T-APCS-004 finding.
+
+I would not consider the release ready. Multiple items are still open
+and the evidence set is incomplete.
+
+Sara
+
+---
+
+Subject: [APCS] Promotion decision v1.2.0
+From: Project Manager <pm@apcs.example>
+To: All
+Date: 24-Apr-2026 09:30
+
+Compounded by the unresolved runtime blocker on T-APCS-004, the missing
+continuity closure for BLK-2026-017, the absence of a new official build
+carrying the integration-layer fix, and the pending validation of
+T-APCS-006, I am placing v1.2.0 on HOLD.
+
+Re-evaluation will happen only after a new official version is generated
+that incorporates the integration-layer fix and all paused tests are
+re-executed with explicit closure evidence attached.
+
+Project Manager

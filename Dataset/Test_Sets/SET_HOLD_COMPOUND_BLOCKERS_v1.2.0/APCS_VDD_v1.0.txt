@@ -1,0 +1,92 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.2.0
+Release: v1.2.0
+Date issued: 24-Apr-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+The v1.2.0 promotion gate cannot be cleared. Multiple compounding items
+are open simultaneously:
+
+  (a) An unresolved runtime blocker on T-APCS-004 (incorrect occupancy
+      values under rapid updates), of the same failure family as
+      BLK-2026-017 from v1.1.2.
+  (b) Continuity from the previous gate is NOT closed; no formal closure
+      evidence has been attached to BLK-2026-017.
+  (c) The integration-layer fix exists only as a local workaround on the
+      QA test bench; no new official version has been generated.
+  (d) T-APCS-006 is in pending validation and was not re-executed on
+      build.4222.
+
+Any one of these items would justify a HOLD; together they make the
+release unambiguously not ready.
+
+----------------------------------------------------------------
+2. Scope & evidence inventory
+----------------------------------------------------------------
+
+In scope:
+  - backend, integration-layer, hmi (mandatory)
+  - auth-proxy, metrics-agent (non-mandatory)
+
+Evidence inventory:
+  - Test execution log on build.4222 (campaign paused)
+  - Reproduction harness output for T-APCS-004 (Runs 1, 2)
+  - Workaround diff (test-bench only, not in manifest)
+  - Stakeholder communication thread (QA, Backend, CM, QA Lead, PM)
+  - Carry-over ticket BLK-2026-017 (no closure evidence)
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  PASS on official build       : 1 (T-APCS-009)
+  FAIL on official build       : 1 (T-APCS-004) - issue still affects
+                                                  rapid-update path
+  Pending validation           : 1 (T-APCS-006)
+  Not executed                 : 2 (T-APCS-005, T-APCS-010)
+  Open Agent4 hard blockers    : 1 (BLK-2026-017, no closure)
+  Workaround admissibility     : NOT ADMISSIBLE per REQ-APCS-012
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+The continuity gate is NOT closed. The new T-APCS-004 finding on
+build.4222 reactivates the same failure family that was supposed to be
+closed by the v1.1.2 hotfix. Until continuity closure is explicit and
+supported by a re-test of T-APCS-004 on a new official build, the gate
+cannot be cleared.
+
+----------------------------------------------------------------
+5. Risks
+----------------------------------------------------------------
+
+  - Functional reliability: incorrect occupancy values would propagate
+    to consumers of the integration-layer, with downstream impact on
+    operator dashboards and analytics.
+  - Evidence integrity: relying on a test-bench-only workaround would
+    create a documented gap between the validated state and the shipped
+    state.
+  - Governance debt: shipping with continuity not closed accumulates
+    Agent4 hard blockers across releases.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+HOLD. Required actions before re-evaluation:
+
+  1. Generate a new official version of the integration-layer that
+     incorporates the ordering fix.
+  2. Re-execute T-APCS-004, T-APCS-005, T-APCS-006, T-APCS-010 on the
+     new build.
+  3. Attach explicit closure evidence to BLK-2026-017, countersigned by
+     Backend Tech Lead and QA Lead.
+  4. Re-issue this VDD against the new build.
+
+Do not proceed to TEST in the current state.
+
+Sign-off: HOLD acknowledged by Project Manager on 24-Apr-2026.

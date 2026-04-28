@@ -1,0 +1,63 @@
+APCS Test Procedure - Release v1.1.0
+Document ID: APCS-TP-1.1.0
+Test campaign window: 09-Apr-2026 to 10-Apr-2026
+Build under test: apcs-rc-1.1.0+build.3812 (planned manifest)
+Environment under test: STG (production-equivalent), backend deployed at v1.0.0
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Verify build artifacts match the signed manifest.            PASS (planned)
+  1.2 Verify environment versions per Module Version Inventory.    FAIL
+       Backend on STG/PROD is still using v1.0.0; manifest declares v1.1.0.
+  1.3 Verify monitoring stack online and capturing telemetry.      PASS
+
+  Pre-condition gate: NOT MET. Section 2 results below are recorded for
+  reference only and are NOT admissible as TEST promotion evidence per
+  REQ-APCS-202, because the evidence environment is not aligned to the
+  planned manifest.
+
+----------------------------------------------------------------
+Section 2: functional regression (recorded against mismatched env)
+----------------------------------------------------------------
+
+  T-APCS-004  Occupancy under rapid updates
+    Result: pending validation - backend on STG is v1.0.0, the v1.1.0
+    code path was not exercised. Re-execution on aligned env is required.
+    Status: NOT VALID FOR PROMOTION
+
+  T-APCS-006  Threshold classification at boundaries
+    Result: PASS on STG (against v1.0.0 backend). Same admissibility
+    caveat applies.
+
+  T-APCS-009  Integration publishing latency
+    Result: PASS, p95 412 ms. Integration-layer is v1.1.0 in all envs,
+    so this evidence is admissible.
+
+----------------------------------------------------------------
+Section 3: governance checks
+----------------------------------------------------------------
+
+  Module Version alignment check
+    Result: FAIL. Backend planned v1.1.0, deployed v1.0.0 on STG/PROD.
+    REQ-APCS-201 violated.
+
+  Evidence admissibility check
+    Result: FAIL. Functional evidence collected on STG is not admissible
+    for v1.1.0 because the environment is not aligned to the manifest.
+    REQ-APCS-202 violated.
+
+  Continuity gate
+    Result: cannot be evaluated until the version drift is closed.
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Mandatory tests planned    : 6
+  Admissible PASS            : 1 (T-APCS-009 only)
+  Admissible FAIL            : 0
+  Pending validation         : 5 (require re-execution on aligned env)
+  Governance checks failed   : 2 (REQ-APCS-201, REQ-APCS-202)
+  Final sign-off             : NOT APPROVED - HOLD until version drift closed

@@ -1,0 +1,60 @@
+APCS Inconsistencies Map - Release v1.2.0
+Document ID: APCS-INC-1.2.0
+Generated: 24-Apr-2026
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: Workaround status
+  Sources:
+    - Emails (Luca Bianchi 22-Apr): "no new official build was published"
+    - MVI: integration-layer flagged "match (without fix)"
+    - Test Procedure section 3: workaround NOT ADMISSIBLE
+    - Requirements REQ-APCS-012: workarounds do not constitute evidence
+  Status: CONSISTENT (all four converge on inadmissibility)
+
+Check 2: T-APCS-004 status
+  Sources:
+    - Emails (Marco Rossi): issue still marked as FAIL, re-test not completed
+    - Test Procedure: FAIL on official build, not re-executed
+    - VDD section 3: FAIL with note "issue still affects rapid-update path"
+    - Requirements REQ-APCS-001: FAIL
+  Status: CONSISTENT
+
+Check 3: Continuity closure
+  Sources:
+    - QA Lead email: BLK-2026-017 carried over without closure evidence
+    - Test Procedure section 3: continuity NOT closed
+    - VDD section 4: continuity NOT closed
+    - Requirements REQ-APCS-010, REQ-APCS-011: FAIL
+  Status: CONSISTENT
+
+Check 4: T-APCS-006 status
+  Sources:
+    - CM email (Sara Neri): pending validation
+    - Test Procedure: pending validation
+    - VDD section 3: pending validation
+    - Requirements REQ-APCS-002, REQ-APCS-013: PENDING / FAIL
+  Status: CONSISTENT
+
+Check 5: Module versions (literal)
+  Sources: MVI, Emails (Luca Bianchi initial)
+  Status: CONSISTENT (all "match" in literal version sense)
+  Caveat: literal match does not equal functional alignment because the
+  remediation is not part of the manifest.
+
+Check 6: Promotion recommendation
+  Sources: PM email, VDD section 6, Test Procedure section 4
+  Reported value: HOLD
+  Status: CONSISTENT
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+The evidence set is internally consistent and converges on HOLD. The
+inconsistency is between the manifest (which presents a "match" state
+on paper) and the operational reality (where the validated remediation
+is not part of any official version). All stakeholders acknowledge this
+gap. No conflicting position was raised.

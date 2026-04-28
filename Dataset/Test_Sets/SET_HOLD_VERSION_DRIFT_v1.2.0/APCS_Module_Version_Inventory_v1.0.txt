@@ -1,0 +1,28 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.1.0
+Generated: 10-Apr-2026 12:00 UTC
+Source of truth: artifact registry tag apcs-rc-1.1.0+build.3812 (planned)
+                 production-equivalent environment snapshot (deployed)
+
+Module             Planned   Deployed   Mandatory   Status
+backend            v1.1.0    v1.0.0     true        mismatch
+integration-layer  v1.1.0    v1.1.0     true        match
+hmi                v1.1.0    v1.1.0     true        match
+auth-proxy         v1.1.0    v1.1.0     false       match
+metrics-agent      v1.1.0    v1.1.0     false       match
+
+Environment alignment:
+  DEV  : backend v1.1.0  | integration v1.1.0  | hmi v1.1.0
+  INT  : backend v1.1.0  | integration v1.1.0  | hmi v1.1.0
+  STG  : backend v1.0.0  | integration v1.1.0  | hmi v1.1.0  (production-equivalent)
+  PROD : backend v1.0.0  | integration v1.1.0  | hmi v1.1.0
+
+Notes:
+  - The production-equivalent (STG) environment is still using v1.0.0 on
+    backend. Production is still on v1.0.0 as well. Test results gathered
+    on STG are not fully available in prod alignment.
+  - A new official version for backend that aligns to v1.1.0 across all
+    environments has not yet been generated.
+  - The signed manifest (planned) declares v1.1.0 for backend, but the
+    deployed state contradicts the manifest. Manifest signature alone is
+    not sufficient evidence of alignment.

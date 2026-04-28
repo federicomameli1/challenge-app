@@ -1,0 +1,62 @@
+APCS Requirements - Release v1.1.0
+Document ID: APCS-REQ-1.1.0
+Author: Systems Engineering
+Last revision: 09-Apr-2026
+
+Scope: requirements for the v1.1.0 promotion gate. Each requirement maps
+to at least one mandatory test case in APCS_Test_Procedure_v1.0 and to
+the validation evidence summarized in APCS_VDD_v1.0.
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly under
+rapid passenger count updates.
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-004
+
+REQ-APCS-002: Backend shall classify occupancy levels consistently around
+configured threshold boundaries.
+  Module: backend
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-006
+
+REQ-APCS-003: Integration layer publishing shall complete within latency
+target in the production-equivalent environment.
+  Module: integration-layer
+  Priority: HIGH
+  Mandatory: true
+  Traces to: T-APCS-009
+
+----------------------------------------------------------------
+Governance requirements
+----------------------------------------------------------------
+
+REQ-APCS-201: Promotion shall not proceed if any mandatory module is
+deployed at a version different from the planned manifest in the
+production-equivalent environment.
+  Module: governance
+  Priority: HIGH
+  Mandatory: true
+
+REQ-APCS-202: Validation evidence must be collected against an environment
+whose deployed versions match the planned manifest. Evidence collected on
+mismatched environments is not admissible for TEST promotion.
+  Module: governance
+  Priority: HIGH
+  Mandatory: true
+
+----------------------------------------------------------------
+Status snapshot (as of 10-Apr-2026 16:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  PARTIAL  - regression executed on staging mirror; results
+                        not fully available in prod due to backend drift.
+REQ-APCS-002  PARTIAL  - same caveat as REQ-APCS-001.
+REQ-APCS-003  PASS     - integration-layer at v1.1.0 across environments.
+REQ-APCS-201  FAIL     - backend deployed v1.0.0 vs planned v1.1.0.
+REQ-APCS-202  FAIL     - evidence environment is not aligned to manifest.
