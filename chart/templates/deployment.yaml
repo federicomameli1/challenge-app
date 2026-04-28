@@ -27,6 +27,5 @@ spec:
 	  value: {{.Values.env.openrouter_model}}
 	- name: OPENROUTER_APP_TITLE
 	  value: {{.Values.env.openrouter_app_title}}
-{{- end }}
           ports:
             - containerPort: {{ .Values.containerPort }}
