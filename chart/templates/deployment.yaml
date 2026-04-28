@@ -17,13 +17,16 @@ spec:
         - name: app
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-	  - name: OPENROUTER_API_KEY
-	    value: {{.Values.env.open_api_key}}
-	  - name: OPENROUTER_MODEL
-	    value: {{.Values.env.openrouter_model}}
-	  - name: OPENROUTER_APP_TITLE
-	    value: {{.Values.env.openrouter_app_title}}
-          {{- end }}
+     env:
+	- name: OPENROUTER_API_KEY
+	   valueFrom:
+	    secretKeyRef:
+	     name: challenge-app-secrets
+	     key: api_key
+	- name: OPENROUTER_MODEL
+	  value: {{.Values.env.openrouter_model}}
+	- name: OPENROUTER_APP_TITLE
+	  value: {{.Values.env.openrouter_app_title}}
+{{- end }}
           ports:
             - containerPort: {{ .Values.containerPort }}
