@@ -3,5 +3,4 @@ appVersion: 1.0.0
 description: Helm chart for the Hitachi challenge app
 name: chart
 type: application
-version: 0.1.4
-# api_key sourced from kubernetes secret
+version: 0.1.5
