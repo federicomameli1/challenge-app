@@ -1,0 +1,25 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.3.0
+Generated: 03-May-2026 11:30 UTC
+Source of truth: artifact registry tag apcs-rc-1.3.0+build.4501
+
+Module             Planned   Deployed   Mandatory   Build hash    Status
+backend            v1.3.0    v1.3.0     true        b4f2e91       match
+integration-layer  v1.3.0    v1.3.0     true        c81a7d6       match
+hmi                v1.3.0    v1.3.0     true        d2e9b30       match
+auth-proxy         v1.3.0    v1.3.0     false       a17c4f8       match
+metrics-agent      v1.3.0    v1.3.0     false       9f0d2a5       match
+
+Environment alignment:
+  DEV         : tutti i moduli a v1.3.0
+  INT         : tutti i moduli a v1.3.0
+  STG         : tutti i moduli a v1.3.0
+  PROD-MIRROR : tutti i moduli a v1.3.0
+
+Note storiche (informative):
+  - Il ciclo precedente v1.2.0 aveva chiuso BLK-2026-017 con evidenza
+    CLOSURE-EVID-2026-017. Nessun carry-over per questo ciclo.
+  - Durante il triage del 02-May è stato aperto e successivamente chiuso
+    il ticket INV-2026-091 (test environment artifact, non product defect).
+  - La cache di telemetria del bench è stata invalidata e regen-policy
+    è stata aggiornata per evitare il recurrence dell'artefatto.

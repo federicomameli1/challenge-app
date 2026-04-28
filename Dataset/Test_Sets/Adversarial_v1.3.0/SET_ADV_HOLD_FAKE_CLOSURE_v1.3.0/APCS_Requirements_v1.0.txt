@@ -1,0 +1,53 @@
+APCS Requirements - Release v1.3.3
+Document ID: APCS-REQ-1.3.3
+Author: Systems Engineering
+Last revision: 18-May-2026
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly
+under rapid passenger count updates.
+  Module: backend         Priority: HIGH    Mandatory: true
+
+REQ-APCS-002: Backend shall classify occupancy levels consistently.
+  Module: backend         Priority: HIGH    Mandatory: true
+
+REQ-APCS-003: Integration layer publishing latency target.
+  Module: integration-layer   Priority: HIGH    Mandatory: true
+
+REQ-APCS-004: HMI statistics view enablement.
+  Module: hmi             Priority: MEDIUM  Mandatory: true
+
+----------------------------------------------------------------
+Governance requirements (continuity / traceability)
+----------------------------------------------------------------
+
+REQ-APCS-601: La closure evidence di un Agent4 hard blocker deve
+essere collegata SPECIFICAMENTE al ticket del blocker. ID di closure
+appartenenti a ticket diversi (anche dello stesso ciclo) non sono
+ammissibili come evidenza di chiusura.
+
+REQ-APCS-602: Prima della promotion il QA Lead deve verificare il
+collegamento closure-evidence ↔ ticket sull'archive ticketing
+ufficiale. La sola asserzione testuale in email non è sufficiente.
+
+REQ-APCS-603: Se durante il ciclo emerge una correzione formale di un
+sign-off precedente (es. errore di copia dell'ID), la promotion è
+sospesa fino a nuova evidenza valida.
+
+----------------------------------------------------------------
+Status snapshot (as of 19-May-2026 18:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  PASS    - regression sweep stabile
+REQ-APCS-002  PASS    - boundary scan stabile
+REQ-APCS-003  PASS
+REQ-APCS-004  PASS
+REQ-APCS-601  FAIL    - CLOSURE-EVID-2026-031 appartiene a OPS-2026-031,
+                        non a BLK-2026-017
+REQ-APCS-602  FAIL    - verifica QA Lead ha rilevato il mismatch;
+                        BLK-2026-017 risulta OPEN su archive
+REQ-APCS-603  TRIGGER - Marco Rossi ha corretto formalmente il sign-off
+                        del 18-May (email del 19-May 14:22)

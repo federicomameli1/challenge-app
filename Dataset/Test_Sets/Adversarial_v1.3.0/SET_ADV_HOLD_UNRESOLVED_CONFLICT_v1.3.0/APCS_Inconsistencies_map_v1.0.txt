@@ -1,0 +1,68 @@
+APCS Inconsistencies Map - Release v1.3.2
+Document ID: APCS-INC-1.3.2
+Generated: 12-May-2026
+
+----------------------------------------------------------------
+Cross-document checks
+----------------------------------------------------------------
+
+Check 1: Functional verdict
+  Sources: Marco Rossi email, Test Procedure, VDD section 3, Requirements
+  Reported value: 47/47 PASS
+  Status: CONSISTENT
+
+Check 2: Operational risk (consumo memoria)
+  Sources:
+    - Operations email 11-May 11:32: +38%, margine 170 MB
+    - MVI Operational telemetry: stessi numeri
+    - Test Procedure section 3 nota: rischio non disposto
+    - VDD section 5: rischio documentato
+  Status: CONSISTENT (numericamente)
+
+Check 3: Stakeholder positions
+  Sources: thread email, VDD section 2, Test Procedure section 3,
+           Requirements stakeholder summary
+  Status: CONSISTENT in tutte le rappresentazioni:
+    - QA ready
+    - Operations NON concorda
+    - CM astenuto
+    - QA Lead in attesa PM
+    - PM nessuna comunicazione
+
+Check 4: PM authorization
+  Sources:
+    - Thread email: nessun messaggio del PM
+    - VDD section 2: "PM nessuna comunicazione"
+    - Test Procedure section 3: AUTORIZZAZIONE NON EMESSA
+    - Requirements REQ-APCS-501: FAIL
+  Status: CONSISTENT (l'autorizzazione è formalmente assente)
+
+Check 5: Final recommendation
+  Sources: VDD section 6, Test Procedure section 4
+  Reported value: HOLD
+  Status: CONSISTENT
+
+----------------------------------------------------------------
+Trappole per analizzatore automatico
+----------------------------------------------------------------
+
+  - Il bundle non contiene parole come "fail", "blocker", "unresolved"
+    nel senso funzionale. La regression è 47/47 PASS.
+  - L'unico segnale lessicale di disaccordo è "NON CONCORDIAMO" /
+    "NON CONCORDA" (Operations) e "NON EMESSA" (autorizzazione PM).
+  - La condizione di HOLD non emerge da un singolo documento ma dalla
+    combinazione di:
+       (i)  presenza di posizione contraria di un team operativo,
+       (ii) assenza di comunicazione autorizzativa del PM.
+  - Un sistema che si limita a contare PASS/FAIL su test mandatory
+    classificherà erroneamente questo bundle come GO. Il verdict
+    corretto richiede ragionamento sulla matrice di stakeholder e
+    sulla regola REQ-APCS-502.
+
+----------------------------------------------------------------
+Result
+----------------------------------------------------------------
+
+Nessuna inconsistenza informativa fra documenti. Il bundle è
+pienamente coerente nel rappresentare uno stato di HOLD per assenza
+di autorizzazione e per obiezione operativa non risolta.

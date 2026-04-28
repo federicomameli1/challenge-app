@@ -1,0 +1,100 @@
+Subject: [APCS] v1.3.1 candidate - validation update
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: QA Team
+Cc: Project Manager
+Date: 06-May-2026 10:00
+
+Team,
+
+build apcs-rc-1.3.1+build.4612 disponibile per validation. Tutti i
+moduli costruiti dalla stessa pipeline, manifest signed, registry tag
+allineato.
+
+Best,
+Luca
+
+---
+
+Subject: RE: [APCS] v1.3.1 candidate - validation update
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Luca Bianchi
+Cc: QA Team; Project Manager
+Date: 06-May-2026 16:30
+
+Sweep regression completata. Risultato sintetico:
+
+  Mandatory tests planned : 47
+  PASS                    : 45
+  Cosmetic remarks        : 2 (non-blocking)
+
+Soak test 4 ore stabile. Nessun crash. Tutti i ticket aperti del ciclo
+precedente sono chiusi. Ready for governance review.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.3.1 candidate - validation update
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: Luca Bianchi; Marco Rossi
+Date: 07-May-2026 09:20
+
+CM report:
+
+- Manifest: tutti i 5 moduli a v1.3.1 secondo il registry.
+- Hash: corrispondenti ai signed artifacts.
+- Environment alignment: STG e PROD-MIRROR riportano "match" sulla
+  tabella MVI standard.
+
+Nessuna anomalia apparente. Configuration aligned for promotion.
+
+Sara
+
+---
+
+Subject: [APCS] Nota operativa - hash runtime
+From: Operations <ops@apcs.example>
+To: Sara Neri
+Cc: Luca Bianchi
+Date: 07-May-2026 14:48
+
+Sara,
+
+quick heads-up dalla telemetria di runtime. Lo strumento di health-check
+dei container su PROD-MIRROR riporta per il backend l'hash a91f3c2,
+mentre il registry tag apcs-rc-1.3.1+build.4612 è associato all'hash
+b4f2e91 (che è quello deployato secondo il manifest).
+
+L'hash a91f3c2 corrisponde a una build precedente (lo abbiamo verificato
+nel registry). Probabilmente la rolling deploy del backend ha lasciato
+un nodo non aggiornato nel cluster, oppure la cache di immagine sui
+runner non è stata invalidata. La tabella MVI dichiara "match" perché
+è generata leggendo il manifest, non lo stato runtime.
+
+Non è un defect funzionale evidente, ma è un drift fra dichiarato e
+deployato che andrebbe risolto prima della promotion. Per ora non l'ho
+escalato come blocker formale, ma ti giro il dato.
+
+Operations
+
+---
+
+Subject: RE: [APCS] Nota operativa - hash runtime
+From: Sara Neri <sara.neri@apcs.example>
+To: Operations
+Cc: Luca Bianchi; Project Manager
+Date: 07-May-2026 17:05
+
+Grazie per la segnalazione. Confermo che la tabella MVI è generata dal
+manifest e non riflette lo stato runtime. Apro CM-2026-073 per tracciare
+la discrepanza fra hash dichiarato (b4f2e91) e hash osservato sui nodi
+backend di PROD-MIRROR (a91f3c2).
+
+Aggiorneremo la procedura MVI per includere un health-check runtime nei
+prossimi cicli.
+
+Per questo ciclo, il manifest è formalmente corretto. Lascio al PM la
+valutazione se procedere o sospendere.
+
+Sara

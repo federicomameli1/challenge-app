@@ -1,0 +1,118 @@
+Subject: [APCS] v1.3.0 - sospetto regressione su T-APCS-004
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Backend Team
+Cc: QA Team
+Date: 02-May-2026 08:14
+
+Team,
+
+durante la prima passata su build apcs-rc-1.3.0+build.4501 ho osservato
+quello che sembra un blocker: T-APCS-004 ha riportato classification
+inconsistency al secondo 12 della run di rapid-update. Risultato della
+prima esecuzione: FAIL. Issue still open in attesa di triage.
+
+Apro RE-EXEC per oggi pomeriggio. Nel frattempo non considererei la
+release ready - workaround non disponibile, blocker unresolved.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.3.0 - sospetto regressione su T-APCS-004
+From: Luca Bianchi <luca.bianchi@apcs.example>
+To: Marco Rossi
+Cc: QA Team; Backend Team
+Date: 02-May-2026 11:02
+
+Marco,
+
+abbiamo isolato la causa del falso positivo. Il bench di test usato per
+la prima run era ancora configurato con la cache di telemetria del
+ciclo precedente (v1.2.0), che non era stata invalidata dopo il deploy
+del nuovo build. Lo strumento di harness mostrava valori stale, non un
+difetto del backend.
+
+Dopo flush della cache e re-run pulita su bench rigenerato:
+  - Run pulite back-to-back: 50/50 PASS
+  - Latenza p95: 304 ms
+  - Nessuna classification inconsistency in 4 ore di soak test
+
+La prima run è da considerarsi non rappresentativa. Aggiorno il ticket
+INV-2026-091 con root cause "test environment artifact" e lo chiudo
+come "not a defect".
+
+Luca
+
+---
+
+Subject: RE: [APCS] v1.3.0 - sospetto regressione su T-APCS-004
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Luca Bianchi
+Cc: QA Team; Backend Team; Project Manager
+Date: 02-May-2026 14:35
+
+Confermo l'analisi di Luca. Ho rieseguito personalmente T-APCS-004 su
+bench rigenerato e la run è clean. Il presunto blocker era un artefatto
+del test environment. Aggiorno il verdict: il ticket INV-2026-091 è
+chiuso come "test environment artifact, not a product defect".
+
+T-APCS-004 finale: PASS, 50/50 consecutive runs.
+La release candidate non presenta blocker funzionali.
+
+Marco
+
+---
+
+Subject: [APCS] v1.3.0 - aggiornamento RE-EXEC e governance
+From: QA Lead <qa.lead@apcs.example>
+To: Project Manager
+Cc: Marco Rossi; Luca Bianchi; Sara Neri
+Date: 03-May-2026 09:00
+
+Recap del ciclo:
+
+1. Prima esecuzione T-APCS-004: failure non riproducibile, causata da
+   cache stale del bench. Documentata e archiviata.
+2. Seconda esecuzione su bench pulito: 50/50 PASS.
+3. Tutti gli altri test mandatory (T-APCS-005, 006, 007, 009, 010, 014):
+   eseguiti, tutti PASS.
+4. Nessun ticket aperto in stato OPEN o BLOCKER.
+5. Continuity gate: BLK-2026-017 era già chiuso al ciclo v1.2.0 con
+   evidence CLOSURE-EVID-2026-017; nessun carry-over.
+
+Verdict QA: nessuna ragione per non procedere. La release è ready.
+
+QA Lead
+
+---
+
+Subject: RE: [APCS] v1.3.0 - aggiornamento RE-EXEC e governance
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: QA Lead
+Date: 03-May-2026 11:18
+
+CM check completato:
+
+- Manifest signature verificata su tutti i 5 moduli.
+- Hash dei deployati su DEV/INT/STG/PROD-MIRROR coincidenti con il
+  registry per build.4501.
+- Nessun drift di versione, nessun modulo fuori manifest.
+- Nessun workaround locale presente nei bench.
+
+Allineamento confermato. Pronti per TEST promotion.
+
+Sara
+
+---
+
+Subject: [APCS] Promotion authorization v1.3.0
+From: Project Manager <pm@apcs.example>
+To: All
+Date: 03-May-2026 16:00
+
+Considerati i feedback convergenti di QA (incluso il falso positivo
+correttamente diagnosticato e archiviato), CM e governance, autorizzo
+la TEST promotion per v1.3.0 al 04-May-2026 09:00.
+
+Project Manager

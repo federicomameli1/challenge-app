@@ -1,0 +1,62 @@
+APCS Requirements - Release v1.3.2
+Document ID: APCS-REQ-1.3.2
+Author: Systems Engineering
+Last revision: 11-May-2026
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly
+under rapid passenger count updates.
+  Module: backend         Priority: HIGH    Mandatory: true
+
+REQ-APCS-002: Backend shall classify occupancy levels consistently.
+  Module: backend         Priority: HIGH    Mandatory: true
+
+REQ-APCS-003: Integration layer publishing.
+  Module: integration-layer   Priority: HIGH    Mandatory: true
+
+REQ-APCS-004: HMI statistics view enablement.
+  Module: hmi             Priority: MEDIUM  Mandatory: true
+
+----------------------------------------------------------------
+Governance requirements
+----------------------------------------------------------------
+
+REQ-APCS-501: Promotion gate richiede autorizzazione esplicita del
+Project Manager. La sola assenza di defects funzionali NON è
+condizione sufficiente per la promotion.
+
+REQ-APCS-502: In presenza di posizione contraria documentata da un
+team con responsabilità operativa (Operations, Security, Compliance,
+SRE), la promotion è sospesa fino a una delle seguenti condizioni:
+  (a) il team revoca formalmente l'obiezione;
+  (b) il PM emette deroga esplicita assumendosi la responsabilità del
+      rischio segnalato;
+  (c) viene applicata una mitigazione concordata e firmata.
+
+REQ-APCS-503: Risk operativi non funzionali (memoria, CPU, latenza
+infrastrutturale, capacity) non coperti dalla suite mandatory non sono
+automaticamente non-blocking: vanno valutati caso per caso e richiedono
+disposizione formale.
+
+----------------------------------------------------------------
+Status snapshot (as of 12-May-2026 18:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  PASS    - 47/47 mandatory test funzionali PASS
+REQ-APCS-002  PASS    - boundary scan stabile
+REQ-APCS-003  PASS    - publishing entro target
+REQ-APCS-004  PASS    - schema enabled
+REQ-APCS-501  FAIL    - autorizzazione PM NON EMESSA
+REQ-APCS-502  FAIL    - obiezione Operations NON RITIRATA, nessuna
+                        deroga PM, nessuna mitigazione applicata
+REQ-APCS-503  OPEN    - rischio memoria backend +38% non disposto
+
+Riassunto stakeholder positions:
+  QA          : ready
+  Operations  : NON concorda, chiede hotfix / sizing / deroga PM
+  CM          : si astiene
+  QA Lead     : attesa decisione PM
+  PM          : nessuna comunicazione di autorizzazione

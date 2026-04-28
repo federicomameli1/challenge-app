@@ -1,0 +1,74 @@
+APCS Test Procedure - Release v1.3.0
+Document ID: APCS-TP-1.3.0
+Test campaign window: 02-May-2026 to 03-May-2026
+Build under test: apcs-rc-1.3.0+build.4501
+
+Glossario interno:
+  PV    = pending validation
+  RE-EX = re-execution
+  TEA   = test environment artifact (non-defect)
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Manifest signature                                     PASS
+  1.2 Module version alignment (DEV/INT/STG/PROD-MIRROR)     PASS
+  1.3 Bench cache regen policy attiva                        PASS (dal 02-May 12:30)
+
+----------------------------------------------------------------
+Section 2: regression
+----------------------------------------------------------------
+
+  T-APCS-004  Occupancy under rapid updates (25 evt/s, 5 min)
+    Run 1 (02-May 08:14, bench non rigenerato)
+      Result: classification inconsistency al sec 12 → FAIL
+      Triage: cache di telemetria stale (artefatto del bench)
+      Ticket: INV-2026-091 - chiuso 02-May 15:00 come TEA
+      Verdict: NON RAPPRESENTATIVA
+    Run 2..51 (02-May 14:35 → 03-May 06:00, bench rigenerato)
+      Result: 50/50 PASS, p95 318 ms, soak 4h pulito
+    Status finale: PASS
+
+  T-APCS-005  Burst updates (peak 60 evt/s, 30 s)
+    Status: PASS, no event loss
+
+  T-APCS-006  Threshold classification at boundaries
+    Status: PASS, hysteresis rispettata
+
+  T-APCS-007  Threshold under flapping inputs
+    Status: PASS
+
+  T-APCS-009  Integration publishing latency
+    Status: PASS, p95 304 ms
+
+  T-APCS-010  Back-pressure recovery
+    Status: PASS, recovery 1.2 s
+
+  T-APCS-014  HMI statistics view enablement
+    Status: PASS, schema v3 enabled
+
+----------------------------------------------------------------
+Section 3: governance
+----------------------------------------------------------------
+
+  Continuity gate (BLK-2026-017)
+    Closure evidence già attaccata al ciclo precedente v1.2.0:
+    CLOSURE-EVID-2026-017. Nessun carry-over per v1.3.0.
+    Status: CLOSED
+
+  TEA classification check (INV-2026-091)
+    Conformità a REQ-APCS-301 verificata: diagnosi documentata,
+    re-run su bench pulito PASS, ticket archiviato come "not a defect".
+    Status: COMPLIANT
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Mandatory tests          : 7
+  PASS (final verdict)     : 7
+  FAIL (final verdict)     : 0
+  TEA (non-defect)         : 1 (INV-2026-091, archived)
+  Continuity carry-over    : nessuno
+  Final sign-off           : APPROVED

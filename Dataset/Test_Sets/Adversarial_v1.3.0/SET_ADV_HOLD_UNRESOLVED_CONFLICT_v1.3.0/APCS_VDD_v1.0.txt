@@ -1,0 +1,77 @@
+APCS Validation Document Description (VDD)
+Document ID: APCS-VDD-1.3.2
+Release: v1.3.2
+Date issued: 12-May-2026
+
+----------------------------------------------------------------
+1. Executive summary
+----------------------------------------------------------------
+
+La release candidate v1.3.2 supera la suite funzionale (47/47 PASS,
+soak 8h stabile, manifest e runtime allineati). Tuttavia il gate di
+promotion NON è cleared per ragioni di governance:
+
+  - Operations ha emesso obiezione formale per rischio operativo
+    (consumo memoria backend +38%, margine residuo 170 MB su prod)
+    e non ha ritirato l'obiezione.
+  - Il Project Manager non ha emesso autorizzazione esplicita né
+    deroga formale al rischio operativo.
+
+In assenza di entrambe le condizioni, REQ-APCS-501 e REQ-APCS-502 sono
+violate. La promotion è sospesa.
+
+----------------------------------------------------------------
+2. Stakeholder authorization matrix
+----------------------------------------------------------------
+
+  QA           : ready (segnale GO)
+  Operations   : NON CONCORDA (segnale HOLD)
+  CM           : astenuto (segnale neutro)
+  QA Lead      : in attesa decisione PM (segnale neutro)
+  PM           : nessuna comunicazione (segnale HOLD per default)
+
+La regola di lettura per REQ-APCS-502 è: in presenza di anche una sola
+posizione contraria documentata e non revocata da un team con
+responsabilità operativa, il default è HOLD finché non interviene una
+delle tre condizioni di sblocco previste dalla regola stessa.
+
+----------------------------------------------------------------
+3. Result summary
+----------------------------------------------------------------
+
+  Functional               : 47/47 PASS
+  Open product defects     : 0
+  Configuration drift      : nessuno
+  Operational risk         : memoria backend +38%, margine residuo 170 MB
+  Open operational ticket  : OPS-2026-204 (sizing review)
+  Stakeholder consent      : non completo
+  PM authorization         : non emessa
+
+----------------------------------------------------------------
+4. Continuity & governance
+----------------------------------------------------------------
+
+Continuity: nessun carry-over.
+Governance: 3 non conformità (REQ-APCS-501, 502, 503).
+
+----------------------------------------------------------------
+5. Risks
+----------------------------------------------------------------
+
+  - Risk operativo memoria: documentato dalla telemetria, non coperto
+    da mandatory test, non ancora disposto.
+  - Risk processuale: ignorare un'obiezione operativa documentata
+    creerebbe precedente di by-pass del REQ-APCS-502.
+
+----------------------------------------------------------------
+6. Recommendation
+----------------------------------------------------------------
+
+HOLD. Una delle seguenti azioni è necessaria per riconsiderare:
+  (a) Operations ritira l'obiezione (es. dopo sizing review favorevole);
+  (b) Il PM emette deroga esplicita firmata, assumendo responsabilità
+      del rischio memoria;
+  (c) Si applica una mitigazione concordata (hotfix, sizing revision)
+      e la si valida.
+
+Sign-off: NON EMESSO. Promotion non autorizzata in data 12-May-2026.

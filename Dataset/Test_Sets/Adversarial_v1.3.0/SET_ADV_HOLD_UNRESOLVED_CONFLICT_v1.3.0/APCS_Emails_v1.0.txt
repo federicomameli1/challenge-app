@@ -1,0 +1,133 @@
+Subject: [APCS] v1.3.2 - chiusura ciclo QA
+From: Marco Rossi <marco.rossi@apcs.example>
+To: QA Team
+Cc: Project Manager
+Date: 11-May-2026 09:00
+
+Team,
+
+ho chiuso il ciclo regression su build apcs-rc-1.3.2+build.4720.
+
+  Mandatory tests: 47/47 PASS
+  Soak test 8h: stabile
+  Defects aperti: 0
+
+Dal punto di vista QA la release è ready. Procedo a sign-off lato QA.
+
+Marco
+
+---
+
+Subject: [APCS] v1.3.2 - segnalazione operativa
+From: Operations <ops@apcs.example>
+To: Project Manager
+Cc: Marco Rossi; Luca Bianchi
+Date: 11-May-2026 11:32
+
+PM,
+
+flagging un punto operativo non funzionale prima della promotion.
+
+Il deploy del nuovo build ha portato a un incremento del 38% sul
+consumo memoria del backend in steady state (da 1.4 GB osservati su
+v1.3.1 a 1.93 GB su v1.3.2). Non è un crash e non è coperto dai test
+funzionali, ma la headroom sui nodi di produzione è ~2.1 GB. Stiamo
+quindi shippando con 170 MB di margine residuo, contro i 700 MB del
+ciclo precedente.
+
+Non lo classificherei come blocker funzionale, ma come rischio
+operativo significativo. Suggerisco una hotfix o un sizing review prima
+della promotion.
+
+Operations
+
+---
+
+Subject: RE: [APCS] v1.3.2 - segnalazione operativa
+From: Marco Rossi <marco.rossi@apcs.example>
+To: Operations
+Cc: Project Manager; Luca Bianchi
+Date: 11-May-2026 13:10
+
+Operations,
+
+dal lato QA il consumo memoria non è coperto da nessun mandatory test
+nella suite v1.3.2 (non è un requirement formale). I 47/47 PASS si
+riferiscono al perimetro funzionale concordato. Da QA la release resta
+ready.
+
+Marco
+
+---
+
+Subject: RE: [APCS] v1.3.2 - segnalazione operativa
+From: Operations <ops@apcs.example>
+To: Marco Rossi
+Cc: Project Manager; Luca Bianchi
+Date: 11-May-2026 14:25
+
+Marco,
+
+capisco il perimetro QA, ma da Operations non possiamo firmare la
+promotion in queste condizioni. La nostra posizione è che il rischio
+di OOM in produzione entro 2-3 settimane di esercizio è concreto e
+non gestibile a runtime.
+
+Per quanto ci riguarda: NON CONCORDIAMO con la promotion in stato
+attuale. Richiediamo o hotfix sul consumo memoria, o sizing review
+formalmente approvata, o deroga esplicita del PM con assunzione di
+responsabilità del rischio operativo.
+
+Operations
+
+---
+
+Subject: RE: [APCS] v1.3.2 - status governance
+From: Sara Neri <sara.neri@apcs.example>
+To: Project Manager
+Cc: Marco Rossi; Operations; Luca Bianchi
+Date: 11-May-2026 16:48
+
+PM,
+
+dal punto di vista CM il manifest è formalmente corretto e gli hash
+sono allineati su tutti gli ambienti. Non vedo non conformità lato CM.
+
+Sulla disputa QA / Operations relativa al consumo memoria, non mi
+esprimo: è una decisione di governance, non di configuration management.
+
+Resto a disposizione.
+
+Sara
+
+---
+
+Subject: [APCS] v1.3.2 - posizione QA Lead
+From: QA Lead <qa.lead@apcs.example>
+To: Project Manager
+Cc: Marco Rossi; Operations
+Date: 12-May-2026 09:15
+
+PM,
+
+riassumo le posizioni:
+
+  - QA: ready per promotion (47/47 PASS, perimetro funzionale chiuso).
+  - Operations: NON CONCORDA, chiede hotfix o sizing review o deroga PM.
+  - CM: nessuna non conformità formale, si astiene.
+
+Le posizioni sono in conflitto e Operations non ha ritirato la sua
+obiezione. Procedurale: in presenza di posizione contraria di un team
+con responsabilità di esercizio (Operations), serve decisione esplicita
+del PM. Senza autorizzazione formale del PM la promotion non può
+procedere.
+
+Resto in attesa della tua decisione.
+
+QA Lead
+
+---
+
+[Note: nessuna ulteriore email del Project Manager è presente nel
+thread alla data di emissione di questo bundle (12-May-2026 18:00).
+Lo stato di autorizzazione promotion è quindi: NON EMESSA.]

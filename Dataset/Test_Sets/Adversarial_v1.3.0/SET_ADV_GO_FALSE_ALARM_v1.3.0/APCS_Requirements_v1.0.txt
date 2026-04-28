@@ -1,0 +1,62 @@
+APCS Requirements - Release v1.3.0
+Document ID: APCS-REQ-1.3.0
+Author: Systems Engineering
+Last revision: 02-May-2026
+
+Note di lettura: questo documento contiene anche lo storico di triage
+del ciclo. Lo stato finale di ciascun requirement è quello in fondo
+alla riga "Status snapshot", non quello inferibile dalle email iniziali.
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-001: Backend shall compute occupancy percentage correctly
+under rapid passenger count updates (25 evt/s sustained).
+  Module: backend         Priority: HIGH    Mandatory: true
+  Traces to: T-APCS-004, T-APCS-005
+
+REQ-APCS-002: Backend shall classify occupancy levels consistently
+around configured threshold boundaries.
+  Module: backend         Priority: HIGH    Mandatory: true
+  Traces to: T-APCS-006, T-APCS-007
+
+REQ-APCS-003: Integration layer publishing shall complete within
+target latency.
+  Module: integration-layer   Priority: HIGH    Mandatory: true
+  Traces to: T-APCS-009, T-APCS-010
+
+REQ-APCS-004: HMI statistics view enablement shall depend on backend
+schema version.
+  Module: hmi             Priority: MEDIUM  Mandatory: true
+  Traces to: T-APCS-014
+
+----------------------------------------------------------------
+Governance requirements
+----------------------------------------------------------------
+
+REQ-APCS-301: Findings classified as "test environment artifact" shall
+be archived under INV-* tickets and shall not count as product defects
+for promotion gate purposes, provided the diagnosis is documented and
+re-execution on a clean bench yields PASS.
+
+REQ-APCS-302: Carry-over Agent4 hard blockers from previous gates must
+have closure evidence on file. If closure was already attached in a
+prior cycle, no new closure is required for the current cycle.
+
+----------------------------------------------------------------
+Status snapshot (final, as of 03-May-2026 12:00)
+----------------------------------------------------------------
+
+REQ-APCS-001  PASS   - 50/50 consecutive runs after bench rigeneration
+REQ-APCS-002  PASS   - boundary scan stable
+REQ-APCS-003  PASS   - p95 304 ms
+REQ-APCS-004  PASS   - schema v3 enabled
+REQ-APCS-301  N/A    - INV-2026-091 archived as test environment artifact
+REQ-APCS-302  PASS   - BLK-2026-017 chiuso al ciclo precedente
+
+Triage trail (informational only, do NOT use for status):
+  - 02-May 08:14: prima esecuzione T-APCS-004 → presunto FAIL
+  - 02-May 11:02: root cause = cache stale del bench
+  - 02-May 14:35: re-run su bench pulito → PASS
+  - 02-May 15:00: ticket INV-2026-091 chiuso "not a defect"

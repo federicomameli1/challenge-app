@@ -1,0 +1,53 @@
+APCS Test Procedure - Release v1.3.2
+Document ID: APCS-TP-1.3.2
+Test campaign window: 09-May-2026 to 11-May-2026
+Build under test: apcs-rc-1.3.2+build.4720
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Manifest signature                                 PASS
+  1.2 MVI alignment                                      PASS
+  1.3 Runtime hash health-check                          PASS
+  1.4 Stakeholder authorization matrix preflight         IN ATTESA
+
+----------------------------------------------------------------
+Section 2: regression
+----------------------------------------------------------------
+
+  Mandatory tests : 47
+  Eseguiti        : 47
+  PASS            : 47
+  FAIL            : 0
+  Soak 8 h        : stabile
+
+  Verdetto funzionale: VERDE.
+
+----------------------------------------------------------------
+Section 3: governance & stakeholder authorization
+----------------------------------------------------------------
+
+  Authorization matrix richiesta da REQ-APCS-501 e REQ-APCS-502:
+
+    Stakeholder       Required   Provided   Notes
+    QA Lead           si         si         "ready, attesa decisione PM"
+    QA (Marco Rossi)  si         si         "ready"
+    Operations        si         NO         OBIEZIONE FORMALE NON RITIRATA
+    CM                si         astenuto   "no non conformità CM"
+    Project Manager   si         NO         AUTORIZZAZIONE NON EMESSA
+
+  Governance verdict: la matrice non è completa. Due caselle critiche
+  (Operations, PM) non sono firmate. Per REQ-APCS-502, finché
+  l'obiezione di Operations non è risolta in uno dei modi previsti
+  (ritiro, deroga PM, mitigazione), la promotion è sospesa.
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Functional verdict       : 47/47 PASS
+  Governance verdict       : NOT MET (REQ-APCS-501, 502, 503)
+  Open operational ticket  : OPS-2026-204 (sizing review)
+  Final sign-off           : NON EMESSO
+                             Promotion gate: NON CLEARED
