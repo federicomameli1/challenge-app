@@ -152,6 +152,39 @@ function buildEvaluateAllResponse(agent) {
   };
 }
 
+const MOCK_BUNDLE_SETS = [
+  {
+    id: "go",
+    label: "GO Documents",
+    source: "built-in",
+    documents: [],
+    backend: {
+      agent4: {
+        datasetRoot: "datasets/apcs_bundles/baseline/SET_GO_v1.0",
+        sourceAdapterKind: "apcs_doc_bundle",
+        scenarioId: "APCS-S4-001",
+      },
+      agent5: {
+        datasetRoot: "datasets/synthetic/phase5/v2",
+        scenarioId: "P5V2-001",
+      },
+    },
+  },
+  {
+    id: "hold",
+    label: "HOLD Documents",
+    source: "built-in",
+    documents: [],
+    backend: {
+      agent4: {
+        datasetRoot: "datasets/apcs_bundles/baseline/SET_HOLD_v1.0",
+        sourceAdapterKind: "apcs_doc_bundle",
+        scenarioId: "APCS-S4-001",
+      },
+    },
+  },
+];
+
 describe("Release Dashboard", () => {
   let backendSets;
 
@@ -167,6 +200,14 @@ describe("Release Dashboard", () => {
     global.fetch = vi.fn(async (input, init = {}) => {
       const url = String(input);
       const method = String(init.method || "GET").toUpperCase();
+
+      if (url.endsWith("/datasets/bundles") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: MOCK_BUNDLE_SETS }),
+        };
+      }
 
       if (url.endsWith("/datasets/custom-sets") && method === "GET") {
         return {
