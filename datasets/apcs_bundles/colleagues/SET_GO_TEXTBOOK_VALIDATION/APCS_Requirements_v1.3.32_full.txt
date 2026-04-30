@@ -1,0 +1,13 @@
+APCS Requirements - Release v1.3.32
+Document ID: APCS-REQ-1.3.32
+
+REQ-APCS-320: System shall meet all functional requirements.
+REQ-APCS-321: System shall meet performance SLA under peak load.
+REQ-APCS-322: System shall remain stable during 24h runtime.
+REQ-APCS-323: Monitoring and alerting shall be correctly configured.
+
+Status:
+REQ-APCS-320 PASS
+REQ-APCS-321 PASS
+REQ-APCS-322 PASS
+REQ-APCS-323 PASS

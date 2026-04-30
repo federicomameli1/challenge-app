@@ -1,0 +1,12 @@
+APCS Module Version Inventory
+
+Planned:
+  backend v2.5.8
+  api v1.9.8
+
+Deployed:
+  backend v2.5.8
+  api v1.9.8
+
+Status:
+CONSISTENT

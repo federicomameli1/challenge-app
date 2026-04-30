@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from agent4.lc_pipeline import LangChainAgent4Pipeline, LCPipelineConfig; print\\('ok'\\)\")",
+      "Bash(python scripts/run_colleagues_sets.py)",
+      "Bash(xargs rm *)",
+      "Bash(git mv *)",
+      "Bash(python -m pytest tests/ -x --tb=short)",
+      "Bash(pip install *)",
+      "Bash(grep -v \"selectedDataset\\\\|datasetId\\\\|datasetProfiles\\\\|requestedDatasetRoot\\\\|resolvedDatasetRoot\\\\|customSets\\\\|Datasets\\\\|Dataset name\\\\|Dataset inspection\\\\|Dataset interpretation\\\\|Upload Document Dataset\\\\|Datasets$\\\\| Dataset$\")",
+      "Bash(python -c ' *)",
+      "Bash(python -m pytest tests/ -x -q)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

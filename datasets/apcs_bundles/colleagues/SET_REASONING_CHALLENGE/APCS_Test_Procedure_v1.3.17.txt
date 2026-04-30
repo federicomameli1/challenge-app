@@ -1,0 +1,12 @@
+APCS Test Procedure - Release v1.3.17
+
+Tests executed:
+  Functional regression PASS
+  Integration tests PASS
+
+Missing:
+  No long-duration stability test (24h)
+  No formal validation of resource consumption thresholds
+
+Note:
+Testing scope focused on functional validation only.

@@ -1,0 +1,13 @@
+APCS VDD - Release v1.3.16
+
+Summary:
+System shows stability and correct behavior in observed runs.
+
+Critical limitation:
+All observations collected under incorrect environment (DEV instead of TEST).
+
+Risk:
+Test results not representative of target environment.
+
+Recommendation:
+HOLD — repeat validation in correct TEST environment before promotion.

@@ -1,0 +1,16 @@
+APCS VDD - Release v1.3.31
+
+Summary:
+All mandatory requirements validated.
+
+Known deviation:
+Latency increase under extreme peak load (outside SLA scope).
+
+Governance:
+Deviation formally accepted by Customer.
+
+Approval:
+Nulla Osta granted with waiver.
+
+Decision:
+GO (with accepted waiver)

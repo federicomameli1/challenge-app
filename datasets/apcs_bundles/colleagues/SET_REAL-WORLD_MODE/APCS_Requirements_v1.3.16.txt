@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.16
+Document ID: APCS-REQ-1.3.16
+
+REQ-APCS-230: System shall be validated in a TEST environment equivalent to production.
+REQ-APCS-231: Deployment environments shall be correctly configured and isolated.
+REQ-APCS-232: System shall demonstrate stability over at least 12h runtime.
+
+Status:
+REQ-APCS-230 NOT VERIFIED (tested in wrong environment)
+REQ-APCS-231 FAIL (environment misconfiguration detected)
+REQ-APCS-232 PASS (12h uptime observed, but in DEV context)

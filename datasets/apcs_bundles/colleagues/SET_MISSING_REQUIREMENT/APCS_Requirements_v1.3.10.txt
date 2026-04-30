@@ -1,0 +1,37 @@
+APCS Requirements - Release v1.3.10
+Document ID: APCS-REQ-1.3.10
+Author: Systems Engineering
+Last revision: 01-Jun-2026
+
+----------------------------------------------------------------
+Functional requirements
+----------------------------------------------------------------
+
+REQ-APCS-100: Backend shall compute occupancy percentage under
+dynamic passenger updates with p95 latency < 300 ms.
+  Module: backend     Priority: HIGH   Mandatory: true
+  Traces to: T-APCS-100
+
+REQ-APCS-101: API shall respond to concurrent requests (up to 500 req/s)
+without degradation of response time beyond SLA.
+  Module: api         Priority: HIGH   Mandatory: true
+  Traces to: T-APCS-101
+
+REQ-APCS-102: Integration layer shall publish occupancy updates within
+400 ms p95.
+  Module: integration-layer   Priority: HIGH   Mandatory: true
+  Traces to: T-APCS-102
+
+REQ-APCS-103: System shall recover from partial data loss events
+without requiring restart, maintaining data consistency.
+  Module: backend     Priority: HIGH   Mandatory: true
+  Traces to: NONE (missing mapping)
+
+----------------------------------------------------------------
+Status snapshot (as of 02-Jun-2026 17:00)
+----------------------------------------------------------------
+
+REQ-APCS-100  PASS
+REQ-APCS-101  PASS
+REQ-APCS-102  PASS
+REQ-APCS-103  NOT VERIFIED (no test coverage)

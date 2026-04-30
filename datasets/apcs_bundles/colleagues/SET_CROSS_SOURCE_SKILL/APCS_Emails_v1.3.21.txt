@@ -1,0 +1,31 @@
+Subject: [APCS][Phase 5] Test report summary
+From: V&V Team
+To: Supplier RM
+Date: 10-Jun-2026 14:30
+
+Hi,
+
+test execution completed successfully.
+
+No failures detected.
+
+System behavior consistent with expectations.
+
+V&V Team
+
+---
+
+Subject: RE:
+From: Monitoring Team
+To: Supplier RM
+Date: 10-Jun-2026 15:10
+
+Hi,
+
+just to flag that during the same time window we observed multiple
+spikes in error rates on the monitoring dashboards.
+
+These did not trigger alerts because thresholds are not configured yet,
+but they might be relevant.
+
+Monitoring Team

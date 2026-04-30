@@ -1,0 +1,11 @@
+APCS Test Procedure - Release v1.3.19
+
+Tests executed:
+  Functional validation PASS
+  Stress test PASS (with minor anomalies)
+
+Missing:
+  No extended soak test (24h)
+
+Notes:
+  Observed anomalies not reproducible and not investigated further

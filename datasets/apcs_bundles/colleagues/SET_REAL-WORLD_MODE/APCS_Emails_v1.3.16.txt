@@ -1,0 +1,21 @@
+Subject: [APCS][Phase 4] Status before TEST promotion - v1.3.16
+From: DevOps
+To: Supplier RM
+Date: 08-Jun-2026 09:30
+
+Hi,
+
+quick update before promoting to TEST.
+
+The build currently running in the environment is stable and has been up
+for ~12 hours without issues.
+
+However, just to clarify, the environment labeled as “TEST” was actually
+pointing to the DEV configuration until yesterday afternoon (network routing issue).
+
+We have now corrected the setup, but most of the observations collected so far
+might reflect DEV conditions rather than the proper TEST environment.
+
+Not sure how critical this is for your decision, but wanted to flag it.
+
+DevOps

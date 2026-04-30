@@ -1,0 +1,17 @@
+APCS VDD - Release v1.3.17
+
+Summary:
+Functional validation complete with no blocking defects.
+
+Gap:
+Non-functional requirements (stability, resource usage) not fully validated.
+
+Stakeholder positions:
+  QA: READY
+  Operations: concerns on stability
+
+Risk:
+Potential degradation under prolonged usage.
+
+Recommendation:
+HOLD until alignment between QA and Operations is achieved.

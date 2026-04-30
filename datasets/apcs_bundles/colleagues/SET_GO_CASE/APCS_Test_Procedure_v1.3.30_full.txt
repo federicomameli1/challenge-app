@@ -1,0 +1,8 @@
+APCS Test Procedure - Release v1.3.30
+
+Tests executed:
+  Functional validation PASS
+  Performance test PASS
+  Soak test (24h) PASS
+
+All mandatory tests completed successfully.

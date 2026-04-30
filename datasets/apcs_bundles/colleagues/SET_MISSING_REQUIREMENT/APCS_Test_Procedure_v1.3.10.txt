@@ -1,0 +1,28 @@
+APCS Test Procedure - Release v1.3.10
+Document ID: APCS-TP-1.3.10
+Build under test: apcs-rc-1.3.10+build.5012
+
+----------------------------------------------------------------
+Functional tests
+----------------------------------------------------------------
+
+T-APCS-100  Occupancy computation
+  Result: PASS
+
+T-APCS-101  API concurrency
+  Result: PASS
+
+T-APCS-102  Integration publishing
+  Result: PASS
+
+----------------------------------------------------------------
+Coverage
+----------------------------------------------------------------
+
+Mapped:
+  REQ-APCS-100
+  REQ-APCS-101
+  REQ-APCS-102
+
+Missing:
+  REQ-APCS-103

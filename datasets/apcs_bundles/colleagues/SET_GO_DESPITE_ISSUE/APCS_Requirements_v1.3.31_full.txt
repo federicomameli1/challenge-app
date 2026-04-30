@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.31
+Document ID: APCS-REQ-1.3.31
+
+REQ-APCS-310: System shall meet functional requirements.
+REQ-APCS-311: System shall meet latency SLA under peak load.
+REQ-APCS-312: System shall remain stable during stress conditions.
+
+Status:
+REQ-APCS-310 PASS
+REQ-APCS-311 WAIVED (accepted deviation outside SLA scope)
+REQ-APCS-312 PASS

@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.21
+Document ID: APCS-REQ-1.3.21
+
+REQ-APCS-280: System shall not exhibit elevated error rates under normal and peak conditions.
+REQ-APCS-281: Monitoring shall include alert thresholds for critical error metrics.
+REQ-APCS-282: Test results shall be corroborated with monitoring evidence.
+
+Status:
+REQ-APCS-280 PARTIAL (no failures in tests, but error spikes observed in monitoring)
+REQ-APCS-281 FAIL (thresholds not configured)
+REQ-APCS-282 FAIL (test results not aligned with monitoring observations)

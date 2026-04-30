@@ -1,0 +1,50 @@
+Subject: [APCS][Phase 5] Test results - v1.3.11 candidate
+From: V&V Team
+To: Supplier RM
+Date: 03-Jun-2026 14:20
+
+Hi,
+
+sharing the results of the verification campaign executed yesterday evening.
+
+We tested the deployment currently available in TEST (as per CI pipeline tag “latest-stable”).
+
+Main outcomes:
+  - No functional regressions detected
+  - All executed test cases passed successfully
+  - No abnormal behavior observed during stress scenarios
+
+Tested configuration:
+  backend: v2.4.0
+  api: v1.8.4
+
+We also ran extended soak tests (~6h) with no stability issues.
+
+Based on the above, from V&V perspective the system is behaving as expected.
+
+Regards,  
+V&V Team
+
+---
+
+Subject: RE: Test results - v1.3.11 candidate
+From: Dev Team
+To: V&V; Supplier RM
+Date: 03-Jun-2026 15:05
+
+Hi all,
+
+just a quick note because I think there might be a mismatch here.
+
+The actual release candidate for v1.3.11 should be using backend v2.4.2,
+not v2.4.0 — we merged a fix late yesterday afternoon (performance + retry logic).
+
+It’s possible that the TEST environment was not updated at the time
+you started the execution.
+
+Can you confirm which build was deployed during your tests?
+
+If needed, we should probably rerun at least part of the campaign.
+
+Thanks,  
+Dev Team

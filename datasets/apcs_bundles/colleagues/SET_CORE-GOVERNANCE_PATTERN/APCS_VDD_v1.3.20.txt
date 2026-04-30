@@ -1,0 +1,16 @@
+APCS VDD - Release v1.3.20
+
+Summary:
+Functional validation passed.
+
+Critical gap:
+Performance validation incomplete at time of approval.
+
+Risk:
+Observed degradation may impact SLA.
+
+Governance issue:
+Approval granted before full evidence available.
+
+Recommendation:
+HOLD — finalize performance validation before release.

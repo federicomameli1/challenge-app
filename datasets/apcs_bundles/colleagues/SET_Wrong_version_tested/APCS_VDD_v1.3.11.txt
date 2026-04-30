@@ -1,0 +1,13 @@
+APCS VDD - Release v1.3.11
+
+Summary:
+All tests passed.
+
+Issue:
+Tests executed on backend v2.4.0 instead of v2.4.2.
+
+Risk:
+Release validation not representative of final build.
+
+Recommendation:
+HOLD until re-testing on correct version.

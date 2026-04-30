@@ -1,0 +1,11 @@
+APCS Test Procedure - Release v1.3.20
+
+Tests executed:
+  Functional validation PASS
+  Partial performance test IN PROGRESS
+
+Findings:
+  Early signs of degradation under load
+
+Missing:
+  Final performance validation not completed

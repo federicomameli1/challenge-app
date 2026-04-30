@@ -1,114 +1,113 @@
 # challenge-app
 
-Frontend + backend workspace for the release-readiness console.
+Release-readiness console: a React frontend, a FastAPI orchestration layer and the Python core agents that decide whether a release can promote from DEV → TEST → PROD.
 
-The repository now embeds the full Python core migrated from `challange_hitachi`:
+## Repository layout
 
-- `agent4/`
-- `agent5/`
-- `brain/`
-- `synthetic_data/`
-- `scripts/`
-- `tests/`
-
-`backend/app.py` is now a thin FastAPI orchestration layer over those packages instead of using simplified local stubs.
+```
+challenge-app/
+├── frontend/                React + Vite app (UI)
+├── backend/                 FastAPI app exposing /agents, /brain, /datasets endpoints
+├── agents/                  Python core (deterministic policy engines)
+│   ├── agent4/              Release Readiness Analyst (Phase 4)
+│   ├── agent5/              Test Evidence Analyst (Phase 5)
+│   └── brain/               Orchestration of agent4 → agent5
+├── datasets/
+│   ├── synthetic/           Generated CSV scenarios used by the agents
+│   │   ├── phase4/{v1,v2}/
+│   │   └── phase5/{v1,v2}/
+│   └── apcs_bundles/        APCS document bundles (Emails, Requirements, VDD, ...)
+│       ├── reference/       Original GO / HOLD reference documents
+│       ├── baseline/        v1.1.x sets (GO_STABLE, HOLD_*)
+│       ├── premium/         v1.2.0 multi-thread bundles
+│       ├── adversarial/     v1.3.0 reasoning stress tests
+│       ├── colleagues/      External contributor sets (v1.3.10+)
+│       └── custom/          Bundles created at runtime via the UI
+├── scripts/
+│   ├── generate/            Synthetic dataset generators
+│   ├── run/                 Single-run / orchestrator entrypoints
+│   └── eval/                Evaluation, label-check and CI analysis
+├── tests/                   Pytest suite (agent5, brain)
+├── deploy/
+│   ├── docker/              Dockerfile, nginx config, run_combined.py
+│   └── helm/                Helm chart packaged to GHCR by CI
+├── docs/                    Living documentation
+└── artifacts/               Local run outputs (gitignored)
+```
 
 ## Frontend
 
-Run the React app:
-
 ```bash
+cd frontend
 npm install
-npm run dev
+npm run dev      # Vite dev server, proxies /api → http://127.0.0.1:8001
+npm test         # Vitest + Testing Library
+npm run build    # writes frontend/dist/ for the container image
 ```
 
 ## Backend
 
-Custom sets created from the UI are persisted on disk under `Dataset/Test_Sets/SET_CUSTOM_*` and are reloaded from the backend on startup.
-
-### Install backend dependencies
-
-From the `challenge-app` root:
-
 ```bash
 pip install -r backend/requirements.txt
-```
-
-### Run backend
-
-From the `challenge-app` root:
-
-```bash
 uvicorn backend.app:app --reload --host 0.0.0.0 --port 8001
 ```
 
-### Configure OpenRouter for LLM summaries
-
-Create or update the root `.env` file and set:
-
-```env
-OPENROUTER_API_KEY=your_key_here
-OPENROUTER_MODEL=openai/gpt-oss-20b:free
-```
-
-The backend auto-loads `.env` on startup. If `OPENROUTER_API_KEY` is missing, the app still runs and falls back to deterministic summaries even when LLM summaries are requested.
+The backend auto-loads `.env` at the repo root. Set `OPENROUTER_API_KEY` to enable LLM-refined explanations; without it the deterministic explainer is used.
 
 ### Core HTTP endpoints
 
 - `GET /health`
-- `GET /datasets/custom-sets`
-- `POST /datasets/custom-sets`
-- `DELETE /datasets/custom-sets/{set_id}`
 - `GET /agents/options`
 - `POST /agents/validate`
 - `POST /agents/scenarios`
 - `POST /agents/run`
 - `GET /brain/options`
 - `POST /brain/run`
+- `GET /datasets/custom-sets`
+- `POST /datasets/custom-sets`
+- `DELETE /datasets/custom-sets/{set_id}`
 
-### Example: Release Readiness Analyst single scenario
+Custom sets uploaded from the UI persist on disk under `datasets/apcs_bundles/custom/` and are reloaded at startup.
 
-```json
-{
-  "agent": "agent4",
-  "dataset_root": "synthetic_data/v1",
-  "scenario_id": "S4-001",
-  "check_label": true,
-  "strict_schema": true,
-  "source_adapter_kind": "auto",
-  "no_llm": true
-}
+## Running agents from the CLI
+
+```bash
+# Single Phase 4 scenario
+python scripts/run/run_agent4.py --scenario-id S4-001 --pretty
+
+# Phase 5 evaluate-all with label check
+python scripts/run/run_agent5.py --evaluate-all --check-label \
+  --dataset-root datasets/synthetic/phase5/v2
+
+# Brain orchestrator (agent4 → agent5)
+python scripts/run/run_brain_orchestrator.py \
+  --scenario-id S4-001 --agent5-scenario-id P5V2-001 --pretty
+
+# Run agent4 over all colleague APCS bundles
+python scripts/run/run_colleagues_sets.py
 ```
 
-The `agent` field also accepts human-readable aliases such as `Release Readiness Analyst` and `Test Evidence Analyst`; the backend normalizes them to the canonical ids `agent4` and `agent5`.
+The `agents/agent4` LangChain pipeline accepts `--source-adapter-kind apcs_doc_bundle` to read APCS document bundles instead of structured CSVs.
 
-### Example: Test Evidence Analyst evaluate-all
+## Container build
 
-```json
-{
-  "agent": "agent5",
-  "dataset_root": "synthetic_data/phase5/v2",
-  "evaluate_all": true,
-  "check_label": true,
-  "no_llm": true
-}
+The Dockerfile builds the frontend into static assets and runs nginx + uvicorn together inside one image.
+
+```bash
+docker build -f deploy/docker/Dockerfile -t challenge-app .
+docker run --rm -p 8080:80 --env-file .env challenge-app
 ```
 
-### Example: Brain orchestration
+## Helm chart
 
-```json
-{
-  "scenario_id": "S4-001",
-  "agent5_scenario_id": "P5V2-001",
-  "agent4_dataset_root": "synthetic_data/v1",
-  "agent5_dataset_root": "synthetic_data/phase5/v2",
-  "allow_agent5_after_agent4_hold": false
-}
+```bash
+helm package deploy/helm
 ```
+
+CI publishes the chart to `oci://ghcr.io/<owner>/<repo>` whenever `deploy/helm/` changes.
 
 ## Notes
 
-- Agent decisions remain deterministic; the backend orchestrates the policy engines and exposes their outputs over HTTP.
-- `strict_schema` and `fail_on_label_mismatch` are enforced as HTTP errors when enabled.
-- Custom dataset uploads support APCS `.docx` bundles in addition to text and CSV assets.
-- The repo is now self-contained for the copied synthetic datasets and Python runners.
+- Agent decisions are deterministic; the LLM layer only refines the natural-language explanation.
+- `strict_schema` and `fail_on_label_mismatch` surface as HTTP errors when enabled.
+- Custom dataset uploads accept `.txt`, `.csv` and `.docx` APCS assets.

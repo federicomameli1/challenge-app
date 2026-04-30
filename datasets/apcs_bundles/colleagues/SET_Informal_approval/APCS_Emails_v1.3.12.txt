@@ -1,0 +1,47 @@
+Subject: [APCS][Phase 6] VDD review and approval request - v1.3.12
+From: Supplier RM
+To: Customer Representative
+Date: 04-Jun-2026 10:30
+
+Dear all,
+
+please find attached the VDD draft for release v1.3.12.
+
+The release includes:
+  - backend v2.4.3
+  - api v1.8.5
+  - minor fixes on HMI layer
+
+From our internal validation:
+  - all functional requirements are covered
+  - no blocking defects remain open
+  - known risks are documented in section 5 of the VDD
+
+We would like to proceed with the approval step (Nulla Osta)
+in order to schedule PROD deployment.
+
+Please let us know if you need additional details or clarifications.
+
+Best regards,  
+Supplier RM
+
+---
+
+Subject: RE: VDD review and approval request - v1.3.12
+From: Customer Representative
+To: Supplier RM
+Date: 04-Jun-2026 12:10
+
+Hi,
+
+thanks for sharing the document.
+
+I had a quick look and overall everything seems aligned with what we discussed
+in the last call.
+
+I don’t see any major concerns at this stage.
+
+Let’s proceed as planned, unless something critical comes up.
+
+Best,  
+Customer

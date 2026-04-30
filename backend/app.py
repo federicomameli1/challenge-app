@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import base64
 import binascii
@@ -25,17 +25,17 @@ LEGACY_CORE_ROOT = REPO_ROOT.parent / "challange_hitachi"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agent4.lc_pipeline import (  # noqa: E402
+from agents.agent4.lc_pipeline import (  # noqa: E402
     Agent4LCError,
     LCPipelineConfig as Agent4PipelineConfig,
     LangChainAgent4Pipeline,
 )
-from agent5.lc_pipeline import (  # noqa: E402
+from agents.agent5.lc_pipeline import (  # noqa: E402
     Agent5LCError,
     LCPipelineConfig as Agent5PipelineConfig,
     LangChainAgent5Pipeline,
 )
-from brain import (  # noqa: E402
+from agents.brain import (  # noqa: E402
     BrainOrchestrator,
     BrainOrchestratorError,
     BrainRunRequest,
@@ -50,7 +50,7 @@ from brain import (  # noqa: E402
 AgentKind = Literal["agent4", "agent5"]
 SourceAdapterKind = Literal["auto", "structured_dataset", "apcs_doc_bundle"]
 
-CUSTOM_SET_ROOT = REPO_ROOT / "Dataset" / "Test_Sets"
+CUSTOM_SET_ROOT = REPO_ROOT / "datasets" / "apcs_bundles" / "custom"
 CUSTOM_SET_MANIFEST_NAME = "custom_set.json"
 ENV_PATH = REPO_ROOT / ".env"
 
@@ -347,8 +347,8 @@ class BrainRunRequestModel(BaseModel):
     agent4_release_id: Optional[str] = None
     agent5_release_id: Optional[str] = None
 
-    agent4_dataset_root: str = "synthetic_data/v1"
-    agent5_dataset_root: str = "synthetic_data/phase5/v1"
+    agent4_dataset_root: str = "datasets/synthetic/phase4/v1"
+    agent5_dataset_root: str = "datasets/synthetic/phase5/v1"
     agent4_source_adapter_kind: Optional[SourceAdapterKind] = None
 
     agent4_use_llm_summary: bool = False
@@ -479,12 +479,12 @@ def _infer_custom_set_backend(folder_name: str, file_names: Sequence[str]) -> Di
         normalized_names & AGENT4_STRUCTURED_OPTIONAL
     ):
         backend["agent4"] = {
-            "datasetRoot": f"challenge-app/Dataset/Test_Sets/{folder_name}",
+            "datasetRoot": f"datasets/apcs_bundles/custom/{folder_name}",
             "sourceAdapterKind": "structured_dataset",
         }
     elif any(name.startswith("APCS_") for name in normalized_names):
         backend["agent4"] = {
-            "datasetRoot": f"challenge-app/Dataset/Test_Sets/{folder_name}",
+            "datasetRoot": f"datasets/apcs_bundles/custom/{folder_name}",
             "sourceAdapterKind": "apcs_doc_bundle",
         }
 
@@ -492,7 +492,7 @@ def _infer_custom_set_backend(folder_name: str, file_names: Sequence[str]) -> Di
         normalized_names & AGENT5_CALENDAR_CANDIDATES
     ):
         backend["agent5"] = {
-            "datasetRoot": f"challenge-app/Dataset/Test_Sets/{folder_name}",
+            "datasetRoot": f"datasets/apcs_bundles/custom/{folder_name}",
         }
 
     return backend
@@ -529,7 +529,7 @@ def _read_custom_set(folder: Path) -> Optional[Dict[str, Any]]:
         documents.append(
             {
                 "name": str(item.get("name") or file_name),
-                "filePath": f"Dataset/Test_Sets/{folder.name}/{file_name}",
+                "filePath": f"datasets/apcs_bundles/custom/{folder.name}/{file_name}",
                 "text": text,
                 "isBinary": is_binary,
                 "contentType": item.get("contentType"),
@@ -550,6 +550,70 @@ def _read_custom_set(folder: Path) -> Optional[Dict[str, Any]]:
         "documents": documents,
         "backend": manifest.get("backend"),
     }
+
+
+BUNDLE_CATEGORIES = ["reference", "baseline", "premium", "adversarial", "colleagues"]
+BUNDLES_ROOT = REPO_ROOT / "datasets" / "apcs_bundles"
+
+
+def _read_bundle_set(folder: Path, category: str) -> Optional[Dict[str, Any]]:
+    apcs_files = sorted(f for f in folder.iterdir() if f.is_file() and f.name.upper().startswith("APCS_"))
+    if not apcs_files:
+        return None
+
+    file_names = [f.name for f in apcs_files]
+    documents = []
+    for f in apcs_files:
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        documents.append({
+            "name": f.name,
+            "filePath": f"datasets/apcs_bundles/{category}/{folder.name}/{f.name}",
+            "text": text,
+            "isBinary": False,
+            "contentType": None,
+            "contentBase64": None,
+        })
+
+    correct_root = f"datasets/apcs_bundles/{category}/{folder.name}"
+    backend_config = _infer_custom_set_backend(folder.name, file_names)
+    if not backend_config.get("agent4"):
+        backend_config["agent4"] = {
+            "datasetRoot": correct_root,
+            "sourceAdapterKind": "apcs_doc_bundle",
+        }
+    else:
+        backend_config["agent4"]["datasetRoot"] = correct_root
+
+    label = folder.name.replace("_", " ").replace("-", " ")
+
+    return {
+        "id": folder.name,
+        "label": label,
+        "source": category,
+        "category": category,
+        "persisted": True,
+        "createdAtUtc": None,
+        "documents": documents,
+        "backend": backend_config,
+    }
+
+
+def _list_bundle_sets() -> List[Dict[str, Any]]:
+    result = []
+    for category in BUNDLE_CATEGORIES:
+        cat_path = BUNDLES_ROOT / category
+        if not cat_path.exists():
+            continue
+        for folder in sorted(cat_path.iterdir()):
+            if not folder.is_dir():
+                continue
+            loaded = _read_bundle_set(folder, category)
+            if loaded:
+                result.append(loaded)
+    return result
 
 
 def _list_custom_sets() -> List[Dict[str, Any]]:
@@ -1019,6 +1083,11 @@ def health() -> Dict[str, Any]:
     }
 
 
+@app.get("/datasets/bundles")
+def list_bundle_sets() -> Dict[str, Any]:
+    return {"items": _list_bundle_sets()}
+
+
 @app.get("/datasets/custom-sets")
 def list_custom_sets() -> Dict[str, Any]:
     return {"items": _list_custom_sets()}
@@ -1073,9 +1142,9 @@ def agent_options() -> Dict[str, Any]:
             "source_adapter_kinds": ["auto", "structured_dataset", "apcs_doc_bundle"],
             "aliases": ["agent4", "Agent 4", "Release Readiness Analyst"],
             "examples": [
-                "synthetic_data/v1",
-                "synthetic_data/v2",
-                "challenge-app/Dataset/Test_Sets/SET_GO_STABLE_v1.1.2",
+                "datasets/synthetic/phase4/v1",
+                "datasets/synthetic/phase4/v2",
+                "datasets/apcs_bundles/baseline/SET_GO_STABLE_v1.1.2",
             ],
         },
         "agent5": {
@@ -1095,8 +1164,8 @@ def agent_options() -> Dict[str, Any]:
             ],
             "aliases": ["agent5", "Agent 5", "Test Evidence Analyst"],
             "examples": [
-                "synthetic_data/phase5/v1",
-                "synthetic_data/phase5/v2",
+                "datasets/synthetic/phase5/v1",
+                "datasets/synthetic/phase5/v2",
             ],
         },
     }

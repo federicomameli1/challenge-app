@@ -1,0 +1,16 @@
+APCS VDD - Release v1.3.22
+
+Summary:
+Functional validation passed, but performance SLA not met.
+
+Critical issue:
+Latency exceeds SLA under peak load conditions.
+
+Governance gap:
+Risk acknowledged but no formal owner assigned.
+
+Impact:
+Release cannot proceed without explicit risk ownership and acceptance.
+
+Recommendation:
+HOLD — assign risk ownership and obtain formal approval before release.

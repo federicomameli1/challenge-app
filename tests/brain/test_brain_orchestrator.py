@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
 from typing import Dict, Mapping, Optional, Tuple
 
-from brain.models import (
+from agents.brain.models import (
     BrainRunRequest,
     DependencyPolicy,
     StageDependency,
@@ -12,9 +12,9 @@ from brain.models import (
     StageSpec,
     StageStatus,
 )
-from brain.orchestrator import BrainOrchestrator
-from brain.stages import BrainStage, StageExecutionContext, StageRegistry
-from scripts.run_brain_orchestrator import (
+from agents.brain.orchestrator import BrainOrchestrator
+from agents.brain.stages import BrainStage, StageExecutionContext, StageRegistry
+from scripts.run.run_brain_orchestrator import (
     _build_request,
     _options_from_args,
     _stage_inputs_from_args,
@@ -202,8 +202,8 @@ def _namespace(**overrides: object) -> argparse.Namespace:
         "agent5_scenario_id": None,
         "agent4_release_id": None,
         "agent5_release_id": None,
-        "agent4_dataset_root": "synthetic_data/v1",
-        "agent5_dataset_root": "synthetic_data/phase5/v1",
+        "agent4_dataset_root": "datasets/synthetic/phase4/v1",
+        "agent5_dataset_root": "datasets/synthetic/phase5/v1",
         "agent4_source_adapter_kind": None,
         "agent4_use_llm_summary": False,
         "agent4_strict_schema": False,

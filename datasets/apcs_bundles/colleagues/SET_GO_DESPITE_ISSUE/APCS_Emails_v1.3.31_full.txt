@@ -1,0 +1,20 @@
+Subject: [APCS][Phase 6] Approval with waiver - v1.3.31
+From: Customer Representative
+To: Supplier RM
+Date: 15-Jun-2026 14:20
+
+Hi,
+
+we reviewed the release documentation.
+
+All mandatory requirements have been validated successfully.
+
+We acknowledge the minor latency deviation under extreme peak load.
+As discussed, this scenario is outside current SLA scope.
+
+We formally accept this deviation and approve the release.
+
+Nulla Osta granted.
+
+Best,  
+Customer

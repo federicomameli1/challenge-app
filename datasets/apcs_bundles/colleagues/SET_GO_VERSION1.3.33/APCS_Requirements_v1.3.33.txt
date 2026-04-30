@@ -1,0 +1,6 @@
+APCS Requirements - Release v1.3.33
+
+REQ-APCS-330: Functional requirements — PASS
+REQ-APCS-331: Performance SLA — PASS
+REQ-APCS-332: Stability (extended runtime) — PASS
+REQ-APCS-333: Monitoring configured — PASS

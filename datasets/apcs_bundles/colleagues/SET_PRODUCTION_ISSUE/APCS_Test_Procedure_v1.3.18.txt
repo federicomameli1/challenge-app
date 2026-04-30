@@ -1,0 +1,11 @@
+APCS Test Procedure - Release v1.3.18
+
+Tests executed:
+  Health check validation PASS
+  Basic functional tests PASS
+
+Limitations:
+  No validation of version consistency across microservices
+
+Observation:
+  One microservice reverted to previous version during deployment
