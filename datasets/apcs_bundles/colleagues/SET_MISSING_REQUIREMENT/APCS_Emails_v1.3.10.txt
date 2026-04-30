@@ -1,0 +1,53 @@
+Subject: [APCS][Phase 5] Test execution summary - v1.3.10
+From: V&V Team <vv.team@hitachi.example>
+To: Supplier Release Manager
+Cc: QA Lead; Dev Team
+Date: 02-Jun-2026 15:00
+
+Hi all,
+
+we’ve completed the planned test campaign for build apcs-rc-1.3.10+build.5012 in TEST.
+
+Overall execution went smoothly, no major issues encountered during the runs.
+All environments were stable and test data behaved as expected.
+
+Summary of results:
+  - REQ-APCS-100: PASS (validated under nominal and boundary conditions)
+  - REQ-APCS-101: PASS (API response verified under concurrent load)
+  - REQ-APCS-102: PASS (integration layer publishing confirmed)
+
+We also repeated a subset of regression scenarios from the previous release
+to ensure no unexpected side effects, all of which passed.
+
+At this stage, from a V&V execution perspective, we don’t see blocking issues.
+
+Please note that the current test scope reflects the latest agreed test procedure v2.1.
+
+Let us know if anything else is required before moving forward.
+
+Best regards,  
+V&V Team
+
+---
+
+Subject: RE: Test execution summary - v1.3.10
+From: QA Lead <qa.lead@hitachi.example>
+To: Supplier Release Manager
+Date: 02-Jun-2026 16:05
+
+Hi,
+
+thanks for the detailed summary.
+
+Just to clarify one point: REQ-APCS-103 (error recovery on partial data loss)
+does not seem to be included in the current test procedure.
+
+I understand this was discussed earlier and considered “low priority”, but
+formally it is still marked as mandatory in the requirements list.
+
+That said, given the stability of the system and absence of related defects,
+from QA side we are still comfortable marking the release as ready.
+
+Let me know if you want to revisit coverage before proceeding.
+
+QA Lead

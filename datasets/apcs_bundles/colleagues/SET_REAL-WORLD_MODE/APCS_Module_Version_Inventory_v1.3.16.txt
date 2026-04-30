@@ -1,0 +1,15 @@
+APCS Module Version Inventory
+
+Planned:
+  backend v2.5.5
+  api v1.9.5
+
+Observed during testing:
+  backend v2.5.5
+  api v1.9.5
+
+Environment:
+  TEST incorrectly mapped to DEV until recent fix
+
+Status:
+ENVIRONMENT MISCONFIGURATION

@@ -1,0 +1,31 @@
+Subject: [APCS][Phase 6] Approval - v1.3.20
+From: Customer Representative
+To: Supplier RM
+Date: 10-Jun-2026 11:10
+
+Hi,
+
+based on what we reviewed so far, we are fine to proceed with the release.
+
+We trust that the remaining checks (mainly performance-related)
+will not introduce major issues, as nothing critical has been observed yet.
+
+Please keep us informed if anything changes before deployment.
+
+Best,  
+Customer
+
+---
+
+Subject: RE: Approval
+From: Operations
+To: Supplier RM
+Date: 10-Jun-2026 12:00
+
+Hi,
+
+just to add: we are still running performance tests and results are not final yet.
+
+We’ve already seen some degradation under load, but analysis is ongoing.
+
+Operations

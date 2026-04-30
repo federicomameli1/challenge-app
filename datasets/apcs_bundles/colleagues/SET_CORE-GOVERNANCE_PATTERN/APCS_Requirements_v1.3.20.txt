@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.20
+Document ID: APCS-REQ-1.3.20
+
+REQ-APCS-270: System shall meet performance SLA under peak load.
+REQ-APCS-271: All mandatory verification activities must be completed prior to approval.
+REQ-APCS-272: System shall show no degradation under sustained load.
+
+Status:
+REQ-APCS-270 NOT VERIFIED (tests ongoing)
+REQ-APCS-271 FAIL (approval issued before completion)
+REQ-APCS-272 PARTIAL (degradation observed)

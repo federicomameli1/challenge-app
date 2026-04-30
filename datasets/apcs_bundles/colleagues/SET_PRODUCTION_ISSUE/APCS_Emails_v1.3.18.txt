@@ -1,0 +1,21 @@
+Subject: [APCS][Phase 4] Deployment update - v1.3.18
+From: DevOps
+To: Supplier RM
+Date: 09-Jun-2026 10:15
+
+Hi,
+
+deployment completed this morning.
+
+All services are up and running, and the system is responding correctly
+to basic health checks.
+
+Just to mention, during the deployment we encountered a configuration
+issue with one of the microservices, so we temporarily reverted it
+to the previous version to keep the system stable.
+
+We plan to align it with the rest of the release later today.
+
+At the moment, everything seems operational.
+
+DevOps

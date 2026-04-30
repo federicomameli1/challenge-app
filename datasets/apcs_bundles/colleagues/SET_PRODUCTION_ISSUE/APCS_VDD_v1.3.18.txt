@@ -1,0 +1,13 @@
+APCS VDD - Release v1.3.18
+
+Summary:
+System operational after deployment.
+
+Critical issue:
+One microservice running previous version due to rollback.
+
+Risk:
+Inconsistent behavior across services and potential integration issues.
+
+Recommendation:
+HOLD — align all services to consistent version before proceeding.

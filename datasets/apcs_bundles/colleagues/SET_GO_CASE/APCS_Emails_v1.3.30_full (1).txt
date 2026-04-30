@@ -1,0 +1,18 @@
+Subject: [APCS][Phase 6] Final approval - v1.3.30
+From: Customer Representative
+To: Supplier RM
+Date: 15-Jun-2026 11:00
+
+Hi,
+
+we have completed the review of the VDD and supporting test evidence.
+
+All functional and non-functional requirements have been validated,
+including performance under peak load and 24h stability tests.
+
+We confirm that all previously identified risks have been mitigated.
+
+Approval (Nulla Osta) is granted for PROD deployment.
+
+Best regards,  
+Customer

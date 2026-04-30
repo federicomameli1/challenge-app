@@ -1,0 +1,26 @@
+Subject: [APCS][Phase 4] DEV status update - v1.3.13
+From: Dev Team
+To: Supplier RM
+Date: 05-Jun-2026 09:15
+
+Hi,
+
+quick update on the current DEV build.
+
+All planned features have been implemented and integrated successfully.
+We completed internal checks and basic validation scenarios, and everything
+looks stable from a functional perspective.
+
+We also addressed the retry mechanism issue from the previous release.
+
+There is still one item under observation:
+  we noticed a potential memory leak under specific edge conditions,
+  but so far we haven’t been able to reproduce it consistently.
+
+Given that, we don’t consider it blocking at this stage.
+
+From DEV side, we are ok to proceed to TEST.
+
+Let me know if you want additional checks before promotion.
+
+Dev Team

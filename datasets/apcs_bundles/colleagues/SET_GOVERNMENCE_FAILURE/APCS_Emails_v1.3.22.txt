@@ -1,0 +1,19 @@
+Subject: [APCS][Phase 6] Risk discussion - v1.3.22
+From: Supplier RM
+To: Operations; Customer
+Date: 11-Jun-2026 09:45
+
+Hi,
+
+regarding the latency issue observed during testing:
+
+we acknowledge that the system exceeds the target threshold under peak load.
+
+At this stage, the question is how we want to manage this risk.
+
+From supplier side, we can accept it temporarily, but since it affects SLA,
+we would need confirmation from the customer.
+
+Please confirm who is willing to formally own this risk for the release.
+
+Supplier RM

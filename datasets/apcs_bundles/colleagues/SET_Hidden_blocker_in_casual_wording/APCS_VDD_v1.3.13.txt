@@ -1,0 +1,13 @@
+APCS VDD - Release v1.3.13
+
+Summary:
+DEV validation completed.
+
+Known issue:
+Potential memory leak under edge conditions.
+
+Risk:
+Unpredictable behavior under prolonged execution.
+
+Recommendation:
+HOLD or proceed to TEST with explicit risk acknowledgment.

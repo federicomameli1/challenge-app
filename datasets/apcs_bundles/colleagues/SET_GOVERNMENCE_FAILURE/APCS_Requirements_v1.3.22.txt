@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.22
+Document ID: APCS-REQ-1.3.22
+
+REQ-APCS-290: System shall meet latency SLA under peak load conditions.
+REQ-APCS-291: Any SLA deviation must be formally accepted by the responsible stakeholder.
+REQ-APCS-292: Risk ownership must be explicitly assigned prior to release approval.
+
+Status:
+REQ-APCS-290 FAIL (latency threshold exceeded)
+REQ-APCS-291 NOT VERIFIED (no formal acceptance recorded)
+REQ-APCS-292 FAIL (risk owner not defined)

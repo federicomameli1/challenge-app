@@ -1,0 +1,13 @@
+APCS Test Procedure - Release v1.3.15
+
+Tests executed:
+  Concurrency test PASS
+  API responsiveness PASS
+  Soak test PASS (6h)
+
+Limitations:
+  Load simulations executed using standard dataset
+  No full production-scale testing performed
+
+Coverage:
+  REQ-APCS-220 partially validated (non-production conditions)

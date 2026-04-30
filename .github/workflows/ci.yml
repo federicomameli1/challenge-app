@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
         run: |
-          python scripts/run_ci_analysis.py \
+          python scripts/eval/run_ci_analysis.py \
             --phase pre-test \
             --event-name "${{ github.event_name }}" \
             --event-payload "$GITHUB_EVENT_PATH" \
@@ -99,14 +99,17 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install deps
         run: npm ci
+        working-directory: frontend
 
       - name: Run tests
         id: test_step
         continue-on-error: true
         run: npm test
+        working-directory: frontend
 
       - name: Set up Docker Buildx
         if: >
@@ -156,6 +159,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: deploy/docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
@@ -376,7 +380,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
         run: |
-          python scripts/run_ci_analysis.py \
+          python scripts/eval/run_ci_analysis.py \
             --phase pre-prod \
             --event-name "${{ github.event_name }}" \
             --event-payload "$GITHUB_EVENT_PATH" \
@@ -519,7 +523,7 @@ jobs:
       - name: Check chart changes
         id: chart_changes
         run: |
-          if git diff --name-only HEAD~1 | grep -q "^chart/"; then
+          if git diff --name-only HEAD~1 | grep -q "^deploy/helm/"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -537,6 +541,6 @@ jobs:
       - name: Package and push Helm chart
         if: steps.chart_changes.outputs.changed == 'true'
         run: |
-          helm package chart --destination .
+          helm package deploy/helm --destination .
           CHART_TGZ="$(ls -1 *.tgz | head -1)"
           helm push "$CHART_TGZ" oci://ghcr.io/${{ github.repository}}

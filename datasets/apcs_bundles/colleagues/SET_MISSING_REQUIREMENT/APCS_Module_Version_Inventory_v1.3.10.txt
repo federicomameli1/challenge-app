@@ -1,0 +1,10 @@
+APCS Module Version Inventory
+Document ID: APCS-MVI-1.3.10
+
+Module             Planned     Deployed    Status
+backend            v2.5.0      v2.5.0      match
+api                v1.9.1      v1.9.1      match
+integration-layer  v1.4.0      v1.4.0      match
+
+Environment:
+  TEST aligned

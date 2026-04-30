@@ -1,0 +1,14 @@
+APCS Module Version Inventory
+
+Planned:
+  backend v2.5.7
+  api v1.9.7
+  integration-layer v1.4.2
+
+Deployed:
+  backend v2.5.7
+  api v1.9.7
+  integration-layer v1.4.1 (previous version)
+
+Status:
+VERSION MISMATCH (partial rollback detected)

@@ -1,0 +1,12 @@
+APCS Test Procedure - Release v1.3.11
+
+Tested version:
+  backend v2.4.0
+
+Tests:
+  Retry logic test PASS
+  Concurrency test PASS
+  Soak test PASS
+
+Note:
+Actual candidate expected backend v2.4.2

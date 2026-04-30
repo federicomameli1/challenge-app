@@ -1,0 +1,11 @@
+APCS Requirements - Release v1.3.30
+Document ID: APCS-REQ-1.3.30
+
+REQ-APCS-300: System shall meet functional requirements.
+REQ-APCS-301: System shall meet performance SLA under peak load.
+REQ-APCS-302: System shall remain stable for 24h runtime.
+
+Status:
+REQ-APCS-300 PASS
+REQ-APCS-301 PASS
+REQ-APCS-302 PASS

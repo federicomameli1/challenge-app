@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 import json
@@ -7,11 +7,11 @@ from typing import Dict, List, Sequence, Tuple
 
 import pytest
 
-from agent5.agent import Agent5Config, Agent5LangChainOrchestrator
-from agent5.explanation import ExplanationContext, build_deterministic_explanation
-from agent5.ingestion import Phase5Ingestion
-from agent5.lc_pipeline import LangChainAgent5Pipeline, LCPipelineConfig
-from agent5.models import (
+from agents.agent5.agent import Agent5Config, Agent5LangChainOrchestrator
+from agents.agent5.explanation import ExplanationContext, build_deterministic_explanation
+from agents.agent5.ingestion import Phase5Ingestion
+from agents.agent5.lc_pipeline import LangChainAgent5Pipeline, LCPipelineConfig
+from agents.agent5.models import (
     Decision,
     DecisionType,
     ReasonItem,
@@ -22,8 +22,8 @@ from agent5.models import (
     build_agent5_output,
     validate_output_schema,
 )
-from agent5.normalization import normalize_evidence_bundle
-from agent5.policy import Phase5PolicyEngine
+from agents.agent5.normalization import normalize_evidence_bundle
+from agents.agent5.policy import Phase5PolicyEngine
 
 
 def _write_csv(
@@ -454,7 +454,7 @@ def test_validate_output_schema_accepts_valid_payload() -> None:
             ),
         ),
         evidence=(
-            SourceRef(file_path="synthetic_data/phase5/v1/requirements_master.csv"),
+            SourceRef(file_path="datasets/synthetic/phase5/v1/requirements_master.csv"),
         ),
         summary="GO recommended because no gate triggered.",
         decision_type=DecisionType.DETERMINISTIC,

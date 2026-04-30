@@ -1,0 +1,27 @@
+Subject: [APCS][Phase 5] Readiness discussion - v1.3.17
+From: QA Lead
+To: Supplier RM
+Cc: Operations; V&V
+Date: 08-Jun-2026 15:50
+
+Hi,
+
+following today’s sync, just summarizing the current situation.
+
+From QA perspective:
+  - all planned test cases executed
+  - no blocking defects identified
+
+So from a strict QA definition, the system is “ready”.
+
+However, I understand that Operations still has concerns about
+long-term stability and resource consumption trends.
+
+I think we might be using slightly different definitions of “ready” here:
+  QA → no functional defects
+  Ops → system stability over time
+
+From our side, we don’t see blockers, but alignment might be needed
+before moving forward.
+
+QA Lead

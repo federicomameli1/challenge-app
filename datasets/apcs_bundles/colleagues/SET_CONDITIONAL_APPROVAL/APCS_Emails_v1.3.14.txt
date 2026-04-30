@@ -1,0 +1,43 @@
+Subject: RE: [APCS][Phase 6] Approval request - v1.3.14
+From: Customer Representative
+To: Supplier RM
+Date: 06-Jun-2026 11:40
+
+Hi,
+
+we reviewed the VDD and the test evidence.
+
+Overall the release looks acceptable from a functional standpoint.
+
+However, we still have concerns regarding the monitoring coverage,
+especially for the new endpoints introduced in this version.
+
+At the moment, it seems that alert thresholds are not yet configured,
+which could limit visibility in case of degradation.
+
+Given that, we are willing to approve the release under the condition that:
+  - monitoring configuration is completed before PROD deployment
+  - thresholds are validated with Operations
+
+Please confirm if this is feasible on your side.
+
+Best regards,  
+Customer
+
+---
+
+Subject: RE: Approval request
+From: Monitoring Team
+To: Supplier RM
+Date: 06-Jun-2026 13:05
+
+Hi,
+
+just to clarify, the monitoring dashboards are already in place,
+but alert thresholds have not been finalized yet.
+
+We were planning to complete that in the next sprint.
+
+Let us know if this needs to be prioritized.
+
+Monitoring Team

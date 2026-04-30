@@ -1,0 +1,11 @@
+APCS Test Procedure - Release v1.3.14
+
+Tests executed:
+  Functional validation PASS
+  Load test PASS
+
+Missing:
+  No validation of monitoring thresholds
+
+Note:
+Monitoring endpoints verified but alerting not tested.
