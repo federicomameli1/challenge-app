@@ -1086,6 +1086,18 @@ def health() -> Dict[str, Any]:
     }
 
 
+@app.get("/llm-test")
+def llm_test() -> Dict[str, Any]:
+    """Quick smoke-test that makes a real LLM call and returns the result or error."""
+    if LLM_GENERATE is None:
+        return {"ok": False, "error": "LLM not configured (OPENROUTER_API_KEY missing)"}
+    try:
+        result = LLM_GENERATE('{"task":"ping","output_schema":{"reply":"string"}}')
+        return {"ok": True, "response": result[:300]}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
 @app.get("/datasets/bundles")
 def list_bundle_sets() -> Dict[str, Any]:
     return {"items": _list_bundle_sets()}
