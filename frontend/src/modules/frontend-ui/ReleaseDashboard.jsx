@@ -887,8 +887,8 @@ export default function ReleaseDashboard() {
   function handleExportCurrentAnalysis() {
     downloadJsonFile("challenge-analysis.json", {
       dataset: {
-        id: selectedDataset.id,
-        label: selectedDataset.label,
+        id: selectedDataset?.id ?? null,
+        label: selectedDataset?.label ?? null,
       },
       selectedAgent,
       runOptions,
@@ -900,11 +900,11 @@ export default function ReleaseDashboard() {
   const quickFacts = [
     {
       label: "Dataset",
-      value: selectedDataset.label,
+      value: selectedDataset?.label ?? "–",
     },
     {
       label: "Analyst",
-      value: selectedAgent.name,
+      value: selectedAgent?.name ?? "–",
     },
     {
       label: "Report mode",
@@ -994,9 +994,9 @@ export default function ReleaseDashboard() {
                   <button
                     type="button"
                     onClick={handleDeleteSelectedSet}
-                    disabled={selectedDataset.source !== "custom"}
+                    disabled={selectedDataset?.source !== "custom"}
                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                      selectedDataset.source === "custom"
+                      selectedDataset?.source === "custom"
                         ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
                         : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                     }`}
@@ -1256,9 +1256,9 @@ export default function ReleaseDashboard() {
                         className="text-sm font-semibold text-slate-900"
                         data-testid="current-result-analyst-name"
                       >
-                        {selectedAgent.name}
+                        {selectedAgent?.name ?? "–"}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">{selectedDataset.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{selectedDataset?.label ?? "–"}</p>
                     </div>
                   </div>
                   <span
@@ -1646,7 +1646,7 @@ export default function ReleaseDashboard() {
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <p className="text-sm font-semibold text-slate-800">Included documents</p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                        {selectedDataset.documents.map((doc) => (
+                        {(selectedDataset?.documents ?? []).map((doc) => (
                           <span key={doc.filePath} className="rounded-full bg-white px-3 py-1.5">
                             {doc.name}
                           </span>
