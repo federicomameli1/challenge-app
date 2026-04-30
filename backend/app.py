@@ -3,6 +3,7 @@
 import base64
 import binascii
 import json
+import logging
 import os
 import re
 import shutil
@@ -1053,6 +1054,8 @@ def _run_brain(req: BrainRunRequestModel) -> Dict[str, Any]:
     return report.to_dict()
 
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
 app = FastAPI(title="Challenge App Core Backend", version="0.2.0")
 
 app.add_middleware(
@@ -1182,13 +1185,26 @@ def run_agent(req: AgentRunRequest) -> AgentRunResponse:
 
     mode: Literal["single", "evaluate_all"] = "evaluate_all" if req.evaluate_all else "single"
 
-    diagnostics = {
+    llm_requested = not req.no_llm and LLM_GENERATE is not None
+    single_payload = payload if not req.evaluate_all else None
+    llm_used = (
+        single_payload is not None
+        and single_payload.get("decision_type") == "deterministic_with_llm_summary"
+    )
+    diagnostics: Dict[str, Any] = {
         "strict_schema_enabled": req.strict_schema,
         "check_label_enabled": req.check_label,
         "fail_on_label_mismatch_enabled": req.fail_on_label_mismatch,
         "schema_error_detected": _schema_error_exists(payload, req.evaluate_all),
         "label_mismatch_detected": _label_mismatch_exists(payload, req.evaluate_all),
+        "llm_requested": llm_requested,
+        "llm_used": llm_used,
     }
+    if llm_requested and not llm_used and not req.evaluate_all:
+        diagnostics["llm_warning"] = (
+            "LLM summary was requested but fell back to the deterministic report. "
+            "Check backend logs for the underlying error (model unavailable, rate limit, etc.)."
+        )
 
     if req.strict_schema and diagnostics["schema_error_detected"]:
         raise HTTPException(status_code=422, detail="Schema validation failed")

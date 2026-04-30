@@ -1329,6 +1329,11 @@ export default function ReleaseDashboard() {
                     </strong>
                   </p>
                 ) : null}
+                {currentRun?.diagnostics?.llm_warning ? (
+                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+                    <strong>LLM fallback:</strong> {currentRun.diagnostics.llm_warning}
+                  </p>
+                ) : null}
               </div>
             </div>
 

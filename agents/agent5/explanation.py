@@ -13,8 +13,11 @@ Design constraint:
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+
+_logger = logging.getLogger(__name__)
 
 from .models import (
     Agent5Output,
@@ -345,8 +348,9 @@ def build_explanation_with_optional_llm(
             missing_artifacts=deterministic.missing_artifacts,
             cross_phase_continuity_flags=deterministic.cross_phase_continuity_flags,
         )
-    except Exception:
+    except Exception as exc:
         # Fallback safety: never fail readiness decision because explanation failed.
+        _logger.warning("Agent5 LLM summary failed, falling back to deterministic: %s", exc)
         return deterministic
 
 
