@@ -1,0 +1,65 @@
+APCS Test Procedure - Release v1.2.0
+Document ID: APCS-TP-1.2.0
+Test campaign window: 22-Apr-2026 to 23-Apr-2026 (paused)
+Build under test: apcs-rc-1.2.0+build.4222
+
+----------------------------------------------------------------
+Section 1: pre-conditions
+----------------------------------------------------------------
+
+  1.1 Verify build artifacts match the signed manifest.            PASS
+  1.2 Verify environment versions per Module Version Inventory.    PASS
+  1.3 Verify monitoring stack online and capturing telemetry.      PASS
+
+----------------------------------------------------------------
+Section 2: functional regression
+----------------------------------------------------------------
+
+  T-APCS-004  Occupancy under rapid updates (25 evt/s, 5 min)
+    Run 1: incorrect occupancy values observed in the first 30 s window.
+    Run 2: same defect reproduced; classification inconsistency at 18 s.
+    Run 3 (with local debounce workaround on test bench): PASS, but the
+           workaround is not part of build.4222 and not part of any
+           signed manifest.
+    Status: FAIL on official build, not re-executed on a new official
+            version. Issue still marked as FAIL.
+
+  T-APCS-005  Occupancy under burst updates
+    Status: not executed (campaign paused after T-APCS-004 finding).
+
+  T-APCS-006  Threshold classification at boundaries
+    Status: pending validation - not re-executed on build.4222.
+
+  T-APCS-009  Integration publishing latency
+    Result: PASS, p95 388 ms.
+
+  T-APCS-010  Integration back-pressure recovery
+    Status: not executed (campaign paused).
+
+----------------------------------------------------------------
+Section 3: governance & continuity
+----------------------------------------------------------------
+
+  Continuity gate: Agent4 hard blocker BLK-2026-017
+    Carry-over from v1.1.2. No closure evidence attached. The new finding
+    on T-APCS-004 in build.4222 reactivates the same failure family.
+    Status: continuity NOT closed. Closure confirmation required.
+
+  Workaround admissibility check
+    The 80 ms debounce workaround applied at the publisher boundary is
+    a test-bench-only patch. It is not present in build.4222 and is not
+    part of any signed manifest. It does not constitute release evidence
+    per REQ-APCS-012.
+    Status: NOT ADMISSIBLE.
+
+----------------------------------------------------------------
+Section 4: result summary
+----------------------------------------------------------------
+
+  Mandatory tests planned    : 6
+  PASS on official build     : 1 (T-APCS-009)
+  FAIL on official build     : 1 (T-APCS-004)
+  Pending validation         : 1 (T-APCS-006)
+  Not executed               : 2 (T-APCS-005, T-APCS-010)
+  Continuity closure         : NOT CLOSED (BLK-2026-017)
+  Final sign-off             : NOT APPROVED - HOLD
