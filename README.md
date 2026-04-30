@@ -1,6 +1,6 @@
 # challenge-app
 
-Release-readiness console: a React frontend, a FastAPI orchestration layer and the Python core agents that decide whether a release can promote from DEV → TEST → PROD.
+Release-readiness console: a React frontend, a FastAPI orchestration layer and the Python core agents that decide whether a release can promote from DEV → TEST → PROD
 
 ## Repository layout
 
