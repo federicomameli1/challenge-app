@@ -13,8 +13,11 @@ Design constraint:
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+
+_logger = logging.getLogger(__name__)
 
 from .models import (
     Agent4Output,
@@ -328,8 +331,9 @@ def build_explanation_with_optional_llm(
             human_action=human_action,
             policy_version=context.policy_version,
         )
-    except Exception:
+    except Exception as exc:
         # Fallback safety: never fail readiness decision because explanation generation failed.
+        _logger.warning("Agent4 LLM summary failed, falling back to deterministic: %s", exc)
         return deterministic
 
 
