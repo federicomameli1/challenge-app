@@ -1,0 +1,4 @@
+scenario_id,release_id,test_case_id,status,executed,retest_required,retest_completed,executor,execution_ts,report_version,narrative_note
+P5-BASE-GO-001,BASE-REL-1.1.2,TC-001,PASS,true,false,false,qa.auth,2026-06-01T10:00:00+00:00,v1.0,
+P5-BASE-GO-001,BASE-REL-1.1.2,TC-002,PASS,true,false,false,qa.payment,2026-06-01T10:00:00+00:00,v1.0,
+P5-BASE-GO-001,BASE-REL-1.1.2,TC-003,PASS,true,false,false,qa.compliance,2026-06-01T10:00:00+00:00,v1.0,

@@ -1,0 +1,2 @@
+release_id,scenario_id,environment,phase5_window_start,phase5_window_end,target_phase5_gate
+ADV-REL-1.3.0-UC,P5-ADV-HOLD-UC-001,TEST,2026-06-01T09:00:00+00:00,2026-06-02T18:00:00+00:00,phase5_test_analysis

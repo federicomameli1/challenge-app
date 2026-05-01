@@ -1,0 +1,4 @@
+scenario_id,release_id,requirement_id,test_case_id,mapping_source,mapping_confidence
+P5-ADV-GO-FA-001,ADV-REL-1.3.0-FA,REQ-001,TC-001,traceability_workbook,high
+P5-ADV-GO-FA-001,ADV-REL-1.3.0-FA,REQ-002,TC-002,traceability_workbook,high
+P5-ADV-GO-FA-001,ADV-REL-1.3.0-FA,REQ-003,TC-003,traceability_workbook,high

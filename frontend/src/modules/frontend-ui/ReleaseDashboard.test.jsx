@@ -190,7 +190,7 @@ describe("Release Dashboard", () => {
 
   async function renderDashboard() {
     render(<ReleaseDashboard />);
-    await screen.findByRole("heading", { name: /backend-native release workflow/i });
+    await screen.findByTestId("agent-console");
   }
 
   beforeEach(() => {
@@ -431,7 +431,6 @@ describe("Release Dashboard", () => {
     await renderDashboard();
 
     expect(screen.getByLabelText(/enable llm report/i)).toBeChecked();
-    expect(screen.getByText(/recommended for the demo/i)).toBeInTheDocument();
   });
 
   it("switching to HOLD documents refreshes the baseline decision", async () => {

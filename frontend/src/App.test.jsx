@@ -7,6 +7,14 @@ beforeEach(() => {
     const url = String(input);
     const method = String(init.method || "GET").toUpperCase();
 
+    if (url.endsWith("/datasets/bundles") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [] }),
+      };
+    }
+
     if (url.endsWith("/datasets/custom-sets") && method === "GET") {
       return {
         ok: true,
@@ -122,7 +130,5 @@ it("does not render the demo button or helper text", () => {
 
 it("renders the release dashboard section", () => {
   render(<App />);
-  expect(
-    screen.getByRole("heading", { name: /backend-native release workflow/i })
-  ).toBeInTheDocument();
+  expect(screen.getByTestId("agent-console")).toBeInTheDocument();
 });

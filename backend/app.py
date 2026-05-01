@@ -588,6 +588,27 @@ def _read_bundle_set(folder: Path, category: str) -> Optional[Dict[str, Any]]:
     else:
         backend_config["agent4"]["datasetRoot"] = correct_root
 
+    # Auto-detect phase5/ subfolder and wire agent5 backend config.
+    phase5_subfolder = folder / "phase5"
+    if phase5_subfolder.is_dir():
+        phase5_root = f"{correct_root}/phase5"
+        scenario_id: Optional[str] = None
+        calendar = phase5_subfolder / "phase5_release_calendar.csv"
+        if calendar.exists():
+            try:
+                import csv as _csv
+                with open(calendar, newline="", encoding="utf-8") as _f:
+                    reader = _csv.DictReader(_f)
+                    first_row = next(reader, None)
+                    if first_row:
+                        scenario_id = first_row.get("scenario_id")
+            except Exception:
+                pass
+        agent5_cfg: Dict[str, Any] = {"datasetRoot": phase5_root}
+        if scenario_id:
+            agent5_cfg["scenarioId"] = scenario_id
+        backend_config["agent5"] = agent5_cfg
+
     label = folder.name.replace("_", " ").replace("-", " ")
 
     return {

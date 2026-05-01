@@ -1,0 +1,3 @@
+scenario_id,release_id,defect_id,title,severity,status,owner,source_system,closure_note
+P5-PREM-HOLD-CB-001,PREM-REL-1.2.0-CB,DF-001,Minor UI formatting issue,LOW,CLOSED,dev.ui,jira,fixed in UI patch
+P5-PREM-HOLD-CB-001,PREM-REL-1.2.0-CB,DF-CRIT-001,Critical data integrity issue in payment commit path,CRITICAL,OPEN,dev.payment,jira,

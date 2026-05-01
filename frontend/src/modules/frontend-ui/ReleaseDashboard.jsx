@@ -919,30 +919,7 @@ export default function ReleaseDashboard() {
   return (
     <section className="h-full overflow-hidden px-3 py-3" data-testid="agent-console">
       <div className="mx-auto flex h-full max-w-[1820px] flex-col gap-3">
-        <header className="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-                Analyst Operations Console
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-                Backend-native release workflow
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Pick an analyst, choose a dataset, run the analysis, and inspect results in
-                a compact dashboard instead of a long scrolling page.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                Demo dashboard
-              </p>
-            </div>
-          </div>
-        </header>
-
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[300px_minmax(0,1fr)_330px]">
+<div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[300px_minmax(0,1fr)_330px]">
           <aside className="min-h-0 space-y-4 overflow-y-auto pr-1">
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1019,28 +996,33 @@ export default function ReleaseDashboard() {
                       type="button"
                       onClick={() => setDatasetId(dataset.id)}
                       title={dataset.label}
-                      className={`rounded-2xl border px-4 py-4 text-left text-sm transition ${
+                      className={`w-full rounded-2xl border px-4 py-4 text-left text-sm transition ${
                         isSelected
                           ? "border-sky-600 bg-sky-50 text-sky-950"
                           : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold">{dataset.label}</p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {dataset.source === "custom" ? "Custom dataset" : (dataset.source ?? "dataset")}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-semibold leading-snug">{dataset.label}</p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {dataset.backend?.agent4 && (
+                              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                                A4
+                              </span>
+                            )}
+                            {dataset.backend?.agent5 && (
+                              <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                                A5
+                              </span>
+                            )}
+                            {dataset.source === "custom" && (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                                Custom
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span
-                          className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                            supportedForAgent
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {supportedForAgent ? "Ready" : "Not mapped"}
-                        </span>
                       </div>
                     </button>
                   );
@@ -1060,10 +1042,6 @@ export default function ReleaseDashboard() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Run Analysis
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Launch the selected analyst with the current dataset. The demo now defaults
-                    to an LLM-written report layered on top of the deterministic rules.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1098,21 +1076,7 @@ export default function ReleaseDashboard() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="grid gap-3">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                    The demo uses one representative case per dataset, so you can focus on the
-                    result instead of picking internal scenarios.
-                  </div>
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sm text-slate-700">
-                    <p className="font-semibold text-slate-900">LLM narrative report</p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      Recommended for the demo. The rules remain authoritative, while the
-                      model rewrites the outcome into a cleaner stakeholder-ready report.
-                    </p>
-                  </div>
-                </div>
-
+              <div className="mt-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <button
                     type="button"
@@ -1438,10 +1402,15 @@ export default function ReleaseDashboard() {
                                   key={`${reason.title}-${index}`}
                                   className="rounded-xl border border-slate-200 bg-white p-3"
                                 >
-                                  <p className="font-mono text-[11px] text-slate-500">
+                                  <p
+                                    className="font-mono text-[11px] text-slate-500 break-all"
+                                    title={evidence.fullPath || evidence.filePath}
+                                  >
                                     {evidence.filePath}:{evidence.line}
                                   </p>
-                                  <p className="mt-1">{evidence.snippet || "No snippet available."}</p>
+                                  {evidence.snippet ? (
+                                    <p className="mt-1 whitespace-pre-wrap break-words">{evidence.snippet}</p>
+                                  ) : null}
                                 </li>
                               ))}
                             </ul>

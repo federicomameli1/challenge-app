@@ -1,0 +1,2 @@
+scenario_id,release_id,defect_id,title,severity,status,owner,source_system,closure_note
+P5-PREM-GO-001,PREM-REL-1.2.0,DF-001,Minor UI formatting issue,LOW,CLOSED,dev.ui,jira,fixed in UI patch

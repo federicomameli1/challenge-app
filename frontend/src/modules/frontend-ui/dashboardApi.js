@@ -43,10 +43,16 @@ function normalizeEvidenceItem(item) {
     }
   }
 
+  const rawPath = String(item?.file_path || item?.filePath || "unknown");
+  // Keep a short display path: from "datasets/" onwards, or just the basename.
+  const datasetsIdx = rawPath.replace(/\\/g, "/").indexOf("datasets/");
+  const displayPath = datasetsIdx >= 0 ? rawPath.slice(datasetsIdx) : basename(rawPath);
+
   return {
-    filePath: String(item?.file_path || item?.filePath || "unknown"),
+    filePath: displayPath,
+    fullPath: rawPath,
     line,
-    snippet: String(item?.snippet || ""),
+    snippet: item?.snippet ? String(item.snippet) : null,
   };
 }
 
