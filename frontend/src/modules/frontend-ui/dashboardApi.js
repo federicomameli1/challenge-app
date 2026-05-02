@@ -43,10 +43,16 @@ function normalizeEvidenceItem(item) {
     }
   }
 
+  const rawPath = String(item?.file_path || item?.filePath || "unknown");
+  // Keep a short display path: from "datasets/" onwards, or just the basename.
+  const datasetsIdx = rawPath.replace(/\\/g, "/").indexOf("datasets/");
+  const displayPath = datasetsIdx >= 0 ? rawPath.slice(datasetsIdx) : basename(rawPath);
+
   return {
-    filePath: String(item?.file_path || item?.filePath || "unknown"),
+    filePath: displayPath,
+    fullPath: rawPath,
     line,
-    snippet: String(item?.snippet || ""),
+    snippet: item?.snippet ? String(item.snippet) : null,
   };
 }
 
@@ -322,6 +328,53 @@ export async function runBackendBrain(payload) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+  });
+}
+
+// --------------------------------------------------------------------------- //
+// CI bridge — surfaces GitHub Actions runs (Agent 4 / Agent 5 reports)        //
+// --------------------------------------------------------------------------- //
+
+export async function fetchCiStatus() {
+  return requestJson("/ci/status");
+}
+
+export async function fetchCiRuns(limit = 10) {
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", String(limit));
+  const data = await requestJson(`/ci/runs?${params.toString()}`);
+  return {
+    configured: Boolean(data?.configured),
+    items: Array.isArray(data?.items) ? data.items : [],
+    config: data?.config || null,
+  };
+}
+
+export async function fetchCiRunDetails(runId) {
+  return requestJson(`/ci/runs/${encodeURIComponent(runId)}`);
+}
+
+export async function fetchCiPendingDeployments(runId) {
+  return requestJson(
+    `/ci/runs/${encodeURIComponent(runId)}/pending-deployments`
+  );
+}
+
+export async function approveCiDeployment({
+  runId,
+  environmentIds,
+  state = "approved",
+  comment = "",
+}) {
+  return requestJson("/ci/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      run_id: runId,
+      environment_ids: environmentIds,
+      state,
+      comment,
+    }),
   });
 }
 

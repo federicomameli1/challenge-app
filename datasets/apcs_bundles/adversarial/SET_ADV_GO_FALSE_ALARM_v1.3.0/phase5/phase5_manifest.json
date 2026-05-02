@@ -1,0 +1,20 @@
+{
+  "dataset_name": "phase5_SET_ADV_GO_FALSE_ALARM_v1.3.0",
+  "generated_at_utc": "2026-05-01T10:00:00+00:00",
+  "generator": "scripts/generate_bundle_phase5.py",
+  "scenario_count": 1,
+  "bundle_source": "SET_ADV_GO_FALSE_ALARM_v1.3.0",
+  "summary": {
+    "go_count": 1,
+    "hold_count": 0,
+    "hold_reason": null
+  },
+  "files": [
+    "phase5_release_calendar.csv",
+    "requirements_master.csv",
+    "test_cases_master.csv",
+    "traceability_matrix.csv",
+    "test_execution_results.csv",
+    "defect_register.csv"
+  ]
+}

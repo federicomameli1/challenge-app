@@ -7,11 +7,35 @@ beforeEach(() => {
     const url = String(input);
     const method = String(init.method || "GET").toUpperCase();
 
+    if (url.endsWith("/datasets/bundles") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [] }),
+      };
+    }
+
     if (url.endsWith("/datasets/custom-sets") && method === "GET") {
       return {
         ok: true,
         status: 200,
         json: async () => ({ items: [] }),
+      };
+    }
+
+    if (url.endsWith("/ci/status") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ configured: false, repo: null, branch: null, token_present: false }),
+      };
+    }
+
+    if (url.includes("/ci/runs") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ configured: false, items: [], config: null }),
       };
     }
 
@@ -122,7 +146,5 @@ it("does not render the demo button or helper text", () => {
 
 it("renders the release dashboard section", () => {
   render(<App />);
-  expect(
-    screen.getByRole("heading", { name: /backend-native release workflow/i })
-  ).toBeInTheDocument();
+  expect(screen.getByTestId("agent-console")).toBeInTheDocument();
 });

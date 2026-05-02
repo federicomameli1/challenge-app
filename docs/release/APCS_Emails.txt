@@ -1,0 +1,38 @@
+Subject: [Release] challenge-app candidate build available
+From: Federico Mameli <federico.mameli@hitachi-challenge.local>
+To: QA Team
+Date: 28-Apr-2026
+
+A new candidate build of challenge-app is ready on the dev cluster (per-PR
+namespace). The change is scoped to the demo button color and the agent
+console rendering pipeline. No backend schema migration is involved.
+
+Please review the recent commits on the open PR before promoting to TEST.
+
+----
+
+Subject: [Release] Re-test results — frontend regression pack
+From: Marco Rossi <marco.rossi@hitachi-challenge.local>
+To: Project Manager
+Date: 29-Apr-2026
+
+All impacted Vitest scenarios were re-executed against the candidate build:
+  - App.test.jsx                : 3/3  PASS
+  - ReleaseDashboard.test.jsx   : 8/8  PASS
+  - dashboardApi.test.js        : 7/7  PASS
+
+No unresolved blocker remains for TEST promotion from the frontend side.
+
+----
+
+Subject: [Release] Backend smoke checks — challenge-app
+From: Sara Neri <sara.neri@hitachi-challenge.local>
+To: Project Manager
+Date: 29-Apr-2026
+
+FastAPI app boots cleanly. /datasets/bundles, /agents/run and /brain/run
+endpoints respond with status 200 against both the baseline and adversarial
+fixtures. No critical defect has been raised in Jira for this build.
+
+Configuration is aligned with the test cluster manifest. Ready for TEST
+promotion from a service-readiness standpoint.

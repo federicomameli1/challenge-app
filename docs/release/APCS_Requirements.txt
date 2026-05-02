@@ -1,0 +1,24 @@
+REQ-CHA-001 [MUST]    The release dashboard shall list dataset bundles fetched
+                      from /datasets/bundles and badge each with the agents it
+                      can drive (A4, A5).
+
+REQ-CHA-002 [MUST]    Agent 4 shall produce a deterministic GO/HOLD decision
+                      that cannot be overridden by the LLM summary layer.
+
+REQ-CHA-003 [MUST]    Agent 5 shall ingest the structured Phase 5 dataset
+                      (requirements, test cases, traceability, execution,
+                      defects) and trigger HOLD on any unresolved hard gate.
+
+REQ-CHA-004 [MUST]    The Brain orchestrator shall block Phase 5 when Phase 4
+                      ends in HOLD unless the operator explicitly overrides
+                      the gate.
+
+REQ-CHA-005 [SHOULD]  All evidence references rendered in the dashboard shall
+                      include a relative file path and, when available, a
+                      textual snippet excerpt.
+
+REQ-CHA-006 [SHOULD]  TEST promotion requires no open critical defect and no
+                      unresolved blocker email in the release correspondence.
+
+REQ-CHA-007 [MUST]    Container images deployed to TEST and PROD shall be
+                      pinned by digest, not by mutable tag.

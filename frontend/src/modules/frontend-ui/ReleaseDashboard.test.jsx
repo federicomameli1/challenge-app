@@ -190,7 +190,7 @@ describe("Release Dashboard", () => {
 
   async function renderDashboard() {
     render(<ReleaseDashboard />);
-    await screen.findByRole("heading", { name: /backend-native release workflow/i });
+    await screen.findByTestId("agent-console");
   }
 
   beforeEach(() => {
@@ -214,6 +214,22 @@ describe("Release Dashboard", () => {
           ok: true,
           status: 200,
           json: async () => ({ items: backendSets }),
+        };
+      }
+
+      if (url.endsWith("/ci/status") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: false, repo: null, branch: null, token_present: false }),
+        };
+      }
+
+      if (url.includes("/ci/runs") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: false, items: [], config: null }),
         };
       }
 
@@ -431,7 +447,6 @@ describe("Release Dashboard", () => {
     await renderDashboard();
 
     expect(screen.getByLabelText(/enable llm report/i)).toBeChecked();
-    expect(screen.getByText(/recommended for the demo/i)).toBeInTheDocument();
   });
 
   it("switching to HOLD documents refreshes the baseline decision", async () => {

@@ -1,0 +1,4 @@
+scenario_id,release_id,requirement_id,description,priority,module,mandatory_for_phase5,domain,traceability_tag,module_alias_raw
+P5-BASE-HOLD-RT-001,BASE-REL-1.1.2-RT,REQ-001,Mandatory authentication regression check.,HIGH,auth-service,true,security,MUST,Authentication Core
+P5-BASE-HOLD-RT-001,BASE-REL-1.1.2-RT,REQ-002,Mandatory transaction idempotency validation.,HIGH,payment-core,true,transaction,MUST,Txn Engine
+P5-BASE-HOLD-RT-001,BASE-REL-1.1.2-RT,REQ-003,Mandatory audit-log persistence verification.,MEDIUM,audit-store,true,compliance,MUST,Audit Ledger

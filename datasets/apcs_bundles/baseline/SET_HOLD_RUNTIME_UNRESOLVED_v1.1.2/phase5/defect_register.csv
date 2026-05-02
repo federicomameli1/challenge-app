@@ -1,0 +1,3 @@
+scenario_id,release_id,defect_id,title,severity,status,owner,source_system,closure_note
+P5-BASE-HOLD-RT-001,BASE-REL-1.1.2-RT,DF-001,Minor UI formatting issue,LOW,CLOSED,dev.ui,jira,fixed in UI patch
+P5-BASE-HOLD-RT-001,BASE-REL-1.1.2-RT,DF-CRIT-001,Critical data integrity issue in payment commit path,CRITICAL,OPEN,dev.payment,jira,

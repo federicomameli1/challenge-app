@@ -1,0 +1,4 @@
+scenario_id,release_id,test_case_id,title,mapped_requirement_ids,criticality,test_owner,test_family_alias
+P5-BASE-RAND-001,BASE-REL-1.0.0,TC-001,Auth flow regression,REQ-001,HIGH,qa.auth,Identity Regression Pack
+P5-BASE-RAND-001,BASE-REL-1.0.0,TC-002,Transaction idempotency checks,REQ-002,HIGH,qa.payment,Txn Resilience Pack
+P5-BASE-RAND-001,BASE-REL-1.0.0,TC-003,Audit log persistence,REQ-003,MEDIUM,qa.compliance,Compliance Persistence Pack

@@ -1,0 +1,2 @@
+scenario_id,release_id,defect_id,title,severity,status,owner,source_system,closure_note
+P5-ADV-HOLD-SD-001,ADV-REL-1.3.0-SD,DF-001,Minor UI formatting issue,LOW,CLOSED,dev.ui,jira,fixed in UI patch
