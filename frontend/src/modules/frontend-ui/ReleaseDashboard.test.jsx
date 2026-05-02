@@ -217,6 +217,22 @@ describe("Release Dashboard", () => {
         };
       }
 
+      if (url.endsWith("/ci/status") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: false, repo: null, branch: null, token_present: false }),
+        };
+      }
+
+      if (url.includes("/ci/runs") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ configured: false, items: [], config: null }),
+        };
+      }
+
       if (url.endsWith("/datasets/custom-sets") && method === "POST") {
         const body = JSON.parse(String(init.body || "{}"));
         const created = {
