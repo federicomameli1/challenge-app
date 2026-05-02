@@ -15,7 +15,6 @@ import {
   saveCustomSetToBackend,
   validateBackendDataset,
 } from "./dashboardApi.js";
-import CiPanel from "./CiPanel.jsx";
 
 const AGENTS = {
   agent4: {
@@ -1038,7 +1037,6 @@ export default function ReleaseDashboard() {
           </aside>
 
           <main className="min-h-0 space-y-4 overflow-y-auto pr-1">
-            <CiPanel />
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

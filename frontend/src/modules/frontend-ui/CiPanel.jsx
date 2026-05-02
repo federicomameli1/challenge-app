@@ -27,83 +27,113 @@ function formatTime(value) {
   return d.toLocaleString();
 }
 
-function ReportSummary({ phase, payload }) {
+function StageCard({ label, payload }) {
   if (!payload) return null;
+
   if (payload.error) {
     return (
-      <p className="text-xs text-rose-700">
-        {phase}: {payload.error}
-      </p>
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-rose-400">{label}</p>
+        <p className="mt-1 text-sm text-rose-700">{payload.error}</p>
+      </div>
     );
   }
+
   const summary = payload.summary;
   if (!summary) {
-    return <p className="text-xs text-slate-500">{phase}: no summary.</p>;
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-1 text-sm text-slate-500">No data available.</p>
+      </div>
+    );
   }
-  if (phase === "stage-results") {
+
+  // Stage results card (tests + build)
+  if (label === "Stage Results") {
     const tests = summary.tests || {};
     const build = summary.build || {};
+    const testsPass = tests.status === "PASS";
+    const buildPass = build.status === "PASS";
     return (
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg bg-slate-50 p-2">
-          <p className="font-semibold text-slate-700">Tests</p>
-          <p className="text-slate-600">
-            {tests.status || "—"} ({tests.outcome || "—"})
-          </p>
-        </div>
-        <div className="rounded-lg bg-slate-50 p-2">
-          <p className="font-semibold text-slate-700">Build</p>
-          <p className="text-slate-600">
-            {build.status || "—"} ({build.outcome || "—"})
-          </p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`rounded-xl border p-3 ${testsPass ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${testsPass ? "text-emerald-600" : "text-rose-600"}`}>
+              Tests
+            </p>
+            <p className={`mt-1 text-sm font-bold ${testsPass ? "text-emerald-800" : "text-rose-800"}`}>
+              {tests.status || "—"}
+            </p>
+          </div>
+          <div className={`rounded-xl border p-3 ${buildPass ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${buildPass ? "text-emerald-600" : "text-rose-600"}`}>
+              Build
+            </p>
+            <p className={`mt-1 text-sm font-bold ${buildPass ? "text-emerald-800" : "text-rose-800"}`}>
+              {build.status || "—"}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Agent report card (pre-test / pre-prod)
+  const isHold = summary.decision === "HOLD";
+  const isGo = summary.decision === "GO";
+  const borderColor = isHold ? "border-rose-200" : isGo ? "border-emerald-200" : "border-slate-200";
+  const bgColor = isHold ? "bg-rose-50" : isGo ? "bg-emerald-50" : "bg-slate-50";
+
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs">
-      <div className="flex items-center gap-2">
-        <span
-          className={`rounded-full px-2 py-0.5 font-semibold uppercase ${decisionBadgeClasses(summary.decision)}`}
-        >
-          {summary.decision || "—"}
-        </span>
-        <span className="font-medium text-slate-700">{phase}</span>
-        {summary.confidence ? (
-          <span className="text-slate-500">conf: {summary.confidence}</span>
-        ) : null}
+    <div className={`rounded-2xl border p-4 ${borderColor} ${bgColor}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${decisionBadgeClasses(summary.decision)}`}>
+            {summary.decision || "—"}
+          </span>
+          {summary.confidence ? (
+            <span className="text-xs text-slate-500">conf: {summary.confidence}</span>
+          ) : null}
+        </div>
       </div>
+
       {summary.summary ? (
-        <p className="mt-2 text-slate-700">{summary.summary}</p>
-      ) : null}
-      {summary.human_action ? (
-        <p className="mt-1 italic text-slate-500">
-          Next: {summary.human_action}
+        <p className={`mt-2 text-sm leading-relaxed ${isHold ? "text-rose-800" : isGo ? "text-emerald-800" : "text-slate-700"}`}>
+          {summary.summary}
         </p>
       ) : null}
+
+      {summary.human_action ? (
+        <p className="mt-1.5 text-xs italic text-slate-500">→ {summary.human_action}</p>
+      ) : null}
+
       {Array.isArray(summary.triggered_rules) && summary.triggered_rules.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {summary.triggered_rules.map((r) => (
             <span
               key={r}
-              className="rounded-full bg-rose-50 px-2 py-0.5 font-mono text-[10px] text-rose-700"
+              className="rounded-full bg-rose-100 px-2.5 py-0.5 font-mono text-[11px] font-medium text-rose-700"
             >
               {r}
             </span>
           ))}
         </div>
       ) : null}
-      {Array.isArray(summary.release_docs_loaded) && summary.release_docs_loaded.length > 0 ? (
-        <p className="mt-2 text-[10px] text-slate-400">
-          Loaded release docs: {summary.release_docs_loaded.join(", ")}
-        </p>
-      ) : null}
-      {summary.head_sha ? (
-        <p className="mt-1 text-[10px] font-mono text-slate-400">
-          head {summary.head_sha} · {summary.diff_stat || "no diff stat"}
-        </p>
-      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+        {summary.head_sha ? (
+          <span className="font-mono">commit {summary.head_sha}</span>
+        ) : null}
+        {summary.diff_stat ? (
+          <span>{summary.diff_stat}</span>
+        ) : null}
+        {Array.isArray(summary.release_docs_loaded) && summary.release_docs_loaded.length > 0 ? (
+          <span>docs: {summary.release_docs_loaded.join(", ")}</span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -113,33 +143,33 @@ function RunRow({ run, isSelected, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(run.id)}
-      className={`w-full rounded-xl border px-3 py-2 text-left text-xs transition ${
+      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
         isSelected
-          ? "border-sky-500 bg-sky-50"
-          : "border-slate-200 bg-white hover:border-slate-300"
+          ? "border-sky-400 bg-sky-50 shadow-sm"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-semibold text-slate-800">
+        <span className="truncate text-sm font-semibold text-slate-800">
           #{run.run_number} · {run.event}
         </span>
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${conclusionBadgeClasses(run.conclusion)}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${conclusionBadgeClasses(run.conclusion)}`}
         >
           {run.conclusion || run.status || "—"}
         </span>
       </div>
-      <p className="mt-1 truncate text-slate-600" title={run.head_commit_message}>
+      <p className="mt-1 truncate text-sm text-slate-600" title={run.head_commit_message}>
         {run.head_commit_message || run.display_title || "(no commit message)"}
       </p>
-      <p className="mt-1 text-[10px] text-slate-400">
+      <p className="mt-1 text-[11px] text-slate-400">
         {run.head_branch} · {run.head_sha} · {formatTime(run.updated_at)}
       </p>
     </button>
   );
 }
 
-export default function CiPanel() {
+export default function CiPanel({ standalone = false }) {
   const [status, setStatus] = useState(null);
   const [runs, setRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(true);
@@ -157,13 +187,10 @@ export default function CiPanel() {
     try {
       const [statusData, runsData] = await Promise.all([
         fetchCiStatus(),
-        fetchCiRuns(10),
+        fetchCiRuns(15),
       ]);
       setStatus(statusData);
       setRuns(runsData.items);
-      // Use functional update so we read the current selectedRunId at the time
-      // the state update is applied, not the stale closure value from when the
-      // fetch started (avoids overwriting a user selection made mid-flight).
       setSelectedRunId((current) => {
         if (!current && runsData.items.length > 0) {
           return runsData.items[0].id;
@@ -181,6 +208,7 @@ export default function CiPanel() {
     refreshRuns();
   }, [refreshRuns]);
 
+  // Initial load with loading indicator when run selection changes
   useEffect(() => {
     let cancelled = false;
     if (!selectedRunId) {
@@ -201,14 +229,54 @@ export default function CiPanel() {
       .finally(() => {
         if (!cancelled) setDetailsLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedRunId]);
 
   const isConfigured = Boolean(status?.configured);
-
   const reports = useMemo(() => details?.reports || {}, [details]);
+
+  // Derive active-run state from the runs list (not from details, to avoid flicker on initial load)
+  const selectedRun = useMemo(
+    () => runs.find((r) => r.id === selectedRunId) || null,
+    [runs, selectedRunId],
+  );
+  const hasActiveRun = useMemo(
+    () => runs.some((r) => r.status !== "completed"),
+    [runs],
+  );
+  const selectedRunIsActive = Boolean(selectedRun && selectedRun.status !== "completed");
+
+  // Silent background refresh of details + pending (no loading spinner)
+  const silentRefreshDetails = useCallback(async () => {
+    if (!selectedRunId) return;
+    const [detailsData, pendingData] = await Promise.all([
+      fetchCiRunDetails(selectedRunId).catch(() => null),
+      fetchCiPendingDeployments(selectedRunId).catch(() => ({ items: [] })),
+    ]);
+    if (detailsData) setDetails(detailsData);
+    setPending(Array.isArray(pendingData?.items) ? pendingData.items : []);
+  }, [selectedRunId]);
+
+  // Auto-refresh run list every 20s while any run is still active
+  useEffect(() => {
+    if (!isConfigured || !hasActiveRun) return undefined;
+    const id = setInterval(refreshRuns, 20_000);
+    return () => clearInterval(id);
+  }, [isConfigured, hasActiveRun, refreshRuns]);
+
+  // Auto-refresh details every 15s while selected run is active
+  useEffect(() => {
+    if (!selectedRunId || !selectedRunIsActive) return undefined;
+    const id = setInterval(silentRefreshDetails, 15_000);
+    return () => clearInterval(id);
+  }, [selectedRunId, selectedRunIsActive, silentRefreshDetails]);
+
+  // Auto-clear approve result after 5s
+  useEffect(() => {
+    if (!approveResult) return undefined;
+    const id = setTimeout(() => setApproveResult(null), 5000);
+    return () => clearTimeout(id);
+  }, [approveResult]);
 
   const approvableEnvironments = useMemo(() => {
     return pending
@@ -226,19 +294,14 @@ export default function CiPanel() {
         runId: selectedRunId,
         environmentIds: approvableEnvironments.map((e) => e.id),
         state,
-        comment: `Approved from dashboard (${new Date().toISOString()})`,
+        comment: `${state === "approved" ? "Approved" : "Rejected"} from dashboard (${new Date().toISOString()})`,
       });
-      setApproveResult({ ok: true, message: `${state} sent for run ${selectedRunId}.`, data: res });
-      // refresh after a short delay
+      setApproveResult({ ok: true, message: `Decision "${state}" sent for environments: ${approvableEnvironments.map((e) => e.name).join(", ")}.` , data: res });
+      // Refresh after a short delay to let GitHub process the approval
       setTimeout(() => {
         refreshRuns();
-        if (selectedRunId) {
-          fetchCiRunDetails(selectedRunId).then(setDetails).catch(() => {});
-          fetchCiPendingDeployments(selectedRunId)
-            .then((d) => setPending(d?.items || []))
-            .catch(() => {});
-        }
-      }, 1500);
+        silentRefreshDetails();
+      }, 2000);
     } catch (exc) {
       setApproveResult({ ok: false, message: String(exc?.message || exc) });
     } finally {
@@ -246,159 +309,182 @@ export default function CiPanel() {
     }
   };
 
+  const outerClass = standalone
+    ? "flex h-full flex-col overflow-hidden"
+    : "flex flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm";
+
   return (
-    <section
-      data-testid="ci-panel"
-      className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-    >
-      <header className="flex flex-wrap items-start justify-between gap-3">
+    <section data-testid="ci-panel" className={outerClass}>
+      {/* Header */}
+      <header className="flex shrink-0 flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             CI / CD Pipeline
           </p>
-          <h2 className="text-lg font-semibold text-slate-800">
-            GitHub Actions runs · Agent 4 → Agent 5
+          <h2 className="text-xl font-semibold text-slate-800">
+            GitHub Actions · Agent 4 → Agent 5
           </h2>
           {status?.repo ? (
-            <p className="text-xs text-slate-500">
-              Repo: <code className="rounded bg-slate-100 px-1">{status.repo}</code>
+            <p className="mt-0.5 text-xs text-slate-500">
+              <code className="rounded bg-slate-100 px-1">{status.repo}</code>
               {status.branch ? (
-                <>
-                  {" · branch "}
-                  <code className="rounded bg-slate-100 px-1">{status.branch}</code>
-                </>
+                <> · <code className="rounded bg-slate-100 px-1">{status.branch}</code></>
               ) : null}
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={refreshRuns}
-          disabled={loadingRuns}
-          className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
-          {loadingRuns ? "Refreshing…" : "Refresh"}
-        </button>
+        <div className="flex items-center gap-3">
+          {hasActiveRun ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Live
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={refreshRuns}
+            disabled={loadingRuns}
+            className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {loadingRuns ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
       </header>
 
       {!isConfigured ? (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="mt-4 shrink-0 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-semibold">CI bridge is not configured.</p>
-          <p className="mt-1">
-            Set <code>CI_BRIDGE_REPO</code> and <code>CI_BRIDGE_TOKEN</code> in
-            the backend environment to surface real GitHub Actions runs here.
+          <p className="mt-1 text-xs">
+            Set <code className="rounded bg-amber-100 px-1">CI_BRIDGE_REPO</code> and{" "}
+            <code className="rounded bg-amber-100 px-1">CI_BRIDGE_TOKEN</code> in the backend
+            environment to surface real GitHub Actions runs here.
           </p>
         </div>
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+        <p className="mt-4 shrink-0 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
           {error}
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+      {/* Two-column layout */}
+      <div className={`mt-4 grid gap-4 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] ${standalone ? "min-h-0 flex-1 overflow-hidden" : ""}`}>
+
         {/* Run list */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className={`flex flex-col gap-2 ${standalone ? "overflow-y-auto pr-1" : ""}`}>
+          <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Recent runs
           </p>
           {loadingRuns ? (
-            <p className="text-xs text-slate-500">Loading…</p>
+            <p className="text-sm text-slate-500">Loading…</p>
           ) : runs.length === 0 ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-sm text-slate-500">
               {isConfigured ? "No runs yet." : "Configure the CI bridge to load runs."}
             </p>
           ) : (
-            <div className="space-y-2">
-              {runs.map((run) => (
-                <RunRow
-                  key={run.id}
-                  run={run}
-                  isSelected={run.id === selectedRunId}
-                  onSelect={setSelectedRunId}
-                />
-              ))}
-            </div>
+            runs.map((run) => (
+              <RunRow
+                key={run.id}
+                run={run}
+                isSelected={run.id === selectedRunId}
+                onSelect={setSelectedRunId}
+              />
+            ))
           )}
         </div>
 
-        {/* Details */}
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {/* Details panel */}
+        <div className={`min-w-0 ${standalone ? "overflow-y-auto pr-1" : ""}`}>
+          <p className="shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Run details
           </p>
+
           {detailsLoading ? (
-            <p className="mt-2 text-xs text-slate-500">Loading reports…</p>
+            <p className="mt-3 text-sm text-slate-500">Loading reports…</p>
           ) : !selectedRunId ? (
-            <p className="mt-2 text-xs text-slate-500">Select a run to inspect reports.</p>
+            <p className="mt-3 text-sm text-slate-500">Select a run to inspect reports.</p>
           ) : details?.error ? (
-            <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+            <p className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
               {details.error}
             </p>
           ) : (
             <div className="mt-2 space-y-3">
+              {/* Run meta */}
               {details?.run ? (
-                <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
-                  <p>
-                    <strong>Status:</strong> {details.run.status || "—"} ·{" "}
-                    <strong>Conclusion:</strong> {details.run.conclusion || "—"} ·{" "}
-                    <strong>Event:</strong> {details.run.event || "—"}
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <span>
+                    <strong>{details.run.status || "—"}</strong>
+                    {details.run.conclusion ? ` · ${details.run.conclusion}` : ""}
+                    {details.run.event ? ` · ${details.run.event}` : ""}
+                  </span>
                   {details.run.html_url ? (
-                    <p className="mt-1">
-                      <a
-                        href={details.run.html_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sky-700 hover:underline"
-                      >
-                        Open on GitHub →
-                      </a>
-                    </p>
+                    <a
+                      href={details.run.html_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-700 hover:underline"
+                    >
+                      Open on GitHub →
+                    </a>
                   ) : null}
                 </div>
               ) : null}
 
-              <ReportSummary phase="pre-test" payload={reports["pre-test"]} />
-              <ReportSummary phase="stage-results" payload={reports["stage-results"]} />
-              <ReportSummary phase="pre-prod" payload={reports["pre-prod"]} />
+              <StageCard label="Pre-test (Agent 4)" payload={reports["pre-test"]} />
+              <StageCard label="Stage Results" payload={reports["stage-results"]} />
+              <StageCard label="Pre-prod (Agent 5)" payload={reports["pre-prod"]} />
 
-              {/* Approval controls */}
+              {/* Approval gate */}
               {pending.length > 0 ? (
-                <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-                  <p className="text-xs font-semibold text-sky-900">
-                    Pending human approval
-                    {approvableEnvironments.length > 0
-                      ? ` · ${approvableEnvironments.map((e) => e.name).join(", ")}`
-                      : ""}
-                  </p>
-                  <p className="mt-1 text-xs text-sky-800">
-                    Agent 4 has produced its recommendation. Review the report
-                    above, then approve to start the test phase.
-                  </p>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleApprove("approved")}
-                      disabled={approving || approvableEnvironments.length === 0}
-                      className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      {approving ? "Sending…" : "Approve → Start tests"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleApprove("rejected")}
-                      disabled={approving || approvableEnvironments.length === 0}
-                      className="rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                  <p className="font-semibold text-sky-900">Awaiting approval</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pending.map((p, i) => (
+                      <span
+                        key={p?.environment?.id ?? i}
+                        className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-800"
+                      >
+                        {p?.environment?.name || `env-${i + 1}`}
+                      </span>
+                    ))}
                   </div>
+
+                  {approvableEnvironments.length > 0 ? (
+                    <>
+                      <p className="mt-2 text-sm text-sky-700">
+                        Review the reports above, then approve or reject to continue the workflow.
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleApprove("approved")}
+                          disabled={approving}
+                          className="rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                        >
+                          {approving ? "Sending…" : "Approve →"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApprove("rejected")}
+                          disabled={approving}
+                          className="rounded-full border border-rose-300 bg-white px-4 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-amber-700">
+                      The CI token does not have write access — approve directly on GitHub.
+                    </p>
+                  )}
+
                   {approveResult ? (
-                    <p
-                      className={`mt-2 text-xs ${approveResult.ok ? "text-emerald-700" : "text-rose-700"}`}
-                    >
+                    <p className={`mt-3 rounded-xl px-3 py-2 text-sm font-medium ${approveResult.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
                       {approveResult.message}
                     </p>
                   ) : null}
