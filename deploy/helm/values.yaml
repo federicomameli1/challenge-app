@@ -21,3 +21,4 @@ service:
 env:
   openrouter_model: "openai/gpt-oss-20b:free"
   openrouter_app_title: "challenge-app"
+  ci_bridge_repo: "federicomameli1/challenge-app"

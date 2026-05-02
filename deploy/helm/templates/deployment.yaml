@@ -27,5 +27,12 @@ spec:
               value: {{ .Values.env.openrouter_model | quote }}
             - name: OPENROUTER_APP_TITLE
               value: {{ .Values.env.openrouter_app_title | quote }}
+            - name: CI_BRIDGE_REPO
+              value: {{ .Values.env.ci_bridge_repo | quote }}
+            - name: CI_BRIDGE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: challenge-app-secrets
+                  key: ci_bridge_token
           ports:
             - containerPort: {{ .Values.containerPort }}

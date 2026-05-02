@@ -261,6 +261,12 @@ def _summarize_report(report: Dict[str, Any]) -> Dict[str, Any]:
     git_info = report.get("git") or {}
     evidence = report.get("evidence") or {}
     payload = (report.get("agent_output") or {}).get("payload") or {}
+    # Extract only the summary line from diff_stat (e.g. "12 files changed, 340 insertions(+)")
+    # instead of the full multi-line output which lists every changed file.
+    diff_stat_raw = (git_info.get("diff_stat") or "").strip()
+    diff_stat_lines = [l.strip() for l in diff_stat_raw.splitlines() if l.strip()]
+    diff_stat_summary = diff_stat_lines[-1] if diff_stat_lines else ""
+
     return {
         "phase": report.get("phase"),
         "generated_at_utc": report.get("generated_at_utc"),
@@ -273,7 +279,7 @@ def _summarize_report(report: Dict[str, Any]) -> Dict[str, Any]:
         "confidence": rec.get("confidence"),
         "policy_version": rec.get("policy_version"),
         "head_sha": git_info.get("head_sha"),
-        "diff_stat": git_info.get("diff_stat"),
+        "diff_stat": diff_stat_summary,
         "release_docs_loaded": list((evidence.get("release_docs") or {}).keys()),
         "reason_count": len(payload.get("reasons") or []),
     }
