@@ -1090,6 +1090,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# CI bridge: surfaces GitHub Actions runs (Agent 4 / Agent 5 reports) and
+# exposes the deployment-approval and workflow-dispatch operations the
+# dashboard needs. Loaded best-effort; failures are reported in /health.
+try:
+    from .ci_bridge import router as _ci_router  # type: ignore
+except ImportError:
+    try:
+        from ci_bridge import router as _ci_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _ci_router = None
+if _ci_router is not None:
+    app.include_router(_ci_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
