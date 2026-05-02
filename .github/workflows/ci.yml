@@ -344,10 +344,10 @@ jobs:
       - analyze-pre-test
       - test-and-build
     if: >
-      github.event_name == 'release' &&
       always() &&
+      (github.event_name == 'push' || github.event_name == 'release') &&
       needs.analyze-pre-test.result == 'success' &&
-      needs.test-and-build.result != 'cancelled'
+      needs.test-and-build.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

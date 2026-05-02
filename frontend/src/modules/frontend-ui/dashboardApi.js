@@ -331,6 +331,53 @@ export async function runBackendBrain(payload) {
   });
 }
 
+// --------------------------------------------------------------------------- //
+// CI bridge — surfaces GitHub Actions runs (Agent 4 / Agent 5 reports)        //
+// --------------------------------------------------------------------------- //
+
+export async function fetchCiStatus() {
+  return requestJson("/ci/status");
+}
+
+export async function fetchCiRuns(limit = 10) {
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", String(limit));
+  const data = await requestJson(`/ci/runs?${params.toString()}`);
+  return {
+    configured: Boolean(data?.configured),
+    items: Array.isArray(data?.items) ? data.items : [],
+    config: data?.config || null,
+  };
+}
+
+export async function fetchCiRunDetails(runId) {
+  return requestJson(`/ci/runs/${encodeURIComponent(runId)}`);
+}
+
+export async function fetchCiPendingDeployments(runId) {
+  return requestJson(
+    `/ci/runs/${encodeURIComponent(runId)}/pending-deployments`
+  );
+}
+
+export async function approveCiDeployment({
+  runId,
+  environmentIds,
+  state = "approved",
+  comment = "",
+}) {
+  return requestJson("/ci/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      run_id: runId,
+      environment_ids: environmentIds,
+      state,
+      comment,
+    }),
+  });
+}
+
 function inferBackendProfiles(set) {
   const docs = Array.isArray(set?.documents) ? set.documents : [];
   const names = new Set(

@@ -1,0 +1,28 @@
+Pre-promotion test procedure — challenge-app
+
+T-CHA-001  Frontend unit tests (Vitest)
+           Command : npm test --prefix frontend
+           Outcome : PASS  (18/18 scenarios)
+           Note    : covers App, ReleaseDashboard, dashboardApi.
+
+T-CHA-002  Backend agent smoke
+           Command : python -m agents.agent4.cli --dataset datasets/apcs_bundles/baseline/SET_GO_STABLE_v1.1.2 --no-llm
+           Outcome : PASS  (decision=GO)
+           Note    : exercises the deterministic policy engine end to end.
+
+T-CHA-003  Backend agent smoke (HOLD case)
+           Command : python -m agents.agent5.cli --dataset datasets/apcs_bundles/baseline/SET_HOLD_RUNTIME_UNRESOLVED_v1.1.2/phase5 --no-llm
+           Outcome : PASS  (decision=HOLD, rule=critical_defect_open)
+           Note    : verifies HOLD is correctly raised by the structured adapter.
+
+T-CHA-004  Brain orchestrator regression
+           Command : pytest tests/integration/test_brain_orchestrator.py
+           Outcome : PASS  (4/4 scenarios)
+           Note    : verifies the cross-phase HOLD gate.
+
+T-CHA-005  Container build smoke
+           Command : docker build -f deploy/docker/Dockerfile .
+           Outcome : PASS  (image size 184 MiB)
+           Note    : multi-stage build, no critical CVE in base image.
+
+Result summary : ALL PASS — no blocking outcome detected for TEST promotion.

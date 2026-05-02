@@ -80,7 +80,7 @@ MARKER_SCAN_IGNORE_SUFFIXES = (
 )
 
 MARKER_SCAN_IGNORE_PATHS = {
-    "scripts/run_ci_analysis.py",
+    "scripts/eval/run_ci_analysis.py",
 }
 
 CORE_DOCUMENTS = [
@@ -90,6 +90,16 @@ CORE_DOCUMENTS = [
     "Dockerfile",
     "package.json",
     "backend/requirements.txt",
+]
+
+RELEASE_DOCS_DIR = "docs/release"
+
+RELEASE_DOC_FILES = [
+    "APCS_Emails.txt",
+    "APCS_Requirements.txt",
+    "APCS_Test_Procedure.txt",
+    "APCS_Module_Version_Inventory.txt",
+    "APCS_VDD.txt",
 ]
 
 PHASE_DOCUMENTS = {
@@ -616,6 +626,31 @@ def build_event_context(
     }
 
 
+def load_release_docs() -> Dict[str, str]:
+    """Load the APCS-style documentation bundle shipped under docs/release/.
+
+    Returns a dict keyed by file name (e.g. "APCS_Emails.txt") with the file
+    text. Files that do not exist or cannot be read are silently skipped so
+    that the CI pipeline keeps working when the repo has not yet been seeded
+    with the release docs.
+    """
+    docs: Dict[str, str] = {}
+    base = PROJECT_ROOT / RELEASE_DOCS_DIR
+    if not base.is_dir():
+        return docs
+    for name in RELEASE_DOC_FILES:
+        path = base / name
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace").strip()
+        except Exception:
+            continue
+        if text:
+            docs[name] = text
+    return docs
+
+
 def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
     changed_files = resolve_changed_files(args.base_ref, args.head_ref)
     relevant_documents = select_relevant_documents(args.phase, changed_files)
@@ -624,6 +659,7 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
     event_payload = load_event_payload(args.event_payload)
     event_context = build_event_context(args, event_payload)
     blocker_markers = file_blocker_markers + list(event_context["metadata_markers"])
+    release_docs = load_release_docs()
 
     changed_file_details = [
         {"path": path, "category": classify_path(path)} for path in changed_files
@@ -687,9 +723,11 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
         "changed_files": changed_files,
         "changed_file_details": changed_file_details,
         "relevant_documents": relevant_documents,
+        "release_docs": release_docs,
         "counts": {
             "changed_files": len(changed_files),
             "relevant_documents": len(relevant_documents),
+            "release_docs": len(release_docs),
             "categories": category_counts,
         },
         "heuristics": heuristics,
@@ -771,7 +809,20 @@ def build_agent4_email_text(evidence: Dict[str, Any]) -> str:
             + "; ".join(item["subject"] for item in commit_messages[:3] if item.get("subject"))
         )
 
-    return "\n".join(header + body) + "\n"
+    sections = ["\n".join(header + body)]
+
+    release_docs = evidence.get("release_docs") or {}
+    apcs_emails = release_docs.get("APCS_Emails.txt")
+    if apcs_emails:
+        sections.append(
+            "\n----\n"
+            "Subject: Release-readiness correspondence (docs/release/APCS_Emails.txt)\n"
+            "From: ci-analysis@challenge.local\n"
+            "To: release.manager@challenge.local\n\n"
+            + apcs_emails
+        )
+
+    return "\n".join(sections) + "\n"
 
 
 def build_agent4_log_text(evidence: Dict[str, Any]) -> str:
@@ -816,6 +867,17 @@ def build_agent4_log_text(evidence: Dict[str, Any]) -> str:
     if metadata_markers:
         lines.append(
             f"{utc_now()} WARN [change-request] Review markers found in PR/release metadata or commit messages"
+        )
+
+    release_docs = evidence.get("release_docs") or {}
+    if release_docs:
+        lines.append(
+            f"{utc_now()} INFO [release-docs] Loaded APCS bundle from docs/release/: "
+            + ", ".join(sorted(release_docs.keys()))
+        )
+    else:
+        lines.append(
+            f"{utc_now()} WARN [release-docs] docs/release/ bundle is empty or missing"
         )
 
     return "\n".join(lines) + "\n"

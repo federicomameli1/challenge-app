@@ -1,8 +1,0 @@
-APCS Test Procedure - Release v1.3.12
-
-Tests executed:
-  Backend SLA test PASS
-  API load test PASS
-  HMI validation PASS
-
-All mandatory tests passed.
