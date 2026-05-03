@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CiPanel from "./modules/frontend-ui/CiPanel.jsx";
 import ReleaseDashboard from "./modules/frontend-ui/ReleaseDashboard.jsx";
 
@@ -7,32 +7,55 @@ const TABS = [
   { id: "ci", label: "CI / CD Pipeline" },
 ];
 
+const THEME_OPTIONS = ["light", "dark", "system"];
+
+function readStoredTheme() {
+  const stored = localStorage.getItem("theme");
+  return THEME_OPTIONS.includes(stored) ? stored : "system";
+}
+
+function systemPrefersDark() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  const isDark = theme === "dark" || (theme === "system" && systemPrefersDark());
+  root.classList.toggle("dark", isDark);
+  root.style.colorScheme = isDark ? "dark" : "light";
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("console");
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [theme, setTheme] = useState(readStoredTheme);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add('dark');
-      root.style.colorScheme = 'dark';
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      root.style.colorScheme = 'light';
-      localStorage.setItem('theme', 'light');
-    }
-  }, [darkMode]);
+    applyTheme(theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (theme !== "system") return undefined;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyTheme("system");
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [theme]);
+
+  const themeMeta = useMemo(() => {
+    if (theme === "light") return { label: "☀ Light", next: "dark" };
+    if (theme === "dark") return { label: "☾ Dark", next: "system" };
+    return { label: "✦ System", next: "light" };
+  }, [theme]);
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900 transition-theme duration-200 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto flex w-full max-w-[1820px] shrink-0 items-center justify-between gap-4 px-4 pb-2 pt-3">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Hitachi Challenge
         </h1>
         <div className="flex items-center gap-3">
-          <nav className="relative flex rounded-full border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            {/* Sliding pill that moves under the active tab */}
+          <nav className="relative flex rounded-full border border-slate-200 bg-white p-1 shadow-sm transition-theme duration-200 dark:border-slate-700 dark:bg-slate-900">
             <div
               className="absolute inset-y-1 rounded-full bg-slate-900 shadow-sm transition-transform duration-300 ease-in-out dark:bg-slate-100"
               style={{
@@ -58,16 +81,17 @@ export default function App() {
           </nav>
           <button
             type="button"
-            onClick={() => setDarkMode((prev) => !prev)}
-            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-            aria-label="Toggle dark mode"
+            onClick={() => setTheme(themeMeta.next)}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-theme duration-200 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            aria-label={`Theme: ${theme}. Click to switch to ${themeMeta.next}.`}
+            title={`Theme: ${theme} → ${themeMeta.next}`}
           >
-            {darkMode ? "☀ Light" : "☾ Dark"}
+            {themeMeta.label}
           </button>
         </div>
       </div>
 
-      <hr className="mx-auto w-full max-w-[1820px] shrink-0 border-slate-200 dark:border-slate-700" />
+      <hr className="mx-auto w-full max-w-[1820px] shrink-0 border-slate-200 transition-theme duration-200 dark:border-slate-700" />
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "console" ? (
