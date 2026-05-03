@@ -1,0 +1,5 @@
+scenario_id,release_id,defect_id,title,severity,status,owner,source_system,closure_note
+P5-CHA-GO-001,CHA-REL-1.5.0,DF-CHA-001,Diff stat rendered too densely in CI panel,LOW,CLOSED,dev.frontend,github,Replaced by single-line summary in _summarize_report
+P5-CHA-GO-001,CHA-REL-1.5.0,DF-CHA-002,Artifact download returns 400 from blob storage,HIGH,CLOSED,dev.backend,github,Authorization header stripped on cross-host redirect via _NoAuthRedirectHandler
+P5-CHA-GO-001,CHA-REL-1.5.0,DF-CHA-003,run_ci_analysis flagged itself as BLOCKER,MEDIUM,CLOSED,dev.devops,github,Fixed MARKER_SCAN_IGNORE_PATHS path
+P5-CHA-GO-001,CHA-REL-1.5.0,DF-CHA-004,analyze-pre-prod skipped on push events,HIGH,CLOSED,dev.devops,github,Updated job condition to run on push and release

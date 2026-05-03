@@ -1,0 +1,15 @@
+scenario_id,release_id,test_case_id,title,mapped_requirement_ids,criticality,test_owner,test_family_alias
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-001,Frontend unit suite,REQ-CHA-011|REQ-CHA-013|REQ-CHA-014,HIGH,qa.frontend,Frontend Regression Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-002,Dashboard CI tab smoke,REQ-CHA-011|REQ-CHA-012,MEDIUM,qa.frontend,Manual UI Smoke
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-003,Agent 4 happy path GO,REQ-CHA-001,HIGH,qa.agents,Phase 4 Smoke Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-004,Agent 4 adversarial HOLD,REQ-CHA-001,HIGH,qa.agents,Phase 4 Smoke Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-005,Agent 5 structured Phase 5,REQ-CHA-002,HIGH,qa.agents,Phase 5 Smoke Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-006,Brain orchestrator regression,REQ-CHA-003,HIGH,qa.agents,Brain Orchestration Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-007,CI bridge unconfigured backend,REQ-CHA-009,HIGH,qa.backend,CI Bridge Resilience Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-008,CI bridge runs listing,REQ-CHA-008,HIGH,qa.backend,CI Bridge API Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-009,CI bridge artifact download,REQ-CHA-006|REQ-CHA-010,HIGH,qa.backend,CI Bridge API Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-010,Approval gate from dashboard,REQ-CHA-005|REQ-CHA-012,HIGH,qa.frontend,E2E Approval Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-011,Container build smoke,REQ-CHA-015,HIGH,qa.devops,Build & Deploy Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-012,Helm secret wiring,REQ-CHA-016,HIGH,qa.devops,Build & Deploy Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-013,End-to-end pipeline,REQ-CHA-004|REQ-CHA-005|REQ-CHA-007|REQ-CHA-017,HIGH,qa.devops,E2E Pipeline Pack
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-014,Traceability and defect hygiene lint,REQ-CHA-019|REQ-CHA-020,MEDIUM,qa.release,Release Hygiene Pack

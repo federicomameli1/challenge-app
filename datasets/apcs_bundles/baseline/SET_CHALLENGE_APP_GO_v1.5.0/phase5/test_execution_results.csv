@@ -1,0 +1,15 @@
+scenario_id,release_id,test_case_id,status,executed,retest_required,retest_completed,executor,execution_ts,report_version,narrative_note
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-001,PASS,true,false,false,qa.frontend,2026-05-02T15:00:00+00:00,v1.5.0,Vitest 18/18 green
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-002,PASS,true,false,false,qa.frontend,2026-05-02T15:05:00+00:00,v1.5.0,Manual smoke on dev cluster
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-003,PASS,true,false,false,qa.agents,2026-05-02T15:10:00+00:00,v1.5.0,Decision GO confidence high
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-004,PASS,true,false,false,qa.agents,2026-05-02T15:12:00+00:00,v1.5.0,Decision HOLD on adversarial fixture
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-005,PASS,true,false,false,qa.agents,2026-05-02T15:15:00+00:00,v1.5.0,critical_defect_open rule fired as expected
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-006,PASS,true,false,false,qa.agents,2026-05-02T15:20:00+00:00,v1.5.0,All Brain scenarios green
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-007,PASS,true,false,false,qa.backend,2026-05-02T15:25:00+00:00,v1.5.0,Returns configured=false without exceptions
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-008,PASS,true,false,false,qa.backend,2026-05-02T15:28:00+00:00,v1.5.0,Returns last 5 workflow runs
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-009,PASS,true,false,false,qa.backend,2026-05-02T15:32:00+00:00,v1.5.0,Authorization stripped on cross-host redirect
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-010,PASS,true,false,false,qa.frontend,2026-05-02T15:40:00+00:00,v1.5.0,End-to-end approval verified on hitachi-test-approval
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-011,PASS,true,false,false,qa.devops,2026-05-02T15:45:00+00:00,v1.5.0,Multi-stage build no critical CVE
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-012,PASS,true,false,false,qa.devops,2026-05-02T15:50:00+00:00,v1.5.0,api_key and ci_bridge_token both present
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-013,PASS,true,false,false,qa.devops,2026-05-02T16:00:00+00:00,v1.5.0,Pipeline succeeded across all gates
+P5-CHA-GO-001,CHA-REL-1.5.0,TC-CHA-014,PASS,true,false,false,qa.release,2026-05-02T16:05:00+00:00,v1.5.0,All requirements traced no orphan
