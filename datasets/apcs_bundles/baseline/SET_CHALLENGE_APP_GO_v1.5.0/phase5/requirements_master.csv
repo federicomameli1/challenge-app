@@ -1,0 +1,20 @@
+scenario_id,release_id,requirement_id,description,priority,module,mandatory_for_phase5,domain,traceability_tag,module_alias_raw
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-001,Agent 4 produces deterministic GO/HOLD on APCS bundle.,HIGH,agents.agent4,true,decision-engine,MUST,Phase 4 Policy Engine
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-002,Agent 5 raises HOLD on unresolved Phase 5 hard gate.,HIGH,agents.agent5,true,decision-engine,MUST,Phase 5 Policy Engine
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-003,Brain blocks Phase 5 when Phase 4 is HOLD without override.,HIGH,agents.brain,true,decision-engine,MUST,Brain Orchestrator
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-004,"CI pipeline runs Agent 4 on push and PR, Agent 5 on push/release.",HIGH,.github/workflows,true,ci-cd,MUST,GitHub Actions Workflow
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-005,Promotion to TEST and PROD gated by GitHub environments.,HIGH,.github/workflows,true,ci-cd,MUST,Environment Gates
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-006,Pipeline publishes Agent 4 and Agent 5 reports as artifacts.,HIGH,scripts/eval/run_ci_analysis,true,ci-cd,MUST,CI Artifact Producer
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-007,Pipeline publishes the build/test stage results artifact.,MEDIUM,.github/workflows,false,ci-cd,SHOULD,CI Stage Results
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-008,Backend exposes /ci/* CI bridge endpoints.,HIGH,backend.ci_bridge,true,api,MUST,CI Bridge API
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-009,CI bridge degrades gracefully when not configured.,HIGH,backend.ci_bridge,true,api,MUST,CI Bridge Resilience
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-010,Artifact downloads strip Authorization on cross-host redirect.,HIGH,backend.ci_bridge,true,api,MUST,CI Bridge Redirect Handler
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-011,Dashboard exposes a CI / CD Pipeline tab with reports.,HIGH,frontend.CiPanel,true,ui,MUST,CI Dashboard Tab
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-012,Dashboard supports approving or rejecting pending deployments.,HIGH,frontend.CiPanel,true,ui,MUST,Approval Flow
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-013,Dashboard auto-refreshes while runs are non-terminal.,MEDIUM,frontend.CiPanel,false,ui,SHOULD,Live Refresh
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-014,Evidence references include relative path and snippet.,MEDIUM,frontend.CiPanel,false,ui,SHOULD,Evidence Rendering
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-015,Container images deployed to TEST/PROD pinned by digest.,HIGH,deploy/docker,true,deployment,MUST,Image Digest Pinning
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-016,Helm chart mounts api_key and ci_bridge_token from Secret.,HIGH,deploy/helm,true,deployment,MUST,Helm Secret Wiring
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-017,"Image build, push and GitOps update done by the pipeline.",MEDIUM,.github/workflows,false,deployment,SHOULD,Pipeline Build & Publish
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-019,Each requirement linked to at least one test case.,HIGH,docs/release,true,traceability,MUST,Traceability Coverage
+P5-CHA-GO-001,CHA-REL-1.5.0,REQ-CHA-020,No open critical defect and no blocker email for TEST.,MEDIUM,docs/release,false,traceability,SHOULD,Defect & Mail Hygiene

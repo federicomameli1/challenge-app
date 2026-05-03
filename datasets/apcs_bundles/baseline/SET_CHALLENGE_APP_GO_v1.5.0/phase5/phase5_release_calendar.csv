@@ -1,0 +1,2 @@
+release_id,scenario_id,environment,phase5_window_start,phase5_window_end,target_phase5_gate
+CHA-REL-1.5.0,P5-CHA-GO-001,TEST,2026-05-02T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase5_test_analysis

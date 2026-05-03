@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
 html,
@@ -20,4 +20,28 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  body * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+}
+
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgb(15 23 42);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(51 65 85);
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(71 85 105);
 }
