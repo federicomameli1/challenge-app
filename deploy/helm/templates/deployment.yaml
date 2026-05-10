@@ -34,5 +34,10 @@ spec:
                 secretKeyRef:
                   name: challenge-app-secrets
                   key: ci_bridge_token
+            - name: SUBJECT_REPO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: challenge-app-secrets
+                  key: subject_repo_token
           ports:
             - containerPort: {{ .Values.containerPort }}
