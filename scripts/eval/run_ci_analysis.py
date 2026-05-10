@@ -672,6 +672,12 @@ def load_release_docs() -> Dict[str, str]:
 
 def _github_headers() -> Dict[str, str]:
     token = os.environ.get("SUBJECT_REPO_TOKEN", "").strip()
+    if not token:
+        print(
+            "WARN [github-auth] SUBJECT_REPO_TOKEN is not set — API calls will be unauthenticated "
+            "(will fail for private repos).",
+            file=sys.stderr,
+        )
     headers: Dict[str, str] = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
@@ -684,8 +690,16 @@ def _github_headers() -> Dict[str, str]:
 
 def _github_get(path: str) -> Any:
     req = urllib.request.Request(f"https://api.github.com{path}", headers=_github_headers())
-    with urllib.request.urlopen(req, timeout=12) as resp:
-        return json.loads(resp.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            return json.loads(resp.read().decode())
+    except urllib.error.HTTPError as exc:
+        body = ""
+        try:
+            body = exc.read().decode("utf-8", errors="replace")[:200]
+        except Exception:
+            pass
+        raise urllib.error.HTTPError(exc.url, exc.code, f"{exc.reason} — {body}", exc.headers, None) from exc
 
 
 def fetch_subject_repo_context(repo: str, ref: str) -> Dict[str, Any]:
@@ -1711,18 +1725,37 @@ def _run_pre_test_analysis(
     target_ref = getattr(args, "target_ref", "main") or "main"
 
     if target_repo:
-        # Fetch pytest artifact if the subject run ID was provided
         subject_run_id = getattr(args, "subject_run_id", None)
-        raw_artifact = fetch_subject_test_artifact(target_repo, subject_run_id) if subject_run_id else None
+        token_set = bool(os.environ.get("SUBJECT_REPO_TOKEN", "").strip())
+        print(
+            f"INFO [subject-pipeline] repo={target_repo} ref={target_ref[:12]} "
+            f"run_id={subject_run_id!r} token_set={token_set}",
+            file=sys.stderr,
+        )
+
+        if subject_run_id:
+            raw_artifact = fetch_subject_test_artifact(target_repo, subject_run_id)
+        else:
+            print(
+                "WARN [subject-pipeline] subject_run_id not provided — skipping test artifact fetch. "
+                "Check that SUBJECT_RUN_ID env var is set (from client_payload.subject_run_id).",
+                file=sys.stderr,
+            )
+            raw_artifact = None
 
         if raw_artifact is not None:
             from agents.test_report_parser import parse_pytest_json
             test_summary = parse_pytest_json(raw_artifact)
         else:
+            parse_error = (
+                "subject_run_id not provided — check SUBJECT_RUN_ID env var in CI."
+                if not subject_run_id
+                else "Artifact download failed — check SUBJECT_REPO_TOKEN permissions and run logs."
+            )
             test_summary = {
                 "available": False,
                 "all_passed": False,
-                "parse_error": "Artifact not fetched — subject_run_id not provided or download failed.",
+                "parse_error": parse_error,
                 "total": 0, "passed": 0, "failed": 0, "error": 0, "skipped": 0,
                 "duration_s": 0.0, "failed_tests": [],
             }
