@@ -25,6 +25,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
@@ -576,14 +577,35 @@ def collect_commit_messages(base_ref: Optional[str], head_ref: str) -> List[Dict
     return messages
 
 
+def _scan_event_markers(
+    title: str,
+    body: str,
+    commit_messages: List[Dict[str, str]],
+) -> List[Dict[str, Any]]:
+    """Scan PR/release title, body, and commit subjects for blocker markers."""
+    markers: List[Dict[str, Any]] = []
+    if title:
+        markers.extend(scan_marker_text(str(title), source_path="event/title", source_label="event_metadata"))
+    if body:
+        markers.extend(scan_marker_text(str(body), source_path="event/body", source_label="event_metadata"))
+    for idx, item in enumerate(commit_messages, start=1):
+        subject = item.get("subject", "")
+        if subject:
+            markers.extend(scan_marker_text(subject, source_path=f"event/commit_messages/{idx}", source_label="commit_message"))
+    return markers
+
+
 def build_event_context(
     args: argparse.Namespace,
     event_payload: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     payload = event_payload or {}
-    pr_payload = payload.get("pull_request") if isinstance(payload.get("pull_request"), dict) else {}
-    release_payload = payload.get("release") if isinstance(payload.get("release"), dict) else {}
-    head_commit = payload.get("head_commit") if isinstance(payload.get("head_commit"), dict) else {}
+    _pr = payload.get("pull_request")
+    _rel = payload.get("release")
+    _hc = payload.get("head_commit")
+    pr_payload: Dict[str, Any] = _pr if isinstance(_pr, dict) else {}
+    release_payload: Dict[str, Any] = _rel if isinstance(_rel, dict) else {}
+    head_commit: Dict[str, Any] = _hc if isinstance(_hc, dict) else {}
 
     title = (
         pr_payload.get("title")
@@ -595,35 +617,6 @@ def build_event_context(
     body = pr_payload.get("body") or release_payload.get("body") or ""
     commit_messages = collect_commit_messages(args.base_ref, args.head_ref)
 
-    metadata_markers: List[Dict[str, Any]] = []
-    if title:
-        metadata_markers.extend(
-            scan_marker_text(
-                str(title),
-                source_path="event/title",
-                source_label="event_metadata",
-            )
-        )
-    if body:
-        metadata_markers.extend(
-            scan_marker_text(
-                str(body),
-                source_path="event/body",
-                source_label="event_metadata",
-            )
-        )
-    for idx, item in enumerate(commit_messages, start=1):
-        subject = item.get("subject", "")
-        if not subject:
-            continue
-        metadata_markers.extend(
-            scan_marker_text(
-                subject,
-                source_path=f"event/commit_messages/{idx}",
-                source_label="commit_message",
-            )
-        )
-
     target_branch = None
     if isinstance(pr_payload.get("base"), dict):
         target_branch = pr_payload["base"].get("ref")
@@ -634,7 +627,7 @@ def build_event_context(
         "title": truncate_text(title, 180),
         "body_preview": truncate_text(body, 400),
         "commit_messages": commit_messages,
-        "metadata_markers": metadata_markers,
+        "metadata_markers": _scan_event_markers(title, body, commit_messages),
         "is_fork_pr": bool(
             pr_payload.get("head", {}).get("repo", {}).get("fork")
             if isinstance(pr_payload.get("head"), dict)
@@ -669,8 +662,7 @@ def load_release_docs() -> Dict[str, str]:
     return docs
 
 
-def _github_get(path: str) -> Any:
-    """GET a GitHub API path with SUBJECT_REPO_TOKEN if available."""
+def _github_headers() -> Dict[str, str]:
     token = os.environ.get("SUBJECT_REPO_TOKEN", "").strip()
     headers: Dict[str, str] = {
         "Accept": "application/vnd.github+json",
@@ -679,13 +671,16 @@ def _github_get(path: str) -> Any:
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(f"https://api.github.com{path}", headers=headers)
+    return headers
+
+
+def _github_get(path: str) -> Any:
+    req = urllib.request.Request(f"https://api.github.com{path}", headers=_github_headers())
     with urllib.request.urlopen(req, timeout=12) as resp:
         return json.loads(resp.read().decode())
 
 
 def fetch_subject_repo_context(repo: str, ref: str) -> Dict[str, Any]:
-    """Fetch commit metadata and changed files from the subject repo."""
     context: Dict[str, Any] = {
         "commit_sha": ref,
         "commit_message": "",
@@ -696,14 +691,11 @@ def fetch_subject_repo_context(repo: str, ref: str) -> Dict[str, Any]:
     try:
         commit = _github_get(f"/repos/{repo}/commits/{ref}")
         context["commit_message"] = commit.get("commit", {}).get("message", "")
-        context["author"] = (
-            commit.get("commit", {}).get("author", {}).get("name", "")
-        )
+        context["author"] = commit.get("commit", {}).get("author", {}).get("name", "")
         files = commit.get("files", [])
         context["changed_files"] = [f["filename"] for f in files if "filename" in f]
         stats = commit.get("stats", {})
-        additions = stats.get("additions", 0)
-        deletions = stats.get("deletions", 0)
+        additions, deletions = stats.get("additions", 0), stats.get("deletions", 0)
         context["diff_stat"] = (
             f"{len(context['changed_files'])} file(s) changed, "
             f"{additions} insertion(s)(+), {deletions} deletion(s)(-)"
@@ -714,48 +706,98 @@ def fetch_subject_repo_context(repo: str, ref: str) -> Dict[str, Any]:
 
 
 def fetch_release_docs_from_github(repo: str, ref: str) -> Dict[str, str]:
-    """Fetch the APCS bundle from a GitHub repo via the Contents API.
-
-    Uses SUBJECT_REPO_TOKEN env var as a Bearer token (required for private repos).
-    Files that cannot be fetched are silently skipped so the pipeline keeps
-    running even when individual documents are missing.
-    """
-    token = os.environ.get("SUBJECT_REPO_TOKEN", "").strip()
-    headers: Dict[str, str] = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "challenge-app-ci-analysis/1.0",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    """Fetch APCS bundle files concurrently via the GitHub Contents API."""
+    def _fetch_one(name: str) -> tuple:
+        try:
+            data = _github_get(f"/repos/{repo}/contents/docs/{name}?ref={ref}")
+            content = base64.b64decode(data["content"]).decode("utf-8", errors="replace").strip()
+            return name, content
+        except urllib.error.HTTPError as exc:
+            print(f"WARN [fetch-apcs] HTTP {exc.code} fetching {name} from {repo}@{ref}", file=sys.stderr)
+            return name, ""
+        except Exception as exc:
+            print(f"WARN [fetch-apcs] Could not fetch {name} from {repo}@{ref}: {exc}", file=sys.stderr)
+            return name, ""
 
     docs: Dict[str, str] = {}
-    for name in RELEASE_DOC_FILES:
-        url = f"https://api.github.com/repos/{repo}/contents/docs/{name}?ref={ref}"
-        req = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                data = json.loads(resp.read().decode())
-                raw = base64.b64decode(data["content"]).decode("utf-8", errors="replace").strip()
-                if raw:
-                    docs[name] = raw
-        except urllib.error.HTTPError as exc:
-            print(
-                f"WARN [fetch-apcs] HTTP {exc.code} fetching {name} from {repo}@{ref}",
-                file=sys.stderr,
-            )
-        except Exception as exc:
-            print(
-                f"WARN [fetch-apcs] Could not fetch {name} from {repo}@{ref}: {exc}",
-                file=sys.stderr,
-            )
+    with ThreadPoolExecutor(max_workers=len(RELEASE_DOC_FILES)) as pool:
+        for name, content in pool.map(_fetch_one, RELEASE_DOC_FILES):
+            if content:
+                docs[name] = content
     return docs
+
+
+def _compute_local_heuristics(
+    changed_files: List[str],
+    blocker_markers: List[Any],
+    file_blocker_markers: List[Any],
+    metadata_markers: List[Any],
+) -> Dict[str, Any]:
+    """Heuristics for the local (self-review) mode, where files come from the working repo."""
+    workflow_files_changed = any(path.startswith(".github/workflows/") for path in changed_files)
+    deployment_files_changed = any(path.startswith("chart/") for path in changed_files)
+    application_files_changed = any(
+        path.startswith("src/") or path.startswith("backend/") for path in changed_files
+    )
+    runtime_files_changed = any(
+        path in {"package.json", "package-lock.json", "backend/requirements.txt", "Dockerfile"}
+        for path in changed_files
+    )
+    tests_changed = any(
+        path.startswith("tests/") or ".test." in path or ".spec." in path or path.endswith("App.test.jsx")
+        for path in changed_files
+    )
+    chart_required = ["chart/Chart.yaml", "chart/templates/deployment.yaml", "chart/templates/service.yaml"]
+    delivery_changed = application_files_changed or deployment_files_changed or runtime_files_changed
+    return {
+        "workflow_files_changed": workflow_files_changed,
+        "deployment_files_changed": deployment_files_changed,
+        "application_files_changed": application_files_changed,
+        "runtime_files_changed": runtime_files_changed,
+        "tests_changed": tests_changed,
+        "delivery_changed": delivery_changed,
+        "workflow_has_test_step": detect_workflow_test_step(),
+        "missing_core_documents": [p for p in CORE_DOCUMENTS if not repo_file_exists(p)],
+        "missing_chart_documents": [p for p in chart_required if not repo_file_exists(p)],
+        "blocker_markers": blocker_markers,
+        "file_blocker_markers": file_blocker_markers,
+        "metadata_blocker_markers": metadata_markers,
+        "conditional_retest_needed": bool(delivery_changed and not tests_changed),
+    }
+
+
+def _compute_subject_heuristics(
+    changed_files: List[str],
+    blocker_markers: List[Any],
+    metadata_markers: List[Any],
+) -> Dict[str, Any]:
+    """Heuristics for the subject-repo mode, where changed files come from an external GitHub repo."""
+    workflow_files_changed = any(path.startswith(".github/") for path in changed_files)
+    application_files_changed = any(
+        not path.startswith("docs/") and not path.startswith(".github/")
+        for path in changed_files
+    )
+    tests_changed = any("test" in path.lower() for path in changed_files)
+    return {
+        "workflow_files_changed": workflow_files_changed,
+        "deployment_files_changed": False,
+        "application_files_changed": application_files_changed,
+        "runtime_files_changed": False,
+        "tests_changed": tests_changed,
+        "delivery_changed": application_files_changed,
+        "workflow_has_test_step": True,
+        "missing_core_documents": [],
+        "missing_chart_documents": [],
+        "blocker_markers": blocker_markers,
+        "file_blocker_markers": [],
+        "metadata_blocker_markers": metadata_markers,
+        "conditional_retest_needed": False,
+    }
 
 
 def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
     event_payload = load_event_payload(args.event_payload)
     event_context = build_event_context(args, event_payload)
-
     target_repo = getattr(args, "target_repo", None)
     target_ref = getattr(args, "target_ref", "main") or "main"
 
@@ -763,12 +805,11 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
         subject_ctx = fetch_subject_repo_context(target_repo, target_ref)
         changed_files = subject_ctx["changed_files"]
         diff_stat = subject_ctx["diff_stat"]
-        file_blocker_markers = []
+        file_blocker_markers: List[Any] = []
         blocker_markers = list(event_context["metadata_markers"])
         release_docs = fetch_release_docs_from_github(target_repo, target_ref)
         release_docs_source = f"github:{target_repo}@{target_ref}"
     else:
-        subject_ctx = None
         changed_files = resolve_changed_files(args.base_ref, args.head_ref)
         diff_stat = resolve_diff_stat(args.base_ref, args.head_ref)
         file_blocker_markers = scan_blocker_markers(changed_files)
@@ -776,82 +817,20 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
         release_docs = load_release_docs()
         release_docs_source = "local:docs/release/"
 
-    changed_file_details = [
-        {"path": path, "category": classify_path(path)} for path in changed_files
-    ]
+    changed_file_details = [{"path": p, "category": classify_path(p)} for p in changed_files]
     category_counts: Dict[str, int] = {}
     for item in changed_file_details:
-        category = item["category"]
-        category_counts[category] = category_counts.get(category, 0) + 1
+        category_counts[item["category"]] = category_counts.get(item["category"], 0) + 1
 
     if target_repo:
-        # In subject-repo mode local file checks don't apply.
-        workflow_files_changed = any(path.startswith(".github/") for path in changed_files)
-        deployment_files_changed = False
-        application_files_changed = any(
-            not path.startswith("docs/") and not path.startswith(".github/")
-            for path in changed_files
+        heuristics = _compute_subject_heuristics(
+            changed_files, blocker_markers, event_context["metadata_markers"],
         )
-        runtime_files_changed = False
-        tests_changed = any("test" in path.lower() for path in changed_files)
-        missing_core_documents = []
-        missing_chart_documents = []
-        workflow_has_test_step = True
     else:
-        workflow_files_changed = any(
-            path.startswith(".github/workflows/") for path in changed_files
+        heuristics = _compute_local_heuristics(
+            changed_files, blocker_markers, file_blocker_markers, event_context["metadata_markers"],
         )
-        deployment_files_changed = any(path.startswith("chart/") for path in changed_files)
-        application_files_changed = any(
-            path.startswith("src/") or path.startswith("backend/") for path in changed_files
-        )
-        runtime_files_changed = any(
-            path in {"package.json", "package-lock.json", "backend/requirements.txt", "Dockerfile"}
-            for path in changed_files
-        )
-        tests_changed = any(
-            path.startswith("tests/")
-            or ".test." in path
-            or ".spec." in path
-            or path.endswith("App.test.jsx")
-            for path in changed_files
-        )
-        missing_core_documents = [
-            path for path in CORE_DOCUMENTS if not repo_file_exists(path)
-        ]
-        chart_required = [
-            "chart/Chart.yaml",
-            "chart/templates/deployment.yaml",
-            "chart/templates/service.yaml",
-        ]
-        missing_chart_documents = [
-            path for path in chart_required if not repo_file_exists(path)
-        ]
-        workflow_has_test_step = detect_workflow_test_step()
-
-    delivery_changed = application_files_changed or deployment_files_changed or runtime_files_changed
-
-    heuristics = {
-        "workflow_files_changed": workflow_files_changed,
-        "deployment_files_changed": deployment_files_changed,
-        "application_files_changed": application_files_changed,
-        "runtime_files_changed": runtime_files_changed,
-        "tests_changed": tests_changed,
-        "delivery_changed": delivery_changed,
-        "workflow_has_test_step": workflow_has_test_step,
-        "missing_core_documents": missing_core_documents,
-        "missing_chart_documents": missing_chart_documents,
-        "blocker_markers": blocker_markers,
-        "file_blocker_markers": file_blocker_markers,
-        "metadata_blocker_markers": event_context["metadata_markers"],
-        "conditional_retest_needed": bool(delivery_changed and not tests_changed),
-    }
-
-    relevant_documents = (
-        []
-        if target_repo
-        else select_relevant_documents(args.phase, changed_files)
-    )
+    relevant_documents = [] if target_repo else select_relevant_documents(args.phase, changed_files)
 
     return {
         "event_context": event_context,
@@ -1301,6 +1280,18 @@ def build_agent5_email_text(
     return "\n".join(header + body) + "\n"
 
 
+def _phase5_requirement_ids(heuristics: Dict[str, Any]) -> List[str]:
+    """Return the applicable requirement IDs for Phase 5 based on what changed."""
+    ids = ["CI-REQ-AUTOMATED-TESTS", "CI-REQ-CONTAINER-BUILD"]
+    if heuristics["deployment_files_changed"]:
+        ids.append("CI-REQ-DEPLOYMENT-PACKAGE")
+    if heuristics["application_files_changed"]:
+        ids.append("CI-REQ-APPLICATION-CHANGES")
+    if heuristics["workflow_files_changed"]:
+        ids.append("CI-REQ-PIPELINE-CHANGES")
+    return ids
+
+
 def build_agent5_dataset(
     *,
     dataset_root: Path,
@@ -1312,14 +1303,7 @@ def build_agent5_dataset(
 ) -> None:
     heuristics = evidence["heuristics"]
     previous_context = derive_agent4_context(previous_report, stage_results)
-
-    requirement_ids = ["CI-REQ-AUTOMATED-TESTS", "CI-REQ-CONTAINER-BUILD"]
-    if heuristics["deployment_files_changed"]:
-        requirement_ids.append("CI-REQ-DEPLOYMENT-PACKAGE")
-    if heuristics["application_files_changed"]:
-        requirement_ids.append("CI-REQ-APPLICATION-CHANGES")
-    if heuristics["workflow_files_changed"]:
-        requirement_ids.append("CI-REQ-PIPELINE-CHANGES")
+    requirement_ids = _phase5_requirement_ids(heuristics)
 
     requirements_rows = [
         {
@@ -1488,26 +1472,21 @@ def build_agent5_dataset(
         )
 
 
-def run_agent4_analysis(
+def _run_agent_pipeline(
+    pipeline_cls: Any,
+    config_cls: Any,
+    config_kwargs: Dict[str, Any],
     *,
+    agent_name: str,
     dataset_root: Path,
     scenario_id: str,
     release_id: str,
     use_llm: bool,
 ) -> Dict[str, Any]:
-    from agents.agent4.lc_pipeline import LangChainAgent4Pipeline, LCPipelineConfig
-
+    """Instantiate an agent pipeline, run it, and return a normalised result dict."""
     base_llm_generate = maybe_get_llm_generate() if use_llm else None
     llm_generate, llm_diagnostics = make_llm_diagnostics_wrapper(base_llm_generate)
-    pipeline = LangChainAgent4Pipeline(
-        config=LCPipelineConfig(
-            dataset_root=str(dataset_root),
-            source_adapter_kind="structured_dataset",
-            use_llm_summary=use_llm,
-            strict_schema=True,
-        ),
-        llm_generate=llm_generate,
-    )
+    pipeline = pipeline_cls(config=config_cls(**config_kwargs), llm_generate=llm_generate)
     validation = pipeline.validate_dataset()
     payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
     llm_diagnostics["decision_type"] = payload.get("decision_type")
@@ -1518,7 +1497,7 @@ def run_agent4_analysis(
         and payload.get("decision_type") != "deterministic_with_llm_summary"
     )
     return {
-        "agent": "agent4",
+        "agent": agent_name,
         "dataset_root": str(dataset_root),
         "scenario_id": scenario_id,
         "release_id": release_id,
@@ -1526,6 +1505,27 @@ def run_agent4_analysis(
         "llm_diagnostics": llm_diagnostics,
         "payload": payload,
     }
+
+
+def run_agent4_analysis(
+    *,
+    dataset_root: Path,
+    scenario_id: str,
+    release_id: str,
+    use_llm: bool,
+) -> Dict[str, Any]:
+    from agents.agent4.lc_pipeline import LangChainAgent4Pipeline, LCPipelineConfig
+
+    return _run_agent_pipeline(
+        LangChainAgent4Pipeline,
+        LCPipelineConfig,
+        {"dataset_root": str(dataset_root), "source_adapter_kind": "structured_dataset", "use_llm_summary": use_llm, "strict_schema": True},
+        agent_name="agent4",
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        use_llm=use_llm,
+    )
 
 
 def run_agent5_analysis(
@@ -1537,34 +1537,16 @@ def run_agent5_analysis(
 ) -> Dict[str, Any]:
     from agents.agent5.lc_pipeline import LangChainAgent5Pipeline, LCPipelineConfig
 
-    base_llm_generate = maybe_get_llm_generate() if use_llm else None
-    llm_generate, llm_diagnostics = make_llm_diagnostics_wrapper(base_llm_generate)
-    pipeline = LangChainAgent5Pipeline(
-        config=LCPipelineConfig(
-            dataset_root=str(dataset_root),
-            use_llm_summary=use_llm,
-            strict_schema=True,
-        ),
-        llm_generate=llm_generate,
+    return _run_agent_pipeline(
+        LangChainAgent5Pipeline,
+        LCPipelineConfig,
+        {"dataset_root": str(dataset_root), "use_llm_summary": use_llm, "strict_schema": True},
+        agent_name="agent5",
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        use_llm=use_llm,
     )
-    validation = pipeline.validate_dataset()
-    payload = pipeline.assess_scenario(scenario_id=scenario_id, release_id=release_id)
-    llm_diagnostics["decision_type"] = payload.get("decision_type")
-    llm_diagnostics["fallback_suspected"] = bool(
-        use_llm
-        and llm_diagnostics["configured"]
-        and llm_diagnostics["called"]
-        and payload.get("decision_type") != "deterministic_with_llm_summary"
-    )
-    return {
-        "agent": "agent5",
-        "dataset_root": str(dataset_root),
-        "scenario_id": scenario_id,
-        "release_id": release_id,
-        "validation": validation,
-        "llm_diagnostics": llm_diagnostics,
-        "payload": payload,
-    }
 
 
 def run_llm_bundle_analysis(
@@ -1613,6 +1595,96 @@ def run_llm_bundle_analysis(
     }
 
 
+def _extract_previous_decision(previous_report: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not previous_report:
+        return None
+    payload = previous_report.get("agent_output", {}).get("payload")
+    if isinstance(payload, dict):
+        return payload.get("decision")
+    return None
+
+
+def _run_pre_test_analysis(
+    args: argparse.Namespace,
+    evidence: Dict[str, Any],
+    *,
+    dataset_root: Path,
+    scenario_id: str,
+    release_id: str,
+) -> Dict[str, Any]:
+    target_repo = getattr(args, "target_repo", None)
+    target_ref = getattr(args, "target_ref", "main") or "main"
+    if target_repo:
+        return run_llm_bundle_analysis(
+            release_docs=evidence.get("release_docs", {}),
+            subject_repo=target_repo,
+            target_ref=target_ref,
+            scenario_id=scenario_id,
+            release_id=release_id,
+        )
+    build_agent4_dataset(
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        evidence=evidence,
+    )
+    return run_agent4_analysis(
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        use_llm=args.use_llm,
+    )
+
+
+def _run_pre_prod_analysis(
+    args: argparse.Namespace,
+    evidence: Dict[str, Any],
+    stage_results: Dict[str, Any],
+    previous_report: Optional[Dict[str, Any]],
+    *,
+    dataset_root: Path,
+    scenario_id: str,
+    release_id: str,
+) -> Dict[str, Any]:
+    build_agent5_dataset(
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        evidence=evidence,
+        stage_results=stage_results,
+        previous_report=previous_report,
+    )
+    return run_agent5_analysis(
+        dataset_root=dataset_root,
+        scenario_id=scenario_id,
+        release_id=release_id,
+        use_llm=args.use_llm,
+    )
+
+
+def _build_recommendation(
+    payload: Dict[str, Any],
+    phase_meta: Dict[str, Any],
+) -> Dict[str, Any]:
+    rule_findings = payload.get("rule_findings", {})
+    triggered_rules = (
+        rule_findings.get("triggered_rule_codes", [])
+        if isinstance(rule_findings, dict)
+        else []
+    )
+    return {
+        "decision": payload.get("decision", "HOLD"),
+        "decision_type": payload.get("decision_type", "unknown"),
+        "summary": payload.get("summary", "No summary returned by agent."),
+        "agent_human_action": payload.get("human_action"),
+        "human_gate": phase_meta["human_gate"],
+        "final_gate_mode": "human_approval_required",
+        "triggered_rules": triggered_rules,
+        "confidence": payload.get("confidence"),
+        "policy_version": payload.get("policy_version"),
+    }
+
+
 def build_report(args: argparse.Namespace) -> Dict[str, Any]:
     phase_meta = PHASE_METADATA[args.phase]
     head_sha = run_command(["git", "rev-parse", args.head_ref], allow_failure=True)
@@ -1625,74 +1697,18 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
     dataset_root = phase_dir / f"{phase_meta['agent']}_ci_dataset"
     scenario_id = phase_meta["scenario_id"]
 
-    target_repo = getattr(args, "target_repo", None)
-    target_ref = getattr(args, "target_ref", "main") or "main"
-
     if args.phase == "pre-test":
-        if target_repo:
-            # Subject-repo mode: use the LLM bundle analyst directly on the APCS docs.
-            agent_output = run_llm_bundle_analysis(
-                release_docs=evidence.get("release_docs", {}),
-                subject_repo=target_repo,
-                target_ref=target_ref,
-                scenario_id=scenario_id,
-                release_id=release_id,
-            )
-        else:
-            build_agent4_dataset(
-                dataset_root=dataset_root,
-                scenario_id=scenario_id,
-                release_id=release_id,
-                evidence=evidence,
-            )
-            agent_output = run_agent4_analysis(
-                dataset_root=dataset_root,
-                scenario_id=scenario_id,
-                release_id=release_id,
-                use_llm=args.use_llm,
-            )
-    else:
-        build_agent5_dataset(
-            dataset_root=dataset_root,
-            scenario_id=scenario_id,
-            release_id=release_id,
-            evidence=evidence,
-            stage_results=stage_results,
-            previous_report=previous_report,
+        agent_output = _run_pre_test_analysis(
+            args, evidence,
+            dataset_root=dataset_root, scenario_id=scenario_id, release_id=release_id,
         )
-        agent_output = run_agent5_analysis(
-            dataset_root=dataset_root,
-            scenario_id=scenario_id,
-            release_id=release_id,
-            use_llm=args.use_llm,
+    else:
+        agent_output = _run_pre_prod_analysis(
+            args, evidence, stage_results, previous_report,
+            dataset_root=dataset_root, scenario_id=scenario_id, release_id=release_id,
         )
 
     payload = agent_output["payload"]
-    rule_findings = payload.get("rule_findings", {})
-    triggered_rules = (
-        rule_findings.get("triggered_rule_codes", [])
-        if isinstance(rule_findings, dict)
-        else []
-    )
-
-    recommendation = {
-        "decision": payload.get("decision", "HOLD"),
-        "decision_type": payload.get("decision_type", "unknown"),
-        "summary": payload.get("summary", "No summary returned by agent."),
-        "agent_human_action": payload.get("human_action"),
-        "human_gate": phase_meta["human_gate"],
-        "final_gate_mode": "human_approval_required",
-        "triggered_rules": triggered_rules,
-        "confidence": payload.get("confidence"),
-        "policy_version": payload.get("policy_version"),
-    }
-
-    previous_decision = None
-    if previous_report:
-        previous_payload = previous_report.get("agent_output", {}).get("payload")
-        if isinstance(previous_payload, dict):
-            previous_decision = previous_payload.get("decision")
-
     llm_diagnostics = agent_output.get("llm_diagnostics", {})
 
     return {
@@ -1712,7 +1728,7 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
         "stage_results": stage_results,
         "previous_stage": {
             "available": previous_report is not None,
-            "decision": previous_decision,
+            "decision": _extract_previous_decision(previous_report),
             "path": args.previous_report,
         },
         "ci_dataset": {
@@ -1721,7 +1737,7 @@ def build_report(args: argparse.Namespace) -> Dict[str, Any]:
             "release_id": release_id,
         },
         "agent_output": agent_output,
-        "recommendation": recommendation,
+        "recommendation": _build_recommendation(payload, phase_meta),
         "llm": {
             "requested": args.use_llm,
             "configured": bool(os.environ.get("OPENROUTER_API_KEY")),
