@@ -323,6 +323,16 @@ export default function ReleaseDashboard() {
     [bundleSets, customSets]
   );
 
+  const normalizedBundleSets = useMemo(
+    () => bundleSets.map((set) => normalizeSetForAnalysis(set)),
+    [bundleSets]
+  );
+
+  const normalizedCustomSets = useMemo(
+    () => customSets.map((set) => normalizeSetForAnalysis(set)),
+    [customSets]
+  );
+
   const selectedDataset =
     allSets.find((set) => set.id === datasetId) ?? allSets[0] ?? null;
   const selectedAgent = AGENTS[agentId];
@@ -955,80 +965,111 @@ export default function ReleaseDashboard() {
             </div>
 
             <div className="flex min-h-0 flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Datasets
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCreateSetError("");
-                      setIsCreateSetOpen(true);
-                    }}
-                    className="rounded-full border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                  >
-                    Upload Document Dataset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteSelectedSet}
-                    disabled={selectedDataset?.source !== "custom"}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                      selectedDataset?.source === "custom"
-                        ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/50 dark:text-rose-300 dark:hover:bg-rose-900/50"
-                        : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
-                    }`}
-                  >
-                    Delete Selected Dataset
-                  </button>
-                </div>
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Datasets
+              </p>
 
-              <div className="mt-3 min-h-0 space-y-3 overflow-y-auto pr-1">
-                {bundleSetsLoading && (
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Loading datasets…</p>
-                )}
-                {allSets.map((dataset) => {
-                  const isSelected = datasetId === dataset.id;
-                  const supportedForAgent = Boolean(dataset?.backend?.[agentId]);
-                  return (
+              <div className="mt-3 min-h-0 space-y-5 overflow-y-auto pr-1">
+                {/* Bundled */}
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    Bundled
+                  </p>
+                  {bundleSetsLoading ? (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Loading…</p>
+                  ) : normalizedBundleSets.length === 0 ? (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">No bundled datasets available.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {normalizedBundleSets.map((dataset) => {
+                        const isSelected = datasetId === dataset.id;
+                        return (
+                          <button
+                            key={dataset.id}
+                            type="button"
+                            onClick={() => setDatasetId(dataset.id)}
+                            title={dataset.label}
+                            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                              isSelected
+                                ? "border-sky-600 bg-sky-50 text-sky-950 dark:border-sky-600 dark:bg-sky-950/50 dark:text-sky-200"
+                                : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            }`}
+                          >
+                            <p className="break-words font-semibold leading-snug">{dataset.label}</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {dataset.backend?.agent4 && (
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">A4</span>
+                              )}
+                              {dataset.backend?.agent5 && (
+                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Custom */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      Custom
+                    </p>
                     <button
-                      key={dataset.id}
                       type="button"
-                      onClick={() => setDatasetId(dataset.id)}
-                      title={dataset.label}
-                      className={`w-full rounded-2xl border px-4 py-4 text-left text-sm transition ${
-                        isSelected
-                          ? "border-sky-600 bg-sky-50 text-sky-950 dark:border-sky-600 dark:bg-sky-950/50 dark:text-sky-200"
-                          : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                      }`}
+                      onClick={() => { setCreateSetError(""); setIsCreateSetOpen(true); }}
+                      className="rounded-full border border-slate-900 bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-700 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="break-words font-semibold leading-snug">{dataset.label}</p>
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {dataset.backend?.agent4 && (
-                              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
-                                A4
-                              </span>
-                            )}
-                            {dataset.backend?.agent5 && (
-                              <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">
-                                A5
-                              </span>
-                            )}
-                            {dataset.source === "custom" && (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                                Custom
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      + Upload
                     </button>
-                  );
-                })}
+                  </div>
+
+                  {normalizedCustomSets.length === 0 ? (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">No custom datasets yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {normalizedCustomSets.map((dataset) => {
+                        const isSelected = datasetId === dataset.id;
+                        return (
+                          <button
+                            key={dataset.id}
+                            type="button"
+                            onClick={() => setDatasetId(dataset.id)}
+                            title={dataset.label}
+                            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                              isSelected
+                                ? "border-sky-600 bg-sky-50 text-sky-950 dark:border-sky-600 dark:bg-sky-950/50 dark:text-sky-200"
+                                : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            }`}
+                          >
+                            <p className="break-words font-semibold leading-snug">{dataset.label}</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {dataset.backend?.agent4 && (
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">A4</span>
+                              )}
+                              {dataset.backend?.agent5 && (
+                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
+                              )}
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">Custom</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {selectedDataset?.source === "custom" ? (
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelectedSet}
+                      className="mt-2 w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300 dark:hover:bg-rose-900/50"
+                    >
+                      Delete "{selectedDataset.label}"
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               {importError ? (

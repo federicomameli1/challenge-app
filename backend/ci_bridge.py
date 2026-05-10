@@ -93,6 +93,15 @@ class CiBridgeConfig:
             "token_present": bool(self.token),
         }
 
+    @classmethod
+    def for_subject_repo(cls, repo: str) -> "CiBridgeConfig":
+        """Build a config targeting a subject repo, authenticated with SUBJECT_REPO_TOKEN."""
+        instance = cls.__new__(cls)
+        instance.repo = repo.strip()
+        instance.token = (os.environ.get("SUBJECT_REPO_TOKEN") or "").strip()
+        instance.branch = None
+        return instance
+
 
 def _config() -> CiBridgeConfig:
     return CiBridgeConfig()
@@ -314,6 +323,22 @@ router = APIRouter(prefix="/ci", tags=["ci"])
 @router.get("/status")
 def ci_status() -> Dict[str, Any]:
     return _config().to_status()
+
+
+@router.get("/subject-runs")
+def list_subject_runs(repo: str = "", limit: int = 10) -> Dict[str, Any]:
+    """List recent CI runs from a subject repo, authenticated via SUBJECT_REPO_TOKEN."""
+    token = (os.environ.get("SUBJECT_REPO_TOKEN") or "").strip()
+    if not repo or not token:
+        return {
+            "configured": False,
+            "items": [],
+            "repo": repo.strip() or None,
+            "token_present": bool(token),
+        }
+    cfg = CiBridgeConfig.for_subject_repo(repo)
+    runs = _list_workflow_runs(cfg, limit=limit)
+    return {"configured": True, "items": runs, "repo": repo.strip()}
 
 
 @router.get("/runs")

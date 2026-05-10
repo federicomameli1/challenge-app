@@ -360,6 +360,16 @@ export async function fetchCiPendingDeployments(runId) {
   );
 }
 
+export async function fetchSubjectCiRuns(repo, limit = 10) {
+  const params = new URLSearchParams({ repo, limit: String(limit) });
+  const data = await requestJson(`/ci/subject-runs?${params.toString()}`);
+  return {
+    configured: Boolean(data?.configured),
+    items: Array.isArray(data?.items) ? data.items : [],
+    repo: data?.repo || repo,
+  };
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,
