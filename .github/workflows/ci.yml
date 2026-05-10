@@ -7,6 +7,8 @@ on:
     types: [opened, reopened, synchronize, closed]
   release:
     types: [published]
+  repository_dispatch:
+    types: [wayside-monitor-push]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -35,10 +37,16 @@ jobs:
       - name: Install backend deps
         run: pip install -r backend/requirements.txt
 
+      - name: Resolve subject repo
+        run: |
+          echo "SUBJECT_REPO=${{ github.event.client_payload.repo || '' }}" >> "$GITHUB_ENV"
+          echo "SUBJECT_REPO_REF=${{ github.event.client_payload.ref || github.sha }}" >> "$GITHUB_ENV"
+
       - name: Run Agent 4 CI analysis
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+          SUBJECT_REPO_TOKEN: ${{ secrets.SUBJECT_REPO_TOKEN }}
         run: |
           python scripts/eval/run_ci_analysis.py \
             --phase pre-test \

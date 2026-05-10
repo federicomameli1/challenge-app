@@ -16,12 +16,15 @@ Important design note:
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import json
 import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
@@ -218,6 +221,21 @@ def parse_args() -> argparse.Namespace:
         "--build-status",
         default=os.environ.get("CI_BUILD_STATUS", "PASS"),
         help="Fallback build status when no stage-results JSON is provided.",
+    )
+    parser.add_argument(
+        "--target-repo",
+        default=os.environ.get("SUBJECT_REPO", "").strip() or None,
+        help=(
+            "owner/repo of the subject repository whose APCS bundle should be "
+            "analysed (e.g. 'user/wayside-monitor'). When set, the APCS documents "
+            "are fetched from the GitHub Contents API instead of docs/release/. "
+            "Requires SUBJECT_REPO_TOKEN env var for private repos."
+        ),
+    )
+    parser.add_argument(
+        "--target-ref",
+        default=os.environ.get("SUBJECT_REPO_REF", "").strip() or "main",
+        help="Git ref (SHA, branch, tag) of the subject repo to fetch the APCS bundle from.",
     )
     return parser.parse_args()
 
@@ -651,6 +669,45 @@ def load_release_docs() -> Dict[str, str]:
     return docs
 
 
+def fetch_release_docs_from_github(repo: str, ref: str) -> Dict[str, str]:
+    """Fetch the APCS bundle from a GitHub repo via the Contents API.
+
+    Uses SUBJECT_REPO_TOKEN env var as a Bearer token (required for private repos).
+    Files that cannot be fetched are silently skipped so the pipeline keeps
+    running even when individual documents are missing.
+    """
+    token = os.environ.get("SUBJECT_REPO_TOKEN", "").strip()
+    headers: Dict[str, str] = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "challenge-app-ci-analysis/1.0",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    docs: Dict[str, str] = {}
+    for name in RELEASE_DOC_FILES:
+        url = f"https://api.github.com/repos/{repo}/contents/docs/{name}?ref={ref}"
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode())
+                raw = base64.b64decode(data["content"]).decode("utf-8", errors="replace").strip()
+                if raw:
+                    docs[name] = raw
+        except urllib.error.HTTPError as exc:
+            print(
+                f"WARN [fetch-apcs] HTTP {exc.code} fetching {name} from {repo}@{ref}",
+                file=sys.stderr,
+            )
+        except Exception as exc:
+            print(
+                f"WARN [fetch-apcs] Could not fetch {name} from {repo}@{ref}: {exc}",
+                file=sys.stderr,
+            )
+    return docs
+
+
 def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
     changed_files = resolve_changed_files(args.base_ref, args.head_ref)
     relevant_documents = select_relevant_documents(args.phase, changed_files)
@@ -659,7 +716,15 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
     event_payload = load_event_payload(args.event_payload)
     event_context = build_event_context(args, event_payload)
     blocker_markers = file_blocker_markers + list(event_context["metadata_markers"])
-    release_docs = load_release_docs()
+
+    target_repo = getattr(args, "target_repo", None)
+    target_ref = getattr(args, "target_ref", "main") or "main"
+    if target_repo:
+        release_docs = fetch_release_docs_from_github(target_repo, target_ref)
+        release_docs_source = f"github:{target_repo}@{target_ref}"
+    else:
+        release_docs = load_release_docs()
+        release_docs_source = "local:docs/release/"
 
     changed_file_details = [
         {"path": path, "category": classify_path(path)} for path in changed_files
@@ -724,6 +789,7 @@ def build_evidence_bundle(args: argparse.Namespace) -> Dict[str, Any]:
         "changed_file_details": changed_file_details,
         "relevant_documents": relevant_documents,
         "release_docs": release_docs,
+        "release_docs_source": release_docs_source,
         "counts": {
             "changed_files": len(changed_files),
             "relevant_documents": len(relevant_documents),
@@ -870,14 +936,15 @@ def build_agent4_log_text(evidence: Dict[str, Any]) -> str:
         )
 
     release_docs = evidence.get("release_docs") or {}
+    release_docs_source = evidence.get("release_docs_source", "local:docs/release/")
     if release_docs:
         lines.append(
-            f"{utc_now()} INFO [release-docs] Loaded APCS bundle from docs/release/: "
+            f"{utc_now()} INFO [release-docs] Loaded APCS bundle from {release_docs_source}: "
             + ", ".join(sorted(release_docs.keys()))
         )
     else:
         lines.append(
-            f"{utc_now()} WARN [release-docs] docs/release/ bundle is empty or missing"
+            f"{utc_now()} WARN [release-docs] APCS bundle is empty or missing (source: {release_docs_source})"
         )
 
     return "\n".join(lines) + "\n"
