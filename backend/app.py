@@ -183,7 +183,7 @@ def _build_llm_generate() -> Optional[Any]:
 
     base_url = _optional_env(
         "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1/chat/completions"
-    )
+    ) or "https://openrouter.ai/api/v1/chat/completions"
     model = _optional_env("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
     timeout_seconds = float(_optional_env("OPENROUTER_TIMEOUT_SECONDS", "45") or "45")
     max_tokens = int(_optional_env("OPENROUTER_MAX_TOKENS", "700") or "700")
