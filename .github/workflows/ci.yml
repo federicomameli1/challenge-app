@@ -67,7 +67,7 @@ jobs:
 
   approve-test:
     needs: analyze-pre-test
-    if: github.event_name == 'push' || github.event_name == 'release'
+    if: (github.event_name == 'push' || github.event_name == 'release') && github.event_name != 'repository_dispatch'
     runs-on: ubuntu-latest
     environment: hitachi-test-approval
     steps:
@@ -80,6 +80,7 @@ jobs:
       - approve-test
     if: >
       always() &&
+      github.event_name != 'repository_dispatch' &&
       needs.analyze-pre-test.result == 'success' &&
       (
         (github.event_name == 'pull_request' && github.event.action != 'closed') ||
@@ -353,6 +354,7 @@ jobs:
       - test-and-build
     if: >
       always() &&
+      github.event_name != 'repository_dispatch' &&
       (github.event_name == 'push' || github.event_name == 'release') &&
       needs.analyze-pre-test.result == 'success' &&
       needs.test-and-build.result == 'success'
@@ -409,7 +411,7 @@ jobs:
 
   approve-prod:
     needs: analyze-pre-prod
-    if: github.event_name == 'release' && needs.analyze-pre-prod.result == 'success'
+    if: github.event_name == 'release' && github.event_name != 'repository_dispatch' && needs.analyze-pre-prod.result == 'success'
     runs-on: ubuntu-latest
     environment: hitachi-prod-approval
     steps:
@@ -420,7 +422,7 @@ jobs:
     needs:
       - approve-prod
       - test-and-build
-    if: github.event_name == 'release' && needs.approve-prod.result == 'success' && needs.test-and-build.result == 'success'
+    if: github.event_name == 'release' && github.event_name != 'repository_dispatch' && needs.approve-prod.result == 'success' && needs.test-and-build.result == 'success'
     runs-on: ubuntu-latest
     env:
       GITOPS_REPO: ${{ vars.GITOPS_REPO }}
@@ -518,6 +520,7 @@ jobs:
           git push
 
   helm-publish:
+    if: github.event_name != 'repository_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
