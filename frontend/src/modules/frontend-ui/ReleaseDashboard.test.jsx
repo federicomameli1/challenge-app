@@ -488,7 +488,7 @@ describe("Release Dashboard", () => {
     await renderDashboard();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /upload document dataset/i }));
+    await user.click(screen.getByRole("button", { name: /\+ upload/i }));
 
     await user.type(screen.getByLabelText(/dataset name/i), "My Custom Dataset");
 
@@ -505,11 +505,11 @@ describe("Release Dashboard", () => {
     await user.click(screen.getByRole("button", { name: /save dataset/i }));
 
     expect(
-      await screen.findByRole("button", { name: /my custom dataset/i })
+      await screen.findByRole("button", { name: /^my custom dataset/i })
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: /delete selected dataset/i })
+      screen.getByRole("button", { name: /delete "my custom dataset"/i })
     );
 
     await waitFor(() => {
