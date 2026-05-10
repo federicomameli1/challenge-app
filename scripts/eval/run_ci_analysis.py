@@ -238,6 +238,14 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get("SUBJECT_REPO_REF", "").strip() or "main",
         help="Git ref (SHA, branch, tag) of the subject repo to fetch the APCS bundle from.",
     )
+    parser.add_argument(
+        "--subject-run-id",
+        default=os.environ.get("SUBJECT_RUN_ID", "").strip() or None,
+        help=(
+            "GitHub Actions run ID of the subject repo's own CI run. When provided, "
+            "the 'wayside-test-report' artifact is downloaded and included in the analysis."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1549,6 +1557,93 @@ def run_agent5_analysis(
     )
 
 
+def fetch_subject_test_artifact(repo: str, run_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Download and parse the pytest JSON report artifact from a subject repo's CI run.
+
+    Returns the parsed JSON dict, or None if the artifact is not found or cannot
+    be downloaded. Uses SUBJECT_REPO_TOKEN for auth (same as APCS doc fetches).
+    """
+    import io
+    import zipfile
+
+    try:
+        artifacts_data = _github_get(f"/repos/{repo}/actions/runs/{run_id}/artifacts")
+        artifacts = artifacts_data.get("artifacts") or []
+        target = next(
+            (a for a in artifacts if a.get("name") == "wayside-test-report"),
+            None,
+        )
+        if not target:
+            print(
+                f"WARN [test-artifact] 'wayside-test-report' artifact not found in run {run_id}",
+                file=sys.stderr,
+            )
+            return None
+
+        artifact_id = target["id"]
+        # Download the zip — requires a redirect to blob storage
+        zip_url = f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip"
+        req = urllib.request.Request(zip_url, headers=_github_headers())
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            zip_bytes = resp.read()
+
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            names = zf.namelist()
+            json_name = next((n for n in names if n.endswith(".json")), None)
+            if not json_name:
+                print(
+                    "WARN [test-artifact] No JSON file found in artifact zip",
+                    file=sys.stderr,
+                )
+                return None
+            return json.loads(zf.read(json_name).decode("utf-8"))
+
+    except Exception as exc:
+        print(
+            f"WARN [test-artifact] Could not fetch test artifact from {repo} run {run_id}: {exc}",
+            file=sys.stderr,
+        )
+        return None
+
+
+def run_subject_pipeline_analysis(
+    *,
+    release_docs: Dict[str, str],
+    commit_info: Dict[str, Any],
+    test_summary: Dict[str, Any],
+    subject_repo: str,
+    target_ref: str,
+    scenario_id: str,
+    release_id: str,
+) -> Dict[str, Any]:
+    """Run the multi-stage SubjectRepoPipeline (deterministic + LLM synthesis)."""
+    from agents.subject_pipeline import SubjectRepoPipeline
+    from agents.llm_client import OpenRouterClient
+
+    client = OpenRouterClient.from_env()
+    pipeline = SubjectRepoPipeline(client)
+    payload = pipeline.analyze(
+        bundle=release_docs,
+        test_summary=test_summary,
+        commit_info=commit_info,
+        subject_repo=subject_repo,
+        ref=target_ref,
+    )
+    return {
+        "agent": "subject_pipeline",
+        "scenario_id": scenario_id,
+        "release_id": release_id,
+        "llm_diagnostics": {
+            "configured": client is not None,
+            "called": payload.get("decision_type") == "llm_synthesis",
+            "model": client.model if client else None,
+            "error": payload.get("summary") if payload.get("decision_type") == "llm_error" else None,
+        },
+        "payload": payload,
+    }
+
+
 def run_llm_bundle_analysis(
     *,
     release_docs: Dict[str, str],
@@ -1614,14 +1709,39 @@ def _run_pre_test_analysis(
 ) -> Dict[str, Any]:
     target_repo = getattr(args, "target_repo", None)
     target_ref = getattr(args, "target_ref", "main") or "main"
+
     if target_repo:
-        return run_llm_bundle_analysis(
+        # Fetch pytest artifact if the subject run ID was provided
+        subject_run_id = getattr(args, "subject_run_id", None)
+        raw_artifact = fetch_subject_test_artifact(target_repo, subject_run_id) if subject_run_id else None
+
+        if raw_artifact is not None:
+            from agents.test_report_parser import parse_pytest_json
+            test_summary = parse_pytest_json(raw_artifact)
+        else:
+            test_summary = {
+                "available": False,
+                "all_passed": False,
+                "parse_error": "Artifact not fetched — subject_run_id not provided or download failed.",
+                "total": 0, "passed": 0, "failed": 0, "error": 0, "skipped": 0,
+                "duration_s": 0.0, "failed_tests": [],
+            }
+
+        return run_subject_pipeline_analysis(
             release_docs=evidence.get("release_docs", {}),
+            commit_info={
+                "commit_message": evidence.get("event_context", {}).get("title", ""),
+                "author": "",
+                "diff_stat": evidence.get("diff_stat", ""),
+                "changed_files": evidence.get("changed_files", []),
+            },
+            test_summary=test_summary,
             subject_repo=target_repo,
             target_ref=target_ref,
             scenario_id=scenario_id,
             release_id=release_id,
         )
+
     build_agent4_dataset(
         dataset_root=dataset_root,
         scenario_id=scenario_id,

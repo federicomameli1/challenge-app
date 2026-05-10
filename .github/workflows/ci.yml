@@ -41,6 +41,7 @@ jobs:
         run: |
           echo "SUBJECT_REPO=${{ github.event.client_payload.repo || '' }}" >> "$GITHUB_ENV"
           echo "SUBJECT_REPO_REF=${{ github.event.client_payload.ref || github.sha }}" >> "$GITHUB_ENV"
+          echo "SUBJECT_RUN_ID=${{ github.event.client_payload.subject_run_id || '' }}" >> "$GITHUB_ENV"
 
       - name: Run Agent 4 CI analysis
         env:
@@ -57,7 +58,8 @@ jobs:
             --pr-number "${{ github.event.pull_request.number }}" \
             --use-llm \
             --write-step-summary \
-            --output-dir artifacts/ci-analysis
+            --output-dir artifacts/ci-analysis \
+            ${SUBJECT_RUN_ID:+--subject-run-id "$SUBJECT_RUN_ID"}
 
       - name: Upload pre-test analysis artifacts
         uses: actions/upload-artifact@v4
