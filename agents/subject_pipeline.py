@@ -121,7 +121,7 @@ class SubjectRepoPipeline:
         try:
             raw = self.client.complete_json(messages, max_tokens=900)
             return _normalize(raw)
-        except LLMError as exc:
+        except Exception as exc:
             logger.warning("LLM synthesis failed (%s) — falling back to deterministic result", exc)
             return _no_llm_result(test_summary)
 

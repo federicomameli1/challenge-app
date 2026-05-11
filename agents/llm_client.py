@@ -97,10 +97,18 @@ class OpenRouterClient:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode())
-            return data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            text = message.get("content") or message.get("reasoning") or ""
+            if not text.strip():
+                raise LLMError(
+                    f"empty content in response (finish_reason={data['choices'][0].get('finish_reason')!r})"
+                )
+            return text
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode(errors="replace")
             raise LLMError(f"HTTP {exc.code}: {body_text[:300]}") from exc
+        except LLMError:
+            raise
         except Exception as exc:
             raise LLMError(str(exc)) from exc
 
