@@ -36,7 +36,7 @@ from agents.brain import (
     StageRegistry,
     build_default_stage_order,
 )
-from agents.brain.adapters import build_agent4_stage, build_agent5_stage
+from agents.brain.adapters import build_agent4_stage, build_agent5_stage, build_agent6_stage
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,6 +68,11 @@ def parse_args() -> argparse.Namespace:
         help="Optional scenario override for Agent 5 stage.",
     )
     parser.add_argument(
+        "--agent6-scenario-id",
+        default=None,
+        help="Optional scenario override for Agent 6 stage.",
+    )
+    parser.add_argument(
         "--agent4-release-id",
         default=None,
         help="Optional release override for Agent 4 stage.",
@@ -76,6 +81,11 @@ def parse_args() -> argparse.Namespace:
         "--agent5-release-id",
         default=None,
         help="Optional release override for Agent 5 stage.",
+    )
+    parser.add_argument(
+        "--agent6-release-id",
+        default=None,
+        help="Optional release override for Agent 6 stage.",
     )
 
     # Dataset roots
@@ -88,6 +98,11 @@ def parse_args() -> argparse.Namespace:
         "--agent5-dataset-root",
         default="datasets/synthetic/phase5/v1",
         help="Agent 5 dataset root (default: datasets/synthetic/phase5/v1).",
+    )
+    parser.add_argument(
+        "--agent6-dataset-root",
+        default="synthetic_data/phase6/v1",
+        help="Agent 6 dataset root (default: synthetic_data/phase6/v1).",
     )
 
     # Agent 4 adapter options
@@ -119,11 +134,28 @@ def parse_args() -> argparse.Namespace:
         help="Enable strict schema enforcement in Agent 5 pipeline.",
     )
 
-    # Gating override
+    # Agent 6 adapter options
+    parser.add_argument(
+        "--agent6-use-llm-summary",
+        action="store_true",
+        help="Enable optional LLM summary layer for Agent 6.",
+    )
+    parser.add_argument(
+        "--agent6-strict-schema",
+        action="store_true",
+        help="Enable strict schema enforcement in Agent 6 pipeline.",
+    )
+
+    # Gating overrides
     parser.add_argument(
         "--allow-agent5-after-agent4-hold",
         action="store_true",
         help="Override default gating and allow Agent 5 even when Agent 4 decision is HOLD.",
+    )
+    parser.add_argument(
+        "--allow-agent6-after-agent5-hold",
+        action="store_true",
+        help="Override default gating and allow Agent 6 even when Agent 5 decision is HOLD.",
     )
 
     # Output controls
@@ -177,8 +209,29 @@ def _build_registry(args: argparse.Namespace) -> Tuple[StageRegistry, Tuple[str,
         expected_agent4_stage_name="agent4",
     )
 
+    agent6_stage = build_agent6_stage(
+        dataset_root=str(args.agent6_dataset_root),
+        use_llm_summary=bool(args.agent6_use_llm_summary),
+        strict_schema=bool(args.agent6_strict_schema),
+        stage_name="agent6",
+        depends_on=(
+            StageDependency(
+                stage_name="agent5",
+                required=True,
+                policy=DependencyPolicy.REQUIRE_GO,
+            ),
+        ),
+        enabled=True,
+        metadata={"managed_by": "brain_orchestrator"},
+        require_agent4_handoff=True,
+        require_agent5_handoff=True,
+        expected_agent4_stage_name="agent4",
+        expected_agent5_stage_name="agent5",
+    )
+
     registry.register(agent4_stage)
     registry.register(agent5_stage)
+    registry.register(agent6_stage)
 
     stage_order = build_default_stage_order()
     return registry, stage_order
@@ -188,12 +241,15 @@ def _stage_inputs_from_args(args: argparse.Namespace) -> Dict[str, Dict[str, Any
     stage_inputs: Dict[str, Dict[str, Any]] = {
         "agent4": {},
         "agent5": {},
+        "agent6": {},
     }
 
     if args.agent4_scenario_id:
         stage_inputs["agent4"]["scenario_id"] = str(args.agent4_scenario_id).strip()
     if args.agent5_scenario_id:
         stage_inputs["agent5"]["scenario_id"] = str(args.agent5_scenario_id).strip()
+    if args.agent6_scenario_id:
+        stage_inputs["agent6"]["scenario_id"] = str(args.agent6_scenario_id).strip()
 
     if args.agent4_release_id is not None:
         value = str(args.agent4_release_id).strip()
@@ -201,9 +257,14 @@ def _stage_inputs_from_args(args: argparse.Namespace) -> Dict[str, Dict[str, Any
     if args.agent5_release_id is not None:
         value = str(args.agent5_release_id).strip()
         stage_inputs["agent5"]["release_id"] = value if value else None
+    if args.agent6_release_id is not None:
+        value = str(args.agent6_release_id).strip()
+        stage_inputs["agent6"]["release_id"] = value if value else None
 
     # Keep explicit handoff requirement as part of stage input contract.
     stage_inputs["agent5"]["require_agent4_handoff"] = True
+    stage_inputs["agent6"]["require_agent4_handoff"] = True
+    stage_inputs["agent6"]["require_agent5_handoff"] = True
 
     return stage_inputs
 
@@ -211,6 +272,7 @@ def _stage_inputs_from_args(args: argparse.Namespace) -> Dict[str, Dict[str, Any
 def _options_from_args(args: argparse.Namespace) -> Dict[str, Any]:
     return {
         "allow_agent5_after_agent4_hold": bool(args.allow_agent5_after_agent4_hold),
+        "allow_agent6_after_agent5_hold": bool(args.allow_agent6_after_agent5_hold),
     }
 
 

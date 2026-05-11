@@ -12,10 +12,13 @@ from .adapters import (
     Agent4StageSettings,
     Agent5StageAdapter,
     Agent5StageSettings,
+    Agent6StageAdapter,
+    Agent6StageSettings,
     BrainStageAdapterBase,
     StageAdapterError,
     build_agent4_stage,
     build_agent5_stage,
+    build_agent6_stage,
 )
 from .models import (
     BrainRunReport,
@@ -72,4 +75,7 @@ __all__ = [
     "Agent5StageSettings",
     "Agent5StageAdapter",
     "build_agent5_stage",
+    "Agent6StageSettings",
+    "Agent6StageAdapter",
+    "build_agent6_stage",
 ]
