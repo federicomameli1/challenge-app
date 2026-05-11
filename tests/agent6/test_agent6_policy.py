@@ -4,14 +4,14 @@ from typing import Dict, Mapping, Optional, Sequence
 
 import pytest
 
-from agent6.models import Decision, RuleCode, SourceRef
-from agent6.normalization import (
+from agents.agent6.models import Decision, RuleCode, SourceRef
+from agents.agent6.normalization import (
     NormalizedAgent4Context,
     NormalizedAgent5Context,
     NormalizedApprovalItem,
     NormalizedPhase6Bundle,
 )
-from agent6.policy import PolicyConfig, Phase6PolicyEngine, evaluate_phase6_readiness
+from agents.agent6.policy import PolicyConfig, Phase6PolicyEngine, evaluate_phase6_readiness
 
 
 def _make_ref(path: str = "handoff") -> SourceRef:

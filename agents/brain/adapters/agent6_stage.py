@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
-from agent6.agent import Agent6Config, Agent6Orchestrator
-from agent6.models import validate_output_schema
+from agents.agent6.agent import Agent6Config, Agent6Orchestrator
+from agents.agent6.models import validate_output_schema
 
 from ..models import StageDependency
 from .base import AdapterConfig, BrainStageAdapterBase, StageAdapterError

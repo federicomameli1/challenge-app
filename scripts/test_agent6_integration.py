@@ -26,8 +26,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from agent6.agent import Agent6Config, Agent6Orchestrator
-from agent6.models import validate_output_schema
+from agents.agent6.agent import Agent6Config, Agent6Orchestrator
+from agents.agent6.models import validate_output_schema
 
 
 def parse_args() -> argparse.Namespace:

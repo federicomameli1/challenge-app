@@ -17,4 +17,4 @@ elif _sys.path[0] != str(_ROOT):
 
 # Import a top-level agent6 module so it is cached in sys.modules.
 # This prevents pytest's test-discovery path from shadowing the real package.
-import agent6.models  # noqa: F401
+import agents.agent6.models  # noqa: F401

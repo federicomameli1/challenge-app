@@ -33,6 +33,14 @@ const AGENTS = {
     description:
       "Assesses Phase 5 test readiness, defects, and continuity closure after Phase 4.",
   },
+  agent6: {
+    id: "agent6",
+    name: "VDD Draft Agent",
+    legacyName: "Agent 6",
+    phase: "Phase 6",
+    description:
+      "Drafts the VDD and approval-readiness package by consolidating Phase 4 readiness and Phase 5 test evidence.",
+  },
 };
 
 const BRAIN_NAME = "Release Flow Coordinator";
@@ -176,6 +184,7 @@ function buildInitialProfiles(dataset) {
   return {
     agent4: createEmptyProfile(Boolean(dataset?.backend?.agent4)),
     agent5: createEmptyProfile(Boolean(dataset?.backend?.agent5)),
+    agent6: createEmptyProfile(Boolean(dataset?.backend?.agent6)),
   };
 }
 
@@ -1003,6 +1012,9 @@ export default function ReleaseDashboard() {
                               {dataset.backend?.agent5 && (
                                 <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
                               )}
+                              {dataset.backend?.agent6 && (
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">A6</span>
+                              )}
                             </div>
                           </button>
                         );
@@ -1051,6 +1063,9 @@ export default function ReleaseDashboard() {
                               )}
                               {dataset.backend?.agent5 && (
                                 <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
+                              )}
+                              {dataset.backend?.agent6 && (
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">A6</span>
                               )}
                               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">Custom</span>
                             </div>

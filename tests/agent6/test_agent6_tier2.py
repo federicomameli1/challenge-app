@@ -8,11 +8,11 @@ import pytest
 
 from agent5.models import Decision
 
-from agent6.agent import Agent6Config, Agent6Orchestrator
-from agent6.models import Decision as Agent6Decision
-from agent6.models import validate_output_schema
-from agent6.normalization import normalize_phase6_bundle
-from agent6.policy import Phase6PolicyEngine
+from agents.agent6.agent import Agent6Config, Agent6Orchestrator
+from agents.agent6.models import Decision as Agent6Decision
+from agents.agent6.models import validate_output_schema
+from agents.agent6.normalization import normalize_phase6_bundle
+from agents.agent6.policy import Phase6PolicyEngine
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +365,7 @@ def test_schema_validation_missing_required_field() -> None:
 
 
 def test_normalization_pipeline_rounds_through() -> None:
-    from agent6.ingestion import Phase6Ingestion
+    from agents.agent6.ingestion import Phase6Ingestion
 
     a4 = _make_a4_handoff(decision="GO")
     a5 = _make_a5_handoff(decision="GO", critical_defect_open=False, requirement_coverage=1.0)

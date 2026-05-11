@@ -39,6 +39,11 @@ from agents.agent5.lc_pipeline import (  # noqa: E402
     LCPipelineConfig as Agent5PipelineConfig,
     LangChainAgent5Pipeline,
 )
+from agents.agent6.lc_pipeline import (  # noqa: E402
+    Agent6LCError,
+    LCPipelineConfig as Agent6PipelineConfig,
+    LangChainAgent6Pipeline,
+)
 from agents.brain import (  # noqa: E402
     BrainOrchestrator,
     BrainOrchestratorError,
@@ -52,7 +57,7 @@ from agents.brain import (  # noqa: E402
     build_default_stage_order,
 )
 
-AgentKind = Literal["agent4", "agent5"]
+AgentKind = Literal["agent4", "agent5", "agent6"]
 SourceAdapterKind = Literal["auto", "structured_dataset", "apcs_doc_bundle"]
 
 CUSTOM_SET_ROOT = REPO_ROOT / "datasets" / "apcs_bundles" / "custom"
@@ -102,6 +107,17 @@ AGENT_METADATA: Dict[str, Dict[str, str]] = {
             "after Phase 4."
         ),
     },
+    "agent6": {
+        "id": "agent6",
+        "slug": "vdd_draft_agent",
+        "display_name": "VDD Draft Agent",
+        "legacy_name": "Agent 6",
+        "phase": "Phase 6",
+        "description": (
+            "Drafts the VDD and approval-readiness package by consolidating "
+            "Phase 4 readiness and Phase 5 test evidence."
+        ),
+    },
 }
 
 AGENT_KIND_ALIASES = {
@@ -115,6 +131,11 @@ AGENT_KIND_ALIASES = {
     "test_evidence_analyst": "agent5",
     "test_evidence": "agent5",
     "evidence_analyst": "agent5",
+    "agent6": "agent6",
+    "agent_6": "agent6",
+    "vdd_draft_agent": "agent6",
+    "vdd_draft": "agent6",
+    "vdd_agent": "agent6",
 }
 
 AGENT_RUNTIME_CONFIG: Dict[str, Dict[str, Any]] = {
@@ -127,6 +148,11 @@ AGENT_RUNTIME_CONFIG: Dict[str, Dict[str, Any]] = {
         "error_label": "Agent5",
         "response_agent": "agent5_langchain_backend",
         "labels_file": "phase5_decision_labels.csv",
+    },
+    "agent6": {
+        "error_label": "Agent6",
+        "response_agent": "agent6_langchain_backend",
+        "labels_file": "phase6_decision_labels.csv",
     },
 }
 
@@ -619,6 +645,27 @@ def _read_bundle_set(folder: Path, category: str) -> Optional[Dict[str, Any]]:
             agent5_cfg["scenarioId"] = scenario_id
         backend_config["agent5"] = agent5_cfg
 
+    # Auto-detect phase6/ subfolder and wire agent6 backend config.
+    phase6_subfolder = folder / "phase6"
+    if phase6_subfolder.is_dir():
+        phase6_root = f"{correct_root}/phase6"
+        scenario_id6: Optional[str] = None
+        calendar6 = phase6_subfolder / "phase6_release_calendar.csv"
+        if calendar6.exists():
+            try:
+                import csv as _csv
+                with open(calendar6, newline="", encoding="utf-8") as _f:
+                    reader = _csv.DictReader(_f)
+                    first_row = next(reader, None)
+                    if first_row:
+                        scenario_id6 = first_row.get("scenario_id")
+            except Exception:
+                pass
+        agent6_cfg: Dict[str, Any] = {"datasetRoot": phase6_root}
+        if scenario_id6:
+            agent6_cfg["scenarioId"] = scenario_id6
+        backend_config["agent6"] = agent6_cfg
+
     label = folder.name.replace("_", " ").replace("-", " ")
 
     return {
@@ -830,6 +877,16 @@ def _build_agent_pipeline(
             config=Agent4PipelineConfig(
                 dataset_root=str(dataset_root),
                 source_adapter_kind=_resolve_agent4_source_adapter_kind(source_adapter_kind),
+                use_llm_summary=use_llm_summary,
+                strict_schema=strict_schema,
+            ),
+            llm_generate=llm_generate,
+        )
+
+    if agent == "agent6":
+        return LangChainAgent6Pipeline(
+            config=Agent6PipelineConfig(
+                dataset_root=str(dataset_root),
                 use_llm_summary=use_llm_summary,
                 strict_schema=strict_schema,
             ),
@@ -1201,7 +1258,7 @@ def delete_custom_set(set_id: str) -> CustomSetDeleteResponse:
 def validate_agent_dataset(req: AgentInspectRequest) -> Dict[str, Any]:
     try:
         return _validate_agent(req)
-    except (Agent4LCError, Agent5LCError) as exc:
+    except (Agent4LCError, Agent5LCError, Agent6LCError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
@@ -1209,7 +1266,7 @@ def validate_agent_dataset(req: AgentInspectRequest) -> Dict[str, Any]:
 def list_agent_scenarios(req: AgentInspectRequest) -> Dict[str, Any]:
     try:
         return _list_agent_scenarios(req)
-    except (Agent4LCError, Agent5LCError) as exc:
+    except (Agent4LCError, Agent5LCError, Agent6LCError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
@@ -1261,6 +1318,27 @@ def agent_options() -> Dict[str, Any]:
                 "datasets/synthetic/phase5/v2",
             ],
         },
+        "agent6": {
+            **AGENT_METADATA["agent6"],
+            "supports": [
+                "scenario-id",
+                "dataset-root",
+                "release-id",
+                "evaluate-all",
+                "check-label",
+                "labels-path",
+                "fail-on-label-mismatch",
+                "strict-schema",
+                "no-llm",
+                "validate-dataset",
+                "list-scenarios",
+            ],
+            "aliases": ["agent6", "Agent 6", "VDD Draft Agent"],
+            "examples": [
+                "synthetic_data/phase6/v1",
+                "synthetic_data/demo/DEMO-001",
+            ],
+        },
     }
 
 
@@ -1270,7 +1348,7 @@ def run_agent(req: AgentRunRequest) -> AgentRunResponse:
         payload = _run_agent(req)
     except HTTPException:
         raise
-    except (Agent4LCError, Agent5LCError) as exc:
+    except (Agent4LCError, Agent5LCError, Agent6LCError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     mode: Literal["single", "evaluate_all"] = "evaluate_all" if req.evaluate_all else "single"
@@ -1312,29 +1390,43 @@ def brain_options() -> Dict[str, Any]:
         "stages": {
             "agent4": AGENT_METADATA["agent4"],
             "agent5": AGENT_METADATA["agent5"],
+            "agent6": AGENT_METADATA["agent6"],
         },
         "supports": [
             "scenario-id",
             "release-id",
             "agent4-scenario-id",
             "agent5-scenario-id",
+            "agent6-scenario-id",
             "agent4-release-id",
             "agent5-release-id",
+            "agent6-release-id",
             "agent4-dataset-root",
             "agent5-dataset-root",
+            "agent6-dataset-root",
             "agent4-source-adapter-kind",
             "agent4-use-llm-summary",
             "agent5-use-llm-summary",
+            "agent6-use-llm-summary",
             "agent4-strict-schema",
             "agent5-strict-schema",
+            "agent6-strict-schema",
             "allow-agent5-after-agent4-hold",
+            "allow-agent6-after-agent5-hold",
         ],
         "default_policy": {
             "agent5_dependency": (
                 "Test Evidence Analyst runs only after Release Readiness Analyst "
                 "finishes with decision GO"
             ),
-            "override_option": "allow_agent5_after_agent4_hold",
+            "agent6_dependency": (
+                "VDD Draft Agent runs only after Test Evidence Analyst "
+                "finishes with decision GO"
+            ),
+            "override_options": [
+                "allow_agent5_after_agent4_hold",
+                "allow_agent6_after_agent5_hold",
+            ],
         },
     }
 

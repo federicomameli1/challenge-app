@@ -4,13 +4,13 @@ from typing import Dict, Mapping, Optional
 
 import pytest
 
-from agent6.consistency import (
+from agents.agent6.consistency import (
     VersionConflict,
     build_consistency_audit,
     check_cross_phase_version_consistency,
 )
-from agent6.models import SourceRef
-from agent6.normalization import (
+from agents.agent6.models import SourceRef
+from agents.agent6.normalization import (
     NormalizedAgent4Context,
     NormalizedAgent5Context,
     NormalizedApprovalItem,

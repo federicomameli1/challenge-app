@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from agent6.models import SourceRef
+from agents.agent6.models import SourceRef
 
 
 class Agent6SourceAdapter(ABC):
