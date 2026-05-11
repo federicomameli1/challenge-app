@@ -392,9 +392,9 @@ class BrainOrchestrator:
 
 def build_default_stage_order() -> Tuple[str, ...]:
     """
-    Default linear flow for current system.
+    Default linear flow for current system (Agent 4 -> Agent 5 -> Agent 6).
     """
-    return ("agent4", "agent5")
+    return ("agent4", "agent5", "agent6")
 
 
 __all__ = [

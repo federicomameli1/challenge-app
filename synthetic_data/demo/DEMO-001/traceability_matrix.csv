@@ -1,0 +1,6 @@
+scenario_id,release_id,requirement_id,test_case_id,mapping_source
+DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-001,TC-DEMO-001,traceability_workbook
+DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-002,TC-DEMO-002,traceability_workbook
+DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-003,TC-DEMO-003,traceability_workbook
+DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-004,TC-DEMO-004,traceability_workbook
+DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-005,TC-DEMO-005,traceability_workbook

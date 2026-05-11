@@ -1,0 +1,2 @@
+scenario_id,release_id,environment,supplier_qa_lead,supplier_manager,customer_approver,legal_review
+DEMO-001,REL-DEMO-2026.05.01,RELEASE,true,true,true,true

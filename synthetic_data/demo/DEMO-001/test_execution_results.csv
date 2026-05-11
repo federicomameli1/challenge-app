@@ -1,0 +1,7 @@
+scenario_id,release_id,test_case_id,status,executed,retest_required,retest_completed,executor
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-001,PASS,true,false,false,qa.ingestion
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-002,PASS,true,false,false,qa.routing
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-003,PASS,true,false,false,qa.kpi
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-004,PASS,true,false,false,qa.analytics
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-005,PASS,true,false,false,qa.alarms
+DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-006,PASS,true,false,false,qa.pipeline

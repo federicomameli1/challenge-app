@@ -1,0 +1,6 @@
+scenario_id,release_id,environment,supplier_qa_lead,supplier_manager,customer_approver,legal_review,security_signoff
+P6-001,P6-REL-1.1.0,RELEASE,true,true,true,true,
+P6-002,P6-REL-1.1.1,RELEASE,true,true,true,true,
+P6-003,P6-REL-1.1.2,RELEASE,false,false,false,false,
+P6-004,P6-REL-1.1.4,RELEASE,false,false,false,false,
+P6-005,P6-REL-1.1.4,RELEASE,true,true,true,true,

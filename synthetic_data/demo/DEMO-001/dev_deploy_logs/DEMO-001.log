@@ -1,0 +1,9 @@
+[2026-05-10 08:30:00] Deployment pipeline initiated for release REL-DEMO-2026.05.01
+[2026-05-10 08:31:15] Pulling images from registry... done
+[2026-05-10 08:32:00] Deploying ingestion-gateway v1.5.0... healthy (latency: 12ms)
+[2026-05-10 08:32:30] Deploying event-router v2.3.1... healthy (latency: 8ms)
+[2026-05-10 08:33:00] Deploying monitoring-core v3.1.0... healthy (latency: 15ms)
+[2026-05-10 08:33:30] Deploying analytics-api v1.9.2... healthy (latency: 22ms)
+[2026-05-10 08:34:00] Deploying alarm-engine v2.7.0... healthy (latency: 9ms)
+[2026-05-10 08:34:15] Smoke tests: all passed
+[2026-05-10 08:35:00] Deployment completed successfully. No blockers detected.

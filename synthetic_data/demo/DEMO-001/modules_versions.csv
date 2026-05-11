@@ -1,0 +1,6 @@
+scenario_id,release_id,environment,module,planned_version,deployed_version,mandatory_for_phase4,version_match
+DEMO-001,REL-DEMO-2026.05.01,DEV,ingestion-gateway,1.5.0,1.5.0,true,true
+DEMO-001,REL-DEMO-2026.05.01,DEV,event-router,2.3.1,2.3.1,true,true
+DEMO-001,REL-DEMO-2026.05.01,DEV,monitoring-core,3.1.0,3.1.0,true,true
+DEMO-001,REL-DEMO-2026.05.01,DEV,analytics-api,1.9.2,1.9.2,true,true
+DEMO-001,REL-DEMO-2026.05.01,DEV,alarm-engine,2.7.0,2.7.0,true,true

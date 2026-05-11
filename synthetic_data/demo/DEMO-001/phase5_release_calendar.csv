@@ -1,0 +1,2 @@
+release_id,scenario_id,environment,phase5_window_start,phase5_window_end,target_phase5_gate
+REL-DEMO-2026.05.01,DEMO-001,TEST,2026-05-10T09:00:00+00:00,2026-05-10T18:00:00+00:00,phase5_test_analysis

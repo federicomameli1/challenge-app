@@ -1,0 +1,2 @@
+release_id,scenario_id,environment,dev_window_start,dev_window_end,target_test_promotion
+REL-DEMO-2026.05.01,DEMO-001,DEV,2026-05-01,2026-05-09,2026-05-10
