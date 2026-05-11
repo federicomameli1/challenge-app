@@ -1596,10 +1596,19 @@ def fetch_subject_test_artifact(repo: str, run_id: str) -> Optional[Dict[str, An
             return None
 
         artifact_id = target["id"]
-        # Download the zip — requires a redirect to blob storage
+        # GitHub redirects artifact downloads to Azure Blob Storage.
+        # Forwarding the Authorization header to Azure causes 401, so strip it on redirect.
+        class _StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                result = super().redirect_request(req, fp, code, msg, headers, newurl)
+                if result is not None:
+                    result.remove_header("Authorization")
+                return result
+
         zip_url = f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip"
         req = urllib.request.Request(zip_url, headers=_github_headers())
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        opener = urllib.request.build_opener(_StripAuthOnRedirect())
+        with opener.open(req, timeout=30) as resp:
             zip_bytes = resp.read()
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
