@@ -81,6 +81,7 @@ class OpenRouterClient:
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "reasoning": {"enabled": False},
         }).encode()
 
         req = urllib.request.Request(
