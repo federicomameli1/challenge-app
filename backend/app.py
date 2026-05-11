@@ -48,6 +48,7 @@ from agents.brain import (  # noqa: E402
     StageRegistry,
     build_agent4_stage,
     build_agent5_stage,
+    build_agent6_stage,
     build_default_stage_order,
 )
 
@@ -348,19 +349,25 @@ class BrainRunRequestModel(BaseModel):
 
     agent4_scenario_id: Optional[str] = None
     agent5_scenario_id: Optional[str] = None
+    agent6_scenario_id: Optional[str] = None
     agent4_release_id: Optional[str] = None
     agent5_release_id: Optional[str] = None
+    agent6_release_id: Optional[str] = None
 
     agent4_dataset_root: str = "datasets/synthetic/phase4/v1"
     agent5_dataset_root: str = "datasets/synthetic/phase5/v1"
+    agent6_dataset_root: str = "synthetic_data/phase6/v1"
     agent4_source_adapter_kind: Optional[SourceAdapterKind] = None
 
     agent4_use_llm_summary: bool = False
     agent5_use_llm_summary: bool = False
+    agent6_use_llm_summary: bool = False
     agent4_strict_schema: bool = False
     agent5_strict_schema: bool = False
+    agent6_strict_schema: bool = False
 
     allow_agent5_after_agent4_hold: bool = False
+    allow_agent6_after_agent5_hold: bool = False
 
     @model_validator(mode="after")
     def validate_scenario_id(self) -> "BrainRunRequestModel":
@@ -1032,8 +1039,31 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
         llm_generate=LLM_GENERATE,
     )
 
+    agent6_dataset_root = str(_resolve_repo_path(req.agent6_dataset_root))
+    agent6_stage = build_agent6_stage(
+        dataset_root=agent6_dataset_root,
+        use_llm_summary=bool(req.agent6_use_llm_summary),
+        strict_schema=bool(req.agent6_strict_schema),
+        stage_name="agent6",
+        depends_on=(
+            StageDependency(
+                stage_name="agent5",
+                required=True,
+                policy=DependencyPolicy.REQUIRE_GO,
+            ),
+        ),
+        enabled=True,
+        metadata={"managed_by": "challenge_app_backend"},
+        require_agent4_handoff=True,
+        require_agent5_handoff=True,
+        expected_agent4_stage_name="agent4",
+        expected_agent5_stage_name="agent5",
+        llm_generate=LLM_GENERATE,
+    )
+
     registry.register(agent4_stage)
     registry.register(agent5_stage)
+    registry.register(agent6_stage)
     return registry, build_default_stage_order()
 
 
@@ -1041,12 +1071,18 @@ def _brain_stage_inputs(req: BrainRunRequestModel) -> Dict[str, Dict[str, Any]]:
     stage_inputs: Dict[str, Dict[str, Any]] = {
         "agent4": {},
         "agent5": {"require_agent4_handoff": True},
+        "agent6": {
+            "require_agent4_handoff": True,
+            "require_agent5_handoff": True,
+        },
     }
 
     if req.agent4_scenario_id:
         stage_inputs["agent4"]["scenario_id"] = req.agent4_scenario_id.strip()
     if req.agent5_scenario_id:
         stage_inputs["agent5"]["scenario_id"] = req.agent5_scenario_id.strip()
+    if req.agent6_scenario_id:
+        stage_inputs["agent6"]["scenario_id"] = req.agent6_scenario_id.strip()
 
     if req.agent4_release_id is not None:
         value = req.agent4_release_id.strip()
@@ -1054,6 +1090,9 @@ def _brain_stage_inputs(req: BrainRunRequestModel) -> Dict[str, Dict[str, Any]]:
     if req.agent5_release_id is not None:
         value = req.agent5_release_id.strip()
         stage_inputs["agent5"]["release_id"] = value or None
+    if req.agent6_release_id is not None:
+        value = req.agent6_release_id.strip()
+        stage_inputs["agent6"]["release_id"] = value or None
 
     return stage_inputs
 
@@ -1067,11 +1106,13 @@ def _run_brain(req: BrainRunRequestModel) -> Dict[str, Any]:
         stage_inputs=_brain_stage_inputs(req),
         options={
             "allow_agent5_after_agent4_hold": bool(req.allow_agent5_after_agent4_hold),
+            "allow_agent6_after_agent5_hold": bool(req.allow_agent6_after_agent5_hold),
         },
         metadata={
             "runner": "challenge-app/backend/app.py",
             "agent4_dataset_root": str(_resolve_repo_path(req.agent4_dataset_root)),
             "agent5_dataset_root": str(_resolve_repo_path(req.agent5_dataset_root)),
+            "agent6_dataset_root": str(_resolve_repo_path(req.agent6_dataset_root)),
         },
     )
     report = orchestrator.run(request)
