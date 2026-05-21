@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "./App.jsx";
 
@@ -130,7 +130,7 @@ afterEach(() => {
 it("renders the heading", () => {
   render(<App />);
   expect(
-    screen.getByRole("heading", { name: /hitachi challenge/i })
+    screen.getByRole("heading", { name: /verdict/i })
   ).toBeInTheDocument();
 });
 
@@ -146,5 +146,6 @@ it("does not render the demo button or helper text", () => {
 
 it("renders the release dashboard section", () => {
   render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: /expert console/i }));
   expect(screen.getByTestId("agent-console")).toBeInTheDocument();
 });
