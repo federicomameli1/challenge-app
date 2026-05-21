@@ -2,8 +2,8 @@
   import.meta.env.VITE_AGENT_BACKEND_URL || "/api";
 
 const AGENT_GATES = {
-  agent4: "Phase 4",
-  agent5: "Phase 5",
+  agent4: "DEV → TEST",
+  agent5: "TEST → PROD",
 };
 
 const PHASE5_REQUIRED_FILES = new Set([
@@ -332,7 +332,7 @@ export async function runBackendBrain(payload) {
 }
 
 // --------------------------------------------------------------------------- //
-// CI bridge — surfaces GitHub Actions runs (Agent 4 / Agent 5 reports)        //
+// CI bridge — surfaces GitHub Actions runs (Release Readiness / Test Evidence) //
 // --------------------------------------------------------------------------- //
 
 export async function fetchCiStatus() {

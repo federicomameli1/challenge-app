@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 #
 # Build context expected: repository root.
-# Build:  docker build -f deploy/docker/Dockerfile -t challenge-app .
+# Build:  docker build -f deploy/docker/Dockerfile -t verdict .
 
 # ---------- Frontend build stage ----------
 FROM --platform=$BUILDPLATFORM node:20-bookworm-slim AS frontend-builder

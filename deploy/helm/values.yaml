@@ -1,12 +1,12 @@
-name: challenge-app
-namespace: challenge-app
-deploymentName: challenge-app
-serviceName: challenge-app
+name: verdict
+namespace: verdict
+deploymentName: verdict
+serviceName: verdict
 
 replicaCount: 1
 
 image:
-  repository: ghcr.io/bl4ckj4c/challenge-app
+  repository: ghcr.io/federicomameli1/verdict
   pullPolicy: IfNotPresent
 
 containerPort: 80
@@ -20,5 +20,5 @@ service:
 
 env:
   openrouter_model: "z-ai/glm-4.5-air:free"
-  openrouter_app_title: "challenge-app"
+  openrouter_app_title: "Verdict"
   ci_bridge_repo: "federicomameli1/challenge-app"
