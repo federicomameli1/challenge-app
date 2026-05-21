@@ -19,33 +19,30 @@ import {
 const AGENTS = {
   agent4: {
     id: "agent4",
-    name: "Release Readiness Analyst",
-    legacyName: "Agent 4",
-    phase: "Phase 4",
+    name: "Release Readiness Agent",
+    gate: "DEV → TEST",
     description:
       "Assesses DEV-to-TEST promotion readiness from APCS operational and documentary evidence.",
   },
   agent5: {
     id: "agent5",
-    name: "Test Evidence Analyst",
-    legacyName: "Agent 5",
-    phase: "Phase 5",
+    name: "Test Evidence Agent",
+    gate: "TEST → PROD",
     description:
-      "Assesses Phase 5 test readiness, defects, and continuity closure after Phase 4.",
+      "Assesses test readiness, defects, and continuity closure for TEST → PROD promotion.",
   },
   agent6: {
     id: "agent6",
-    name: "VDD Draft Agent",
-    legacyName: "Agent 6",
-    phase: "Phase 6",
+    name: "VDD Drafting Agent",
+    gate: "VDD & Approval",
     description:
-      "Drafts the VDD and approval-readiness package by consolidating Phase 4 readiness and Phase 5 test evidence.",
+      "Drafts the VDD and approval-readiness package by consolidating release readiness and test evidence.",
   },
 };
 
 const BRAIN_NAME = "Release Flow Coordinator";
 const BRAIN_DESCRIPTION =
-  "Runs Phase 4 then Phase 5 using the backend orchestration layer, including the gate that blocks Phase 5 when Phase 4 ends in HOLD unless you explicitly override it.";
+  "Runs Release Readiness then Test Evidence analysis using the backend orchestration layer, including the gate that blocks Test Evidence when Release Readiness ends in HOLD unless you explicitly override it.";
 
 const DEFAULT_RUN_OPTIONS = {
   evaluateAll: false,
@@ -965,7 +962,7 @@ export default function ReleaseDashboard() {
                     >
                       <p className="font-semibold">{agent.name}</p>
                       <p className="mt-1 text-xs opacity-80">
-                        {agent.phase} · {agent.legacyName}
+                        {agent.gate}
                       </p>
                     </button>
                   );
@@ -1007,13 +1004,13 @@ export default function ReleaseDashboard() {
                             <p className="break-words font-semibold leading-snug">{dataset.label}</p>
                             <div className="mt-1.5 flex flex-wrap gap-1">
                               {dataset.backend?.agent4 && (
-                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">A4</span>
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">Readiness</span>
                               )}
                               {dataset.backend?.agent5 && (
-                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
+                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">Test Ev.</span>
                               )}
                               {dataset.backend?.agent6 && (
-                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">A6</span>
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">VDD</span>
                               )}
                             </div>
                           </button>
@@ -1059,13 +1056,13 @@ export default function ReleaseDashboard() {
                             <p className="break-words font-semibold leading-snug">{dataset.label}</p>
                             <div className="mt-1.5 flex flex-wrap gap-1">
                               {dataset.backend?.agent4 && (
-                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">A4</span>
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">Readiness</span>
                               )}
                               {dataset.backend?.agent5 && (
-                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">A5</span>
+                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">Test Ev.</span>
                               )}
                               {dataset.backend?.agent6 && (
-                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">A6</span>
+                                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">VDD</span>
                               )}
                               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">Custom</span>
                             </div>
@@ -1498,7 +1495,7 @@ export default function ReleaseDashboard() {
                                 {summary.name}
                               </p>
                               <p className="break-words text-xs text-slate-500 dark:text-slate-400">
-                                {summary.legacyName} · {summary.phase}
+                                {summary.gate}
                               </p>
                             </div>
                             <div
@@ -1701,7 +1698,7 @@ export default function ReleaseDashboard() {
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 <p>
                   The coordinator runs the default demo case for the selected dataset across
-                  Phase 4 and Phase 5.
+                  Release Readiness and Test Evidence analysis.
                 </p>
                 <label className="mt-3 flex items-center gap-2">
                   <input
@@ -1711,7 +1708,7 @@ export default function ReleaseDashboard() {
                       setAllowAgent5AfterAgent4Hold(event.target.checked)
                     }
                   />
-                  Allow Phase 5 to continue even if Phase 4 ends in HOLD
+                  Allow Test Evidence to continue even if Release Readiness ends in HOLD
                 </label>
               </div>
 
@@ -1775,7 +1772,7 @@ export default function ReleaseDashboard() {
                           {summary.name}
                         </p>
                         <p className="break-words text-xs text-slate-500 dark:text-slate-400">
-                          {summary.legacyName} · {summary.phase}
+                          {summary.gate}
                         </p>
                       </div>
                       <div
@@ -1851,7 +1848,7 @@ export default function ReleaseDashboard() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">{newSetFiles.length} file(s) selected</p>
               ) : null}
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Use APCS text or `.docx` bundles for {AGENTS.agent4.name}, or structured CSV bundles for {AGENTS.agent5.name}. Uploaded datasets are persisted in the backend.
+                Use APCS text or `.docx` bundles for Release Readiness, or structured CSV bundles for Test Evidence analysis. Uploaded datasets are persisted in the backend.
               </p>
               {createSetError ? (
                 <p className="text-xs font-medium text-rose-700 dark:text-rose-400">{createSetError}</p>

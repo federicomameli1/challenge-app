@@ -94,7 +94,7 @@ jobs:
       GITOPS_REPO: ${{ vars.GITOPS_REPO }}
       APP_NAME: ${{ vars.APP_NAME }}
       IMAGE_TAG: ${{ github.sha }}
-      VALUES_ENV: ${{ github.event_name == 'release' && 'prod' || 'test' }}
+      VALUES_ENV: mgmt
 
     steps:
       - name: Checkout

@@ -370,7 +370,7 @@ export default function CiPanel({ standalone = false }) {
             CI / CD Pipeline
           </p>
           <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
-            GitHub Actions · Agent 4 → Agent 5
+            GitHub Actions · Release Readiness → Test Evidence
           </h2>
           {status?.repo ? (
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -534,9 +534,9 @@ export default function CiPanel({ standalone = false }) {
                       ) : null}
                     </div>
                   ) : null}
-                  <StageCard label="Pre-test (Agent 4)" payload={reports["pre-test"]} />
+                  <StageCard label="Pre-test (Release Readiness)" payload={reports["pre-test"]} />
                   <StageCard label="Stage Results" payload={reports["stage-results"]} />
-                  <StageCard label="Pre-prod (Agent 5)" payload={reports["pre-prod"]} />
+                  <StageCard label="Pre-prod (Test Evidence)" payload={reports["pre-prod"]} />
 
                   {pending.length > 0 ? (
                     <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/50">
