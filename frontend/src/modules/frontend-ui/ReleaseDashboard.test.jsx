@@ -428,10 +428,10 @@ describe("Release Dashboard", () => {
 
     expect(screen.getByTestId("agent-console")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /release readiness analyst/i })
+      screen.getByRole("button", { name: /release readiness agent/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /test evidence analyst/i })
+      screen.getByRole("button", { name: /test evidence agent/i })
     ).toBeInTheDocument();
   });
 
@@ -474,13 +474,13 @@ describe("Release Dashboard", () => {
     const user = userEvent.setup();
 
     expect(screen.getByTestId("current-result-analyst-name")).toHaveTextContent(
-      /release readiness analyst/i
+      /release readiness agent/i
     );
 
     await user.click(screen.getByRole("button", { name: /show next analyst result/i }));
 
     expect(screen.getByTestId("current-result-analyst-name")).toHaveTextContent(
-      /test evidence analyst/i
+      /test evidence agent/i
     );
   });
 
