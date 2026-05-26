@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: "{{ .Values.image.repository }}{{ if .Values.image.tag }}:{{ .Values.image.tag }}{{ end }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: OPENROUTER_API_KEY
@@ -39,5 +39,15 @@ spec:
                 secretKeyRef:
                   name: challenge-app-secrets
                   key: subject_repo_token
+            - name: HUGGINGFACE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: challenge-app-secrets
+                  key: huggingface_token
+                  optional: true
+            {{- with .Values.env.hf_embedding_model }}
+            - name: HF_EMBEDDING_MODEL
+              value: {{ . | quote }}
+            {{- end }}
           ports:
             - containerPort: {{ .Values.containerPort }}

@@ -22,3 +22,8 @@ env:
   openrouter_model: "z-ai/glm-4.5-air:free"
   openrouter_app_title: "Verdict"
   ci_bridge_repo: "federicomameli1/challenge-app"
+  # HuggingFace embedding model for RAG. Leave unset to use the runner's
+  # default (sentence-transformers/all-MiniLM-L6-v2). The token itself
+  # is read from the 'huggingface_token' key in the challenge-app-secrets
+  # secret (optional — endpoint returns 503 if missing).
+  hf_embedding_model: ""
