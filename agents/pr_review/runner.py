@@ -1,0 +1,229 @@
+"""End-to-end runner for the PR review agent.
+
+Pipeline:
+  1. Chunk the docs directory
+  2. Embed all chunks (HF Inference API)
+  3. Embed a representative slice of the diff
+  4. Retrieve top-K most relevant chunks via cosine similarity
+  5. Build the prompt and call the LLM
+  6. Parse JSON response and render the markdown report
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import List, Optional
+
+from agents.llm_client import LLMError, OpenRouterClient
+from agents.rag import (
+    Chunk,
+    HFEmbeddingsClient,
+    HFEmbeddingsError,
+    chunk_directory,
+    top_k,
+)
+
+from .models import Highlight, PRReviewInput, PRReviewOutput, Severity, Verdict
+from .prompts import SYSTEM_PROMPT, build_context_block, build_user_prompt
+
+logger = logging.getLogger(__name__)
+
+
+class PRReviewError(Exception):
+    """Raised when the PR review pipeline cannot complete."""
+
+
+_DIFF_EMBEDDING_MAX_CHARS = 2000
+
+
+class PRReviewRunner:
+    """Orchestrates the PR review pipeline.
+
+    Dependencies are injected so tests can stub them. In production use
+    `PRReviewRunner.from_env()` which wires the real LLM and HF clients.
+    """
+
+    def __init__(
+        self,
+        llm_client: OpenRouterClient,
+        embeddings_client: HFEmbeddingsClient,
+    ) -> None:
+        self.llm = llm_client
+        self.embed = embeddings_client
+
+    @classmethod
+    def from_env(cls) -> Optional["PRReviewRunner"]:
+        llm = OpenRouterClient.from_env()
+        if llm is None:
+            logger.warning("PRReviewRunner: no OpenRouter client (OPENROUTER_API_KEY missing)")
+            return None
+        embed = HFEmbeddingsClient.from_env()
+        if embed is None:
+            logger.warning("PRReviewRunner: no HF embeddings client (HUGGINGFACE_TOKEN missing)")
+            return None
+        return cls(llm_client=llm, embeddings_client=embed)
+
+    def run(self, input: PRReviewInput) -> PRReviewOutput:
+        chunks = chunk_directory(
+            input.docs_dir,
+            extensions=tuple(input.docs_extensions),
+            relative_to=input.relative_to,
+        )
+        if not chunks:
+            logger.info("PRReviewRunner: no chunks from docs_dir=%s", input.docs_dir)
+
+        retrieved = self._retrieve(chunks, input.diff_unified, input.top_k)
+
+        meta_lines = [
+            f"number: #{input.pr_meta.number}",
+            f"title: {input.pr_meta.title}",
+            f"author: {input.pr_meta.author}",
+            f"branch: {input.pr_meta.branch} → {input.pr_meta.base}",
+            f"head_sha: {input.pr_meta.head_sha}",
+        ]
+        user_prompt = build_user_prompt(
+            diff_unified=input.diff_unified,
+            pr_meta_lines=meta_lines,
+            context_block=build_context_block(retrieved),
+        )
+
+        try:
+            llm_payload = self.llm.complete_json(
+                [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ]
+            )
+        except LLMError as exc:
+            raise PRReviewError(f"LLM call failed: {exc}") from exc
+
+        verdict, summary, highlights = _coerce_llm_payload(llm_payload)
+        report_md = _render_markdown_report(input.pr_meta, verdict, summary, highlights, retrieved)
+
+        return PRReviewOutput(
+            verdict=verdict,
+            summary=summary,
+            highlights=highlights,
+            report_markdown=report_md,
+            chunks_used=[chunk.id for chunk, _ in retrieved],
+            model=self.llm.model,
+        )
+
+    def _retrieve(
+        self,
+        chunks: List[Chunk],
+        diff_unified: str,
+        k: int,
+    ) -> list:
+        if not chunks:
+            return []
+
+        diff_query = diff_unified[:_DIFF_EMBEDDING_MAX_CHARS] or "(empty diff)"
+
+        try:
+            chunk_vectors = self.embed.embed_texts([c.text for c in chunks])
+            query_vector = self.embed.embed_texts([diff_query])[0]
+        except HFEmbeddingsError as exc:
+            raise PRReviewError(f"Embedding call failed: {exc}") from exc
+
+        return top_k(query_vector, chunks, chunk_vectors, k=k)
+
+
+def _coerce_llm_payload(payload: dict) -> tuple:
+    """Validate and coerce the LLM JSON payload to (Verdict, summary, [Highlight])."""
+    verdict_raw = str(payload.get("verdict", "")).strip().upper()
+    if verdict_raw not in {"GO", "HOLD"}:
+        raise PRReviewError(f"LLM returned invalid verdict: {verdict_raw!r}")
+    verdict = Verdict(verdict_raw)
+
+    summary = str(payload.get("summary", "")).strip()
+    if not summary:
+        summary = "(no summary provided)"
+
+    highlights_raw = payload.get("highlights") or []
+    if not isinstance(highlights_raw, list):
+        raise PRReviewError("LLM 'highlights' is not a list")
+
+    highlights: List[Highlight] = []
+    for item in highlights_raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            severity = Severity(str(item.get("severity", "info")).strip().lower())
+        except ValueError:
+            severity = Severity.INFO
+        highlights.append(
+            Highlight(
+                severity=severity,
+                title=str(item.get("title", "")).strip() or "(untitled)",
+                description=str(item.get("description", "")).strip(),
+                file_ref=_nullable_str(item.get("file_ref")),
+                doc_ref=_nullable_str(item.get("doc_ref")),
+            )
+        )
+    return verdict, summary, highlights
+
+
+def _nullable_str(value) -> Optional[str]:
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s or s.lower() == "null":
+        return None
+    return s
+
+
+_SEVERITY_BADGE = {
+    Severity.BLOCKER: "🛑 Blocker",
+    Severity.WARNING: "⚠️ Warning",
+    Severity.INFO: "ℹ️ Info",
+}
+
+
+def _render_markdown_report(
+    pr_meta,
+    verdict: Verdict,
+    summary: str,
+    highlights: List[Highlight],
+    retrieved: list,
+) -> str:
+    verdict_badge = "✅ **GO**" if verdict is Verdict.GO else "🟠 **HOLD**"
+    parts: List[str] = [
+        "## [Verdict] LLM Review",
+        "",
+        f"**Verdict:** {verdict_badge}",
+        "",
+        f"**Summary:** {summary}",
+        "",
+    ]
+    if highlights:
+        parts.append("### Findings")
+        parts.append("")
+        for h in highlights:
+            badge = _SEVERITY_BADGE.get(h.severity, "ℹ️ Info")
+            line = f"- **{badge} — {h.title}**"
+            parts.append(line)
+            parts.append(f"  {h.description}")
+            refs = []
+            if h.file_ref:
+                refs.append(f"`{h.file_ref}`")
+            if h.doc_ref:
+                refs.append(f"_{h.doc_ref}_")
+            if refs:
+                parts.append(f"  Refs: {', '.join(refs)}")
+        parts.append("")
+    else:
+        parts.append("_No specific findings — the diff looks aligned with the documented requirements._")
+        parts.append("")
+
+    if retrieved:
+        parts.append("<details>")
+        parts.append("<summary>Documentation chunks consulted</summary>")
+        parts.append("")
+        for chunk, score in retrieved:
+            parts.append(f"- `{chunk.id}` (relevance {score:.2f})")
+        parts.append("")
+        parts.append("</details>")
+    parts.append("")
+    parts.append(f"_PR #{pr_meta.number} · head `{pr_meta.head_sha[:8] if pr_meta.head_sha else 'n/a'}` · automated review_")
+    return "\n".join(parts)

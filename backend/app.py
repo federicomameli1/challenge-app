@@ -56,6 +56,12 @@ from agents.brain import (  # noqa: E402
     build_agent6_stage,
     build_default_stage_order,
 )
+from agents.pr_review import (  # noqa: E402
+    PRReviewError,
+    PRReviewInput,
+    PRReviewOutput,
+    PRReviewRunner,
+)
 
 AgentKind = Literal["agent4", "agent5", "agent6"]
 SourceAdapterKind = Literal["auto", "structured_dataset", "apcs_doc_bundle"]
@@ -1441,3 +1447,25 @@ def run_brain(req: BrainRunRequestModel) -> BrainRunResponse:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return BrainRunResponse(ok=True, payload=payload)
+
+
+@app.post("/agents/pr-review/run", response_model=PRReviewOutput)
+def run_pr_review(req: PRReviewInput) -> PRReviewOutput:
+    """LLM-driven GO/HOLD analysis of a pull-request diff vs. project docs.
+
+    Standalone agent (not part of the brain orchestrator) — used by the
+    `verdict-llm-review.yml` workflow on subject repositories.
+    """
+    runner = PRReviewRunner.from_env()
+    if runner is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "PR review agent is not configured. Set OPENROUTER_API_KEY and "
+                "HUGGINGFACE_TOKEN environment variables."
+            ),
+        )
+    try:
+        return runner.run(req)
+    except PRReviewError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc

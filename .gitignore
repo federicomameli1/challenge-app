@@ -44,6 +44,9 @@ artifacts/
 *.key
 *.p12
 
+# Helm build artifacts
+*.tgz
+
 # Reference documents not committed
 Hitachi Challenge Process and documentation model.docx
 Running example SSMS.docx
