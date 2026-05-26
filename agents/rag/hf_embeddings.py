@@ -25,7 +25,10 @@ from typing import List, Optional, Sequence
 logger = logging.getLogger(__name__)
 
 _DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-_DEFAULT_BASE_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction"
+# HF migrated the Inference API to a router-based endpoint. The
+# legacy api-inference.huggingface.co subdomain was deprecated and
+# no longer resolves from many networks (including GH Actions runners).
+_DEFAULT_BASE_URL = "https://router.huggingface.co/hf-inference/models"
 _DEFAULT_TIMEOUT = 30
 
 
@@ -79,7 +82,7 @@ class HFEmbeddingsClient:
         if not texts:
             return []
 
-        url = f"{self.base_url}/{self.model}"
+        url = f"{self.base_url}/{self.model}/pipeline/feature-extraction"
         payload = json.dumps(
             {
                 "inputs": list(texts),
