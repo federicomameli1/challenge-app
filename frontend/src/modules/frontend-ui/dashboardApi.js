@@ -495,6 +495,37 @@ export async function rejectDeployment({ repo, runId, environmentIds, comment } 
   });
 }
 
+// --------------------------------------------------------------------------- //
+// Health bridge — ArgoCD cluster health (snapshot + SSE)                     //
+// --------------------------------------------------------------------------- //
+
+export async function fetchHealthSnapshot() {
+  return requestJson("/health/apps");
+}
+
+export function openHealthStream({ onSnapshot, onUpdate, onError } = {}) {
+  const url = `${AGENT_BACKEND_URL}/health/stream`;
+  const source = new EventSource(url);
+  source.onmessage = (event) => {
+    if (!event?.data) return;
+    let payload;
+    try {
+      payload = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (payload?.type === "snapshot" && onSnapshot) {
+      onSnapshot(payload.data);
+    } else if (payload?.type === "app_update" && onUpdate) {
+      onUpdate(payload.snapshot);
+    }
+  };
+  source.onerror = (err) => {
+    if (onError) onError(err);
+  };
+  return source;
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,

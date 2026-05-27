@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { fetchIssues, fetchPendingDeployments, fetchPulls } from "./dashboardApi.js";
+import {
+  fetchHealthSnapshot,
+  fetchIssues,
+  fetchPendingDeployments,
+  fetchPulls,
+} from "./dashboardApi.js";
 
 function Widget({ title, body, footer, action }) {
   return (
@@ -32,6 +37,8 @@ export default function HomePage({ subjectRepo, onNavigate }) {
   const [approvalsError, setApprovalsError] = useState(null);
   const [issuesCount, setIssuesCount] = useState(null);
   const [issuesError, setIssuesError] = useState(null);
+  const [health, setHealth] = useState(null);
+  const [healthError, setHealthError] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -54,6 +61,14 @@ export default function HomePage({ subjectRepo, onNavigate }) {
         if (alive) setIssuesCount(data.items.length);
       } catch (exc) {
         if (alive) setIssuesError(exc?.message || String(exc));
+      }
+    })();
+    (async () => {
+      try {
+        const data = await fetchHealthSnapshot();
+        if (alive) setHealth(data);
+      } catch (exc) {
+        if (alive) setHealthError(exc?.message || String(exc));
       }
     })();
     return () => {
@@ -108,8 +123,36 @@ export default function HomePage({ subjectRepo, onNavigate }) {
 
         <Widget
           title="Cluster Health"
-          body={<span className="text-slate-500 dark:text-slate-400">Coming soon (Phase E).</span>}
-          footer="Polled via ArgoCD"
+          body={
+            healthError ? (
+              <span className="text-rose-600 dark:text-rose-300">{healthError}</span>
+            ) : health === null ? (
+              <span className="text-slate-500 dark:text-slate-400">Loading…</span>
+            ) : health.apps_total === 0 ? (
+              <span className="text-slate-500 dark:text-slate-400">
+                No app events received yet — configure ArgoCD notifications.
+              </span>
+            ) : health.apps_degraded > 0 || health.apps_out_of_sync > 0 ? (
+              <span>
+                <span className="text-2xl font-semibold text-rose-700 dark:text-rose-300">
+                  {health.apps_degraded + health.apps_out_of_sync}
+                </span>{" "}
+                app{health.apps_degraded + health.apps_out_of_sync === 1 ? "" : "s"} need attention
+                <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
+                  ({health.apps_healthy}/{health.apps_total} healthy)
+                </span>
+              </span>
+            ) : (
+              <span>
+                <span className="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">
+                  {health.apps_healthy}/{health.apps_total}
+                </span>{" "}
+                apps healthy.
+              </span>
+            )
+          }
+          footer="ArgoCD notifications → Verdict (SSE)"
+          action={{ label: "See all →", onClick: () => onNavigate("health") }}
         />
 
         <Widget

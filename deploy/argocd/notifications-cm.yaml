@@ -1,0 +1,92 @@
+# ArgoCD notifications-controller configuration for Verdict.
+#
+# Apply on the mgmt cluster (where ArgoCD lives):
+#   kubectl apply -f deploy/argocd/notifications-cm.yaml
+#
+# This wires every Argo CD Application to POST a small JSON event to
+# Verdict's /api/webhooks/argocd endpoint whenever its sync or health
+# status changes. Verdict then keeps an in-memory snapshot and streams
+# updates to the Health page via SSE.
+#
+# Verdict is reachable in-cluster at:
+#   http://verdict.verdict.svc.cluster.local/api/webhooks/argocd
+# (Service `verdict` in namespace `verdict`, port 80, nginx routes /api/
+#  to the FastAPI backend.)
+#
+# The `subscriptions` block at the bottom subscribes ALL Applications to
+# the triggers — no per-Application annotation needed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  # ----- Webhook service -----------------------------------------------------
+  service.webhook.verdict: |
+    url: http://verdict.verdict.svc.cluster.local/api/webhooks/argocd
+    headers:
+      - name: Content-Type
+        value: application/json
+
+  # ----- Message template ----------------------------------------------------
+  # The Verdict backend tolerates extra fields and a flat or nested shape.
+  template.app-health-change: |
+    webhook:
+      verdict:
+        method: POST
+        body: |
+          {
+            "app": "{{.app.metadata.name}}",
+            "cluster": "{{.app.spec.destination.name}}",
+            "namespace": "{{.app.spec.destination.namespace}}",
+            "sync_status": "{{.app.status.sync.status}}",
+            "health_status": "{{.app.status.health.status}}",
+            "operation_phase": "{{if .app.status.operationState}}{{.app.status.operationState.phase}}{{end}}",
+            "revision": "{{.app.status.sync.revision}}"
+          }
+
+  # ----- Triggers ------------------------------------------------------------
+  # Each trigger fires only on transitions (the controller tracks the last
+  # state per (app, trigger) pair). The `oncePer` clue ensures we don't
+  # spam Verdict for the same revision.
+  trigger.verdict-on-health: |
+    - description: Application health became Healthy
+      send: [app-health-change]
+      when: app.status.health.status == 'Healthy'
+      oncePer: app.status.sync.revision
+    - description: Application health is Degraded
+      send: [app-health-change]
+      when: app.status.health.status == 'Degraded'
+    - description: Application is Missing
+      send: [app-health-change]
+      when: app.status.health.status == 'Missing'
+    - description: Application is Progressing
+      send: [app-health-change]
+      when: app.status.health.status == 'Progressing'
+      oncePer: app.status.sync.revision
+
+  trigger.verdict-on-sync: |
+    - description: Sync became Synced
+      send: [app-health-change]
+      when: app.status.sync.status == 'Synced'
+      oncePer: app.status.sync.revision
+    - description: Sync became OutOfSync
+      send: [app-health-change]
+      when: app.status.sync.status == 'OutOfSync'
+    - description: Sync status Unknown
+      send: [app-health-change]
+      when: app.status.sync.status == 'Unknown'
+
+  trigger.verdict-on-operation: |
+    - description: Operation failed
+      send: [app-health-change]
+      when: app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']
+
+  # ----- Default subscriptions (apply to all apps) ---------------------------
+  subscriptions: |
+    - recipients:
+        - webhook:verdict
+      triggers:
+        - verdict-on-health
+        - verdict-on-sync
+        - verdict-on-operation

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ExpertConsole from "./modules/frontend-ui/ExpertConsole.jsx";
+import HealthPage from "./modules/frontend-ui/HealthPage.jsx";
 import HomePage from "./modules/frontend-ui/HomePage.jsx";
 import PRReviewPage from "./modules/frontend-ui/PRReviewPage.jsx";
 import PlaceholderPage from "./modules/frontend-ui/PlaceholderPage.jsx";
@@ -94,12 +95,7 @@ export default function App() {
           )}
           {view === "pulls" && <PRReviewPage subjectRepo={subjectRepo} />}
           {view === "releases" && <ReleasesPage subjectRepo={subjectRepo} />}
-          {view === "health" && (
-            <PlaceholderPage
-              title="Cluster Health"
-              hint="Will surface ArgoCD app status for mgmt / test / prod via the notifications webhook (Phase E)."
-            />
-          )}
+          {view === "health" && <HealthPage />}
           {view === "tickets" && <TicketsPage subjectRepo={subjectRepo} />}
           {view === "console" && <ExpertConsole />}
         </main>
