@@ -239,6 +239,11 @@ def list_pulls(repo: str, state: str = "open", limit: int = 50) -> PullsResponse
     return PullsResponse(repo=repo, items=items)
 
 
+class _SelfReviewSkipped(Exception):
+    """Raised when GitHub refuses a self-approval and the caller should
+    proceed without a review (e.g. for the same-author merge flow)."""
+
+
 def _submit_review(
     cfg: CiBridgeConfig,
     pr_number: int,
@@ -254,12 +259,19 @@ def _submit_review(
         payload={"event": event, "body": body},
     )
     if status not in (200, 201):
+        body_text = (raw[:500] or b"").decode("utf-8", errors="replace")
+        # GitHub explicitly forbids users from approving their own PRs.
+        # For the dev/demo flow we surface a sentinel so the caller can
+        # continue to the merge step instead of bailing out.
+        if (
+            status == 422
+            and event == "APPROVE"
+            and "approve your own pull request" in body_text.lower()
+        ):
+            raise _SelfReviewSkipped(body_text)
         raise HTTPException(
             status_code=status,
-            detail=(
-                f"GitHub returned {status} submitting review: "
-                f"{(raw[:300] or b'').decode('utf-8', errors='replace')}"
-            ),
+            detail=f"GitHub returned {status} submitting review: {body_text}",
         )
     try:
         return json.loads(raw or b"{}")
@@ -300,7 +312,13 @@ def _merge_pr(
 
 @router.post("/{pr_number}/approve", response_model=ActionResult)
 def approve_pull(pr_number: int, req: ApproveRequest) -> ActionResult:
-    """Submit an APPROVE review and (optionally) merge the PR."""
+    """Submit an APPROVE review and (optionally) merge the PR.
+
+    If GitHub refuses the review because the caller is the PR author
+    (self-approval is not allowed), we still proceed with the merge step
+    so the dev/demo flow remains usable. The response signals this via
+    review_state == "SELF_REVIEW_SKIPPED".
+    """
     cfg = CiBridgeConfig.for_subject_repo(req.repo)
     if not cfg.token:
         raise HTTPException(
@@ -308,38 +326,56 @@ def approve_pull(pr_number: int, req: ApproveRequest) -> ActionResult:
             detail="SUBJECT_REPO_TOKEN is not configured in the backend env",
         )
 
-    review = _submit_review(
-        cfg,
-        pr_number,
-        event="APPROVE",
-        body=req.body or "Approved via Verdict.",
-    )
+    review: Dict[str, Any] = {}
+    review_state = "APPROVED"
+    review_skipped_reason: Optional[str] = None
+    try:
+        review = _submit_review(
+            cfg,
+            pr_number,
+            event="APPROVE",
+            body=req.body or "Approved via Verdict.",
+        )
+    except _SelfReviewSkipped as skip:
+        review_state = "SELF_REVIEW_SKIPPED"
+        review_skipped_reason = (
+            "GitHub does not allow approving your own pull request — "
+            "proceeding directly to merge."
+        )
 
     merged = False
     merge_sha: Optional[str] = None
-    message: Optional[str] = None
+    message: Optional[str] = review_skipped_reason
     if req.merge:
         try:
             merge_resp = _merge_pr(cfg, pr_number, req.merge_method)
             merged = bool(merge_resp.get("merged"))
             merge_sha = merge_resp.get("sha")
-            message = merge_resp.get("message")
+            merge_message = merge_resp.get("message")
+            message = (
+                f"{review_skipped_reason} {merge_message}".strip()
+                if review_skipped_reason and merge_message
+                else (merge_message or review_skipped_reason)
+            )
         except HTTPException as exc:
-            # Review went through; surface merge failure but keep review_id
             return ActionResult(
                 ok=False,
                 pr_number=pr_number,
                 review_id=review.get("id"),
-                review_state="APPROVED",
+                review_state=review_state,
                 merged=False,
-                message=f"Review submitted but merge failed: {exc.detail}",
+                message=(
+                    f"{review_skipped_reason} Merge failed: {exc.detail}"
+                    if review_skipped_reason
+                    else f"Review submitted but merge failed: {exc.detail}"
+                ),
             )
 
     return ActionResult(
         ok=True,
         pr_number=pr_number,
         review_id=review.get("id"),
-        review_state="APPROVED",
+        review_state=review_state,
         merged=merged,
         merge_sha=merge_sha,
         message=message,

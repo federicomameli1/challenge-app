@@ -274,12 +274,16 @@ export default function PRReviewPage({ subjectRepo }) {
         merge: true,
       });
       const merged = result?.merged;
-      setActionMessage({
-        kind: "success",
-        text: merged
-          ? `PR #${approveTarget.number} approved and merged.`
-          : `PR #${approveTarget.number} approved. Merge could not complete: ${result?.message || "see GitHub"}`,
-      });
+      const selfSkipped = result?.review_state === "SELF_REVIEW_SKIPPED";
+      let text;
+      if (merged && selfSkipped) {
+        text = `PR #${approveTarget.number} merged (self-review skipped — GitHub forbids approving your own PR).`;
+      } else if (merged) {
+        text = `PR #${approveTarget.number} approved and merged.`;
+      } else {
+        text = `PR #${approveTarget.number} ${selfSkipped ? "" : "approved"}. Merge could not complete: ${result?.message || "see GitHub"}`;
+      }
+      setActionMessage({ kind: "success", text });
       setApproveTarget(null);
       await load();
     } catch (exc) {
