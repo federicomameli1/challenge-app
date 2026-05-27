@@ -1210,6 +1210,16 @@ except ImportError:
 if _ci_router is not None:
     app.include_router(_ci_router)
 
+try:
+    from .pulls_bridge import router as _pulls_router  # type: ignore
+except ImportError:
+    try:
+        from pulls_bridge import router as _pulls_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _pulls_router = None
+if _pulls_router is not None:
+    app.include_router(_pulls_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
