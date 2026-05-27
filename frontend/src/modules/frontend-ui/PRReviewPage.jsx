@@ -31,6 +31,8 @@ function verdictTone(verdict) {
 
 function ConfirmApproveDialog({ pr, busy, onConfirm, onCancel }) {
   if (!pr) return null;
+  const verdict = pr.last_review?.verdict || null;
+  const isHold = verdict === "HOLD";
   return (
     <div
       role="dialog"
@@ -41,7 +43,13 @@ function ConfirmApproveDialog({ pr, busy, onConfirm, onCancel }) {
         <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
           Approve & merge PR #{pr.number}?
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+        {isHold ? (
+          <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+            <strong>Heads up:</strong> Verdict returned <strong>HOLD</strong> on this PR. You can still
+            approve and merge — the LLM is advisory — but read the report carefully first.
+          </div>
+        ) : null}
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
           This submits a GitHub <strong>APPROVE</strong> review and merges the
           PR via the API (squash merge). The action cannot be undone — make
           sure you have read the verdict and the report.
@@ -172,7 +180,13 @@ function PRCard({ pr, onApprove, onReject }) {
         <button
           type="button"
           onClick={() => onApprove(pr)}
-          className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          disabled={!verdict}
+          title={
+            verdict
+              ? "Submit a GitHub APPROVE review and merge this PR"
+              : "Waiting for Verdict review to complete before approval is allowed"
+          }
+          className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:hover:bg-emerald-300 dark:disabled:border-emerald-900/60 dark:disabled:bg-emerald-900/60 dark:disabled:text-emerald-200/60"
         >
           Approve &amp; merge
         </button>
@@ -191,6 +205,11 @@ function PRCard({ pr, onApprove, onReject }) {
         >
           ↗ Open on GitHub
         </a>
+        {!verdict ? (
+          <span className="ml-auto text-xs italic text-slate-500 dark:text-slate-400">
+            Approve is locked until Verdict review completes.
+          </span>
+        ) : null}
       </footer>
     </article>
   );
