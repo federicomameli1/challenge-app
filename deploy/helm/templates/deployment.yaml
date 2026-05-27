@@ -49,5 +49,9 @@ spec:
             - name: HF_EMBEDDING_MODEL
               value: {{ . | quote }}
             {{- end }}
+            {{- if hasKey .Values.env "allow_self_merge" }}
+            - name: VERDICT_ALLOW_SELF_MERGE
+              value: {{ .Values.env.allow_self_merge | quote }}
+            {{- end }}
           ports:
             - containerPort: {{ .Values.containerPort }}

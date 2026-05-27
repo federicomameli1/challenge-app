@@ -14,10 +14,26 @@ so the same SUBJECT_REPO_TOKEN powers both CI run actions and PR actions.
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = (os.environ.get(name) or "").strip().lower()
+    if not raw:
+        return default
+    return raw in {"1", "true", "yes", "on"}
+
+
+# Demo affordance: GitHub forbids approving your own PR, which breaks the
+# single-developer iteration loop. When this flag is true (default), the
+# backend silently skips the failing APPROVE step and proceeds with the
+# merge. In production this MUST be set to false so a real reviewer is
+# always required — see docs/design-decisions.md.
+ALLOW_SELF_MERGE = _env_bool("VERDICT_ALLOW_SELF_MERGE", True)
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -267,6 +283,7 @@ def _submit_review(
             status == 422
             and event == "APPROVE"
             and "approve your own pull request" in body_text.lower()
+            and ALLOW_SELF_MERGE
         ):
             raise _SelfReviewSkipped(body_text)
         raise HTTPException(

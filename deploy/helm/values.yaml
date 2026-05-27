@@ -27,3 +27,9 @@ env:
   # is read from the 'huggingface_token' key in the challenge-app-secrets
   # secret (optional — endpoint returns 503 if missing).
   hf_embedding_model: ""
+  # DEMO AFFORDANCE — remove before going to production.
+  # When "true", the backend silently skips the GitHub APPROVE call when
+  # the PAT owner is also the PR author (GitHub returns 422 in that case)
+  # and proceeds straight to merge. Set to "false" in prod so a real
+  # reviewer is always required. Default in code is true.
+  allow_self_merge: "true"
