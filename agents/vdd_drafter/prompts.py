@@ -11,31 +11,85 @@ from typing import List, Sequence
 
 
 CANONICAL_SECTIONS: Sequence[str] = (
-    "Release summary",
-    "Scope of change",
-    "Module inventory",
-    "Requirements coverage",
-    "Test evidence summary",
-    "Risks and mitigations",
-    "Operational impact",
-    "Sign-off checklist",
+    "Introduction",
+    "Version Description",
+    "Documentation Related to the Baseline",
+    "Sw Version Build",
+    "Changes Incorporated",
+    "Sw Version Limitation",
+    "Installation Instructions",
+)
+
+
+# Sub-section hints rendered into the prompt so the LLM produces the
+# same depth as the Hitachi template G-TMP S0203 rev.01.
+SUB_SECTION_HINTS: Sequence[tuple] = (
+    (
+        "Introduction",
+        [
+            "Purpose",
+            "Applicability",
+            "Terms, Acronyms and Abbreviations",
+            "Reference Documents (Contractual / Project / Tender / Standards / GBMS)",
+            "Description of Changes from the Previous Revision",
+        ],
+    ),
+    (
+        "Version Description",
+        [
+            "Inventory of materials released",
+            "Inventory of software configuration items contents — identification, checksums, reference of components used",
+        ],
+    ),
+    (
+        "Documentation Related to the Baseline",
+        [
+            "Requirements specification documents",
+            "Software conception, design, programming documents",
+            "Testing documentation",
+            "Other documents",
+        ],
+    ),
+    (
+        "Sw Version Build",
+        [
+            "SW Configuration items list (source files)",
+            "Build Environment for Reproducibility",
+        ],
+    ),
+    (
+        "Changes Incorporated",
+        [
+            "List of changes taken into account in this SW version",
+            "List of changes NOT taken into account in this SW version",
+        ],
+    ),
+    ("Sw Version Limitation", []),
+    ("Installation Instructions", []),
 )
 
 
 SYSTEM_PROMPT = """You are Verdict, an AI assistant specialized in drafting
 Version Description Documents (VDDs) for railway safety software releases.
 
-A VDD is the formal handover artifact between engineering and release
-management. It must be:
+The VDD you produce MUST follow the structure of the official Hitachi
+template G-TMP S0203 rev.01. The seven canonical top-level sections
+are fixed and must appear in the prescribed order. Do not rename,
+reorder, merge, or skip them.
+
+The VDD is the formal handover artifact between engineering and
+release management. It must be:
 
 - **Factual** — every claim grounded in the evidence provided. Never
-  invent test counts, module versions, or requirement IDs.
-- **Complete on what we have** — populate every section possible from
-  the inputs. When evidence for a section is genuinely missing, write
-  "_Evidence not available in this release bundle._" rather than
-  fabricating content.
+  invent test counts, module versions, requirement IDs, checksums, or
+  reference documents.
+- **Complete on what we have** — populate each sub-section possible
+  from the inputs. When evidence for a sub-section is genuinely
+  missing, write a single italic line "_Evidence not available in
+  this release bundle._" instead of fabricating content.
 - **Concise but specific** — short sentences, named modules, named
-  requirements (REQ-WMS-XXX), named tests when present. No fluff."""
+  requirements (REQ-WMS-XXX), named tests when present. No fluff,
+  no marketing language."""
 
 
 def _docs_block(docs_bundle: dict) -> str:
@@ -87,7 +141,12 @@ def build_user_prompt(*, input_payload, _truncate=lambda text, _max: text) -> st
             f"{len(input_payload.diff_unified) - input_payload.diff_max_chars} chars omitted] ...\n\n{tail}"
         )
 
-    sections_list = "\n".join(f"  {i+1}. {s}" for i, s in enumerate(CANONICAL_SECTIONS))
+    section_lines: List[str] = []
+    for i, (section, subs) in enumerate(SUB_SECTION_HINTS, start=1):
+        section_lines.append(f"  {i}. {section}")
+        for sub in subs:
+            section_lines.append(f"      - {sub}")
+    sections_list = "\n".join(section_lines)
 
     parts: List[str] = [
         f"## Release metadata",
@@ -121,20 +180,24 @@ def build_user_prompt(*, input_payload, _truncate=lambda text, _max: text) -> st
         "## Task",
         "",
         "Produce a single markdown document — the Version Description "
-        "Document for this release. Use exactly these top-level sections, "
-        "in this order:",
+        "Document for this release, following the Hitachi template "
+        "G-TMP S0203 rev.01. Use exactly these top-level sections in "
+        "this order, with the listed sub-sections rendered as `### "
+        "<sub-section name>` underneath:",
         "",
         sections_list,
         "",
-        "After each section heading, write the content as concise prose "
-        "or a short bullet list. Cite module names, requirement IDs "
-        "(REQ-WMS-XXX), and test cases by name whenever the evidence "
-        "supports it. If a section has no supporting evidence, write a "
-        "single italic line _Evidence not available in this release "
-        "bundle._ instead of inventing content.",
+        "Render each top-level section as `## <name>` (e.g. `## "
+        "Introduction`) and each sub-section as `### <name>` "
+        "(e.g. `### Purpose`). For sub-sections without supporting "
+        "evidence in the inputs, write a single italic line "
+        "_Evidence not available in this release bundle._ instead of "
+        "fabricating content. Cite module names, requirement IDs "
+        "(REQ-WMS-XXX), and test cases by their identifier whenever "
+        "the evidence supports it.",
         "",
-        "End the document with a horizontal rule and a one-line "
-        "italic footer: _Auto-drafted by Verdict on release "
+        "End the document with a horizontal rule (`---`) and a "
+        "one-line italic footer: _Auto-drafted by Verdict on release "
         f"`{input_payload.release_tag}`._",
         "",
         "Return ONLY the markdown — no surrounding code fences, no "
