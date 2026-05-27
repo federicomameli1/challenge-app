@@ -370,6 +370,40 @@ export async function fetchSubjectCiRuns(repo, limit = 10) {
   };
 }
 
+// --------------------------------------------------------------------------- //
+// Pulls bridge — PR review loop on the subject repo                          //
+// --------------------------------------------------------------------------- //
+
+export async function fetchPulls(repo, state = "open") {
+  const params = new URLSearchParams({ repo, state });
+  const data = await requestJson(`/pulls?${params.toString()}`);
+  return {
+    repo: data?.repo || repo,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function approvePull(prNumber, { repo, body = null, merge = true, mergeMethod = "squash" }) {
+  return requestJson(`/pulls/${encodeURIComponent(prNumber)}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repo,
+      body,
+      merge,
+      merge_method: mergeMethod,
+    }),
+  });
+}
+
+export async function rejectPull(prNumber, { repo, body }) {
+  return requestJson(`/pulls/${encodeURIComponent(prNumber)}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo, body }),
+  });
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,

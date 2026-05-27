@@ -144,8 +144,8 @@ it("does not render the demo button or helper text", () => {
   ).not.toBeInTheDocument();
 });
 
-it("renders the release dashboard section", () => {
+it("renders the release dashboard section via the Expert mode toggle", () => {
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: /expert console/i }));
+  fireEvent.click(screen.getByRole("button", { name: /expert mode/i }));
   expect(screen.getByTestId("agent-console")).toBeInTheDocument();
 });
