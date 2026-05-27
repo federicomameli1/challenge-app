@@ -5,6 +5,7 @@ import PRReviewPage from "./modules/frontend-ui/PRReviewPage.jsx";
 import PlaceholderPage from "./modules/frontend-ui/PlaceholderPage.jsx";
 import ReleasesPage from "./modules/frontend-ui/ReleasesPage.jsx";
 import Sidebar from "./modules/frontend-ui/Sidebar.jsx";
+import TicketsPage from "./modules/frontend-ui/TicketsPage.jsx";
 
 const DEFAULT_SUBJECT_REPO = "federicomameli1/wayside-monitor";
 
@@ -99,12 +100,7 @@ export default function App() {
               hint="Will surface ArgoCD app status for mgmt / test / prod via the notifications webhook (Phase E)."
             />
           )}
-          {view === "tickets" && (
-            <PlaceholderPage
-              title="Tickets"
-              hint="Will mirror open GitHub Issues on the subject repo with one-click triage (Phase F)."
-            />
-          )}
+          {view === "tickets" && <TicketsPage subjectRepo={subjectRepo} />}
           {view === "console" && <ExpertConsole />}
         </main>
       </div>

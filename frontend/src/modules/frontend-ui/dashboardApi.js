@@ -427,6 +427,35 @@ export async function fetchReleases(repo, { limit = 20 } = {}) {
   };
 }
 
+// --------------------------------------------------------------------------- //
+// Issues bridge — GitHub Issues mirror for the subject repo                  //
+// --------------------------------------------------------------------------- //
+
+export async function fetchIssues(repo, { state = "open", limit = 50 } = {}) {
+  const params = new URLSearchParams({ repo, state, limit: String(limit) });
+  const data = await requestJson(`/issues?${params.toString()}`);
+  return {
+    repo: data?.repo || repo,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function createIssue({ repo, title, body, labels, assignees } = {}) {
+  return requestJson("/issues", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo, title, body, labels, assignees }),
+  });
+}
+
+export async function updateIssue(number, { repo, state, state_reason, labels, title, body } = {}) {
+  return requestJson(`/issues/${encodeURIComponent(number)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repo, state, state_reason, labels, title, body }),
+  });
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchPulls } from "./dashboardApi.js";
+import { fetchIssues, fetchPulls } from "./dashboardApi.js";
 
 function Widget({ title, body, footer, action }) {
   return (
@@ -29,6 +29,8 @@ function Widget({ title, body, footer, action }) {
 export default function HomePage({ subjectRepo, onNavigate }) {
   const [pullsCount, setPullsCount] = useState(null);
   const [pullsError, setPullsError] = useState(null);
+  const [issuesCount, setIssuesCount] = useState(null);
+  const [issuesError, setIssuesError] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -38,6 +40,14 @@ export default function HomePage({ subjectRepo, onNavigate }) {
         if (alive) setPullsCount(data.items.length);
       } catch (exc) {
         if (alive) setPullsError(exc?.message || String(exc));
+      }
+    })();
+    (async () => {
+      try {
+        const data = await fetchIssues(subjectRepo, { state: "open" });
+        if (alive) setIssuesCount(data.items.length);
+      } catch (exc) {
+        if (alive) setIssuesError(exc?.message || String(exc));
       }
     })();
     return () => {
@@ -93,8 +103,24 @@ export default function HomePage({ subjectRepo, onNavigate }) {
 
         <Widget
           title="Tickets"
-          body={<span className="text-slate-500 dark:text-slate-400">Coming soon (Phase F).</span>}
+          body={
+            issuesError ? (
+              <span className="text-rose-600 dark:text-rose-300">{issuesError}</span>
+            ) : issuesCount === null ? (
+              <span className="text-slate-500 dark:text-slate-400">Loading…</span>
+            ) : issuesCount === 0 ? (
+              <span>No open tickets right now.</span>
+            ) : (
+              <span>
+                <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                  {issuesCount}
+                </span>{" "}
+                open ticket{issuesCount === 1 ? "" : "s"}.
+              </span>
+            )
+          }
           footer="GitHub Issues mirror"
+          action={{ label: "See all →", onClick: () => onNavigate("tickets") }}
         />
       </div>
     </section>
