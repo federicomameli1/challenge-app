@@ -58,6 +58,11 @@ A single FastAPI module that:
 | GET    | `/datasets/custom-sets` | List user-uploaded APCS bundles |
 | POST   | `/datasets/custom-sets` | Upload a new APCS bundle |
 | DELETE | `/datasets/custom-sets/{set_id}` | Remove a user-uploaded bundle |
+| POST   | `/agents/pr-review/run` | Standalone PR-review agent (diff + docs → GO/HOLD report) |
+| GET    | `/pulls?repo=...` | List PRs on a subject repo with last Verdict comment (PR review loop) |
+| POST   | `/pulls/{n}/approve` | Submit APPROVE review + optional auto-merge |
+| POST   | `/pulls/{n}/reject` | Submit REQUEST_CHANGES review |
+| GET    | `/ci/...` | CI bridge endpoints (runs, artifacts, deployment approvals) |
 
 ### Agent kinds and aliases
 
@@ -112,6 +117,38 @@ Same pipeline shape as agent4 but with phase-5 specific ingestion. Required CSV 
 - `defect_register.csv`
 
 Optional release calendar: `phase5_release_calendar.csv` or `release_calendar.csv`.
+
+### `agents/rag/` — Lightweight RAG primitives (Phase B foundation)
+
+Shared, dependency-free building blocks used by agents that need to ground LLM reasoning in project documentation:
+
+- `chunker.py` — paragraph-based splitting (`chunk_document`, `chunk_directory`); blank-line separation, configurable min chars.
+- `hf_embeddings.py` — HuggingFace Inference API client targeting the **router-based endpoint** (`router.huggingface.co/hf-inference/models/.../pipeline/feature-extraction`). Configurable model via `HF_EMBEDDING_MODEL`, requires `HUGGINGFACE_TOKEN`.
+- `retrieval.py` — pure-Python cosine similarity + `top_k` ranking (no numpy).
+
+### `agents/pr_review/` — Cross-repo PR review agent (Phase B)
+
+Standalone LLM-driven GO/HOLD analyzer for a pull-request diff against a project's documentation. Does **not** conform to the `BrainStage` interface (the input shape is fundamentally different from scenario-based agents; a brain adapter can be added later if chaining is needed).
+
+```
+diff + docs_dir → chunk docs → embed all chunks (HF)
+                            → embed diff query (HF)
+                            → top-K retrieval
+                            → prompt build (system + context + diff + JSON instruction)
+                            → OpenRouter LLM call
+                            → coerce JSON → render markdown report
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `models.py` | Pydantic input/output (`PRReviewInput`, `PRReviewOutput`, `Highlight`, `Verdict`, `Severity`) |
+| `prompts.py` | System prompt + JSON output instruction + context block renderer |
+| `runner.py` | `PRReviewRunner` orchestrating the pipeline; `from_env()` factory wires real LLM and HF clients |
+
+Used from two execution sites:
+
+1. **Verdict backend** via `POST /agents/pr-review/run` (the endpoint runs the pipeline inside the Verdict pod on the mgmt cluster).
+2. **The subject repo's GitHub Actions runner** via `git clone` of the verdict repo + `python .github/scripts/run_pr_review.py` (lets the workflow do the LLM call without exposing the Verdict pod to the public internet — see *Cross-repo PR Review* section below).
 
 ### `agents/brain/` — Orchestrator
 
@@ -193,11 +230,70 @@ Configuration secrets/vars:
 
 See [ci-hitachi-integration-draft.md](ci-hitachi-integration-draft.md) for the integration notes.
 
+## Cross-repo PR Review (Verdict-as-gate, Phase B)
+
+Verdict runs on the CrownLabs management cluster as a single deployment behind a private NodePort — it is **not exposed to the public internet**. The subject application (`wayside-monitor`) lives in its own repo and is deployed across `dev`/`test`/`prod` clusters via GitOps. The PR review loop crosses these boundaries without a tunnel:
+
+```
+                ┌──────────────────────────────────────────────────────────────┐
+                │  Developer opens PR on wayside-monitor                       │
+                └─────────────────────────────┬────────────────────────────────┘
+                                              │
+                ┌─────────────────────────────▼────────────────────────────────┐
+                │  GH Actions runner (public)                                  │
+                │  workflow: .github/workflows/verdict-llm-review.yml          │
+                │   1. checkout wayside-monitor + verdict (shallow clone)      │
+                │   2. python .github/scripts/run_pr_review.py                 │
+                │      → imports agents.pr_review from the verdict clone       │
+                │      → calls HF Inference + OpenRouter                       │
+                │      → renders markdown report                               │
+                │   3. upload report+JSON as workflow artifact                 │
+                │   4. gh pr comment ← posts "[Verdict] LLM Review" markdown   │
+                └─────────────────────────────┬────────────────────────────────┘
+                                              │ (GitHub stores comment + artifact)
+                                              ▼
+                ┌──────────────────────────────────────────────────────────────┐
+                │  Verdict UI (on mgmt, private NodePort)                      │
+                │   - GET /pulls?repo=...                                      │
+                │       fetches open PRs via GitHub API and parses the latest  │
+                │       "[Verdict] LLM Review" comment from each.              │
+                │   - POST /pulls/{n}/approve                                  │
+                │       submits APPROVE review + optional auto-merge.          │
+                │   - POST /pulls/{n}/reject                                   │
+                │       submits REQUEST_CHANGES with the provided body.        │
+                └──────────────────────────────────────────────────────────────┘
+```
+
+Key design properties:
+
+- **No public exposure of Verdict.** The compute happens on the GH runner; Verdict consumes the result via the GitHub API. The SUBJECT_REPO_TOKEN inside the Verdict pod authenticates outbound calls only.
+- **Single source of truth for the agent logic.** The `agents/pr_review/` module lives in the `verdict` repo; the workflow clones verdict at runtime and imports the module, so the prompts/embeddings/coercion logic isn't duplicated.
+- **No persistent storage in Verdict.** The PR history is GitHub; Verdict reads it on demand. Adding caching/persistence is straightforward later (Phase F-style).
+- **GO/HOLD is advisory.** The verdict drives the human reviewer's decision but does not enforce branch protection. The "Approve" button in the UI submits a GitHub PR review APPROVE and (by default) calls the merge API.
+
+Required GitHub repo secrets on `wayside-monitor` for the workflow:
+
+| Secret | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` | LLM completion on the runner |
+| `HUGGINGFACE_TOKEN`  | Embedding calls on the runner (Inference Providers scope) |
+| `GITHUB_TOKEN` (auto) | `pull-requests: write` for the bot comment |
+
+Required Verdict pod env (mounted from the `challenge-app-secrets` K8s secret):
+
+| Env var | Purpose |
+|---|---|
+| `OPENROUTER_API_KEY` | Same; for in-pod use of the agent endpoint (e.g. manual re-run from UI) |
+| `HUGGINGFACE_TOKEN`  | Same |
+| `SUBJECT_REPO_TOKEN` | Auth for `/pulls` GitHub calls; needs `Actions: R/W`, `Pull requests: R/W`, `Contents: Write` on the subject repo |
+| `CI_BRIDGE_REPO`, `CI_BRIDGE_TOKEN` | Default subject for the CI bridge endpoints |
+
 ## Deployment (`deploy/`)
 
 - `deploy/docker/Dockerfile` builds the frontend into static assets and runs nginx + uvicorn together inside one image.
 - `deploy/docker/run_combined.py` is the container entrypoint.
-- `deploy/helm/` packages the Helm chart, published to `oci://ghcr.io/<owner>/<repo>` whenever `deploy/helm/` changes.
+- `deploy/helm/` packages the Helm chart, auto-published to `oci://ghcr.io/<owner>/charts/verdict` by the `helm-publish` job whenever files under `deploy/helm/` change.
+- The container image references the secret `challenge-app-secrets` for `OPENROUTER_API_KEY`, `CI_BRIDGE_TOKEN`, `SUBJECT_REPO_TOKEN`, and (optional) `HUGGINGFACE_TOKEN`. The `huggingface_token` key is marked `optional: true` in the chart so the pod still starts when it is missing (the PR review endpoint then returns 503 until the key is added).
 
 ## Testing (`tests/`)
 
@@ -212,6 +308,8 @@ Frontend tests live in `frontend/src/**/*.test.jsx` and run via Vitest.
 
 The architecture is designed so that adding a new agent or a new evidence source does not change the core engines:
 
-- **New stage** — implement `BrainStage`, register it in `StageRegistry`, add it to the stage order.
+- **New brain stage** — implement `BrainStage`, register it in `StageRegistry`, add it to the stage order. Use this when the input is scenario-based (dataset + scenario_id + release_id).
 - **New evidence source for an existing agent** — implement an adapter under `agents/agentN/adapters/` returning a `RawInputBundle`.
 - **New LLM provider** — replace the OpenRouter call in `explanation.py` with another provider behind the same `LLM_GENERATE` callable interface.
+- **New standalone agent (non scenario-based)** — follow the `agents/pr_review/` pattern: a lightweight package with `models.py`, `prompts.py`, `runner.py`, exposed via its own backend endpoint. This is the right shape when the input is ad-hoc (a diff, a doc, an arbitrary payload) and the LLM call **is** the analysis (no deterministic policy engine needed). Reuse `agents/rag/` for documentation grounding.
+- **New external execution site** — the `verdict-llm-review.yml` workflow in `wayside-monitor` demonstrates the pattern: a GH Actions runner shallow-clones this repo, adds `agents/` to `PYTHONPATH`, and invokes a standalone agent inline. Suitable when the Verdict pod is not reachable from the runner (CrownLabs deployment).

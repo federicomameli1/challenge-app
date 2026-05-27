@@ -81,3 +81,20 @@ This document captures the **why** behind the architecture. It complements [arch
 **Why.** The challenge defines this artifact set as the documentary deliverable for a release. Accepting variable file lists would force the adapter into discovery logic and would weaken the equivalence with reference bundles.
 
 **Consequence for reviewers.** Adding a new document type means extending the contract everywhere (adapter, normalization, fixtures, reference bundles), not just appending a file at upload time.
+
+
+## D11 — Standalone agents skip the deterministic policy layer
+
+**Decision.** For agents whose input is ad-hoc (PR diff, a single document, arbitrary text) and whose output is **guidance for a human reviewer** (not an auditable verdict), build them as standalone packages outside the agent4/agent5 mold: pydantic models, prompt templates, a runner that calls the LLM directly, no deterministic policy engine in front. The current example is `agents/pr_review/`.
+
+**Why.** Forcing every agent through the scenario+dataset+ingestion+normalization+policy+evidence+explanation pipeline is correct for release readiness (where the GO/HOLD verdict is the system of record) but wasteful and confusing for advisory analyses. The PR review LLM **is** the analysis; there is nothing for a rule engine to compute. The deterministic boundary from [D1](#d1--decisions-are-deterministic-llms-only-narrate) still holds for agent4/agent5 because their outputs feed promotion decisions; standalone agents only emit suggestions that a human then turns into a GitHub PR action.
+
+**Consequence for reviewers.** Don't retro-fit a `BrainStage` adapter around `pr_review` just for consistency. If a future agent needs to be chained with agent4/agent5 (e.g. a pre-test risk assessor), build a proper stage with a policy engine; if it's read-by-human guidance, follow the standalone pattern.
+
+## D12 — Cross-repo execution: compute on the runner, consume on Verdict
+
+**Decision.** When a subject repo's PR triggers an LLM analysis, the LLM call happens on the GitHub Actions runner (which shallow-clones the verdict repo to import the agent module), not on the Verdict pod. Verdict consumes the result by reading the PR comment via the GitHub API.
+
+**Why.** The Verdict pod runs on CrownLabs behind a private NodePort. Exposing it publicly would require a tunnel (Cloudflare/ngrok), add auth, and create a permanent network surface. Pulling the result via GitHub API is asymmetric — Verdict can call out, but nothing needs to call in. This keeps the security posture minimal at the cost of duplicating compute (which is free on GH-hosted runners).
+
+**Consequence for reviewers.** Do not add inbound webhooks to Verdict for subject-repo events. If a new analysis is needed, prefer "compute on the runner + persist as PR comment / artifact / commit". The Verdict pod's role is to read GitHub state and present it.
