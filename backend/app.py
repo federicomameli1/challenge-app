@@ -1220,6 +1220,16 @@ except ImportError:
 if _pulls_router is not None:
     app.include_router(_pulls_router)
 
+try:
+    from .commits_bridge import router as _commits_router  # type: ignore
+except ImportError:
+    try:
+        from commits_bridge import router as _commits_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _commits_router = None
+if _commits_router is not None:
+    app.include_router(_commits_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:

@@ -3,6 +3,7 @@ import ExpertConsole from "./modules/frontend-ui/ExpertConsole.jsx";
 import HomePage from "./modules/frontend-ui/HomePage.jsx";
 import PRReviewPage from "./modules/frontend-ui/PRReviewPage.jsx";
 import PlaceholderPage from "./modules/frontend-ui/PlaceholderPage.jsx";
+import ReleasesPage from "./modules/frontend-ui/ReleasesPage.jsx";
 import Sidebar from "./modules/frontend-ui/Sidebar.jsx";
 
 const DEFAULT_SUBJECT_REPO = "federicomameli1/wayside-monitor";
@@ -91,12 +92,7 @@ export default function App() {
             <HomePage subjectRepo={subjectRepo} onNavigate={setActiveView} />
           )}
           {view === "pulls" && <PRReviewPage subjectRepo={subjectRepo} />}
-          {view === "releases" && (
-            <PlaceholderPage
-              title="Releases"
-              hint="Will list recent releases on the subject repo with their auto-drafted VDDs (Phase D)."
-            />
-          )}
+          {view === "releases" && <ReleasesPage subjectRepo={subjectRepo} />}
           {view === "health" && (
             <PlaceholderPage
               title="Cluster Health"

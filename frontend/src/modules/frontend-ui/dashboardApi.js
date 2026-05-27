@@ -404,6 +404,20 @@ export async function rejectPull(prNumber, { repo, body }) {
   });
 }
 
+// --------------------------------------------------------------------------- //
+// Commits bridge — recent builds on main with Test Evidence verdicts          //
+// --------------------------------------------------------------------------- //
+
+export async function fetchCommits(repo, { branch = "main", limit = 20 } = {}) {
+  const params = new URLSearchParams({ repo, branch, limit: String(limit) });
+  const data = await requestJson(`/commits?${params.toString()}`);
+  return {
+    repo: data?.repo || repo,
+    branch: data?.branch || branch,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,
