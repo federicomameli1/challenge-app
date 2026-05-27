@@ -62,6 +62,12 @@ from agents.pr_review import (  # noqa: E402
     PRReviewOutput,
     PRReviewRunner,
 )
+from agents.vdd_drafter import (  # noqa: E402
+    VDDDrafterError,
+    VDDDrafterRunner,
+    VDDDraftInput,
+    VDDDraftOutput,
+)
 
 AgentKind = Literal["agent4", "agent5", "agent6"]
 SourceAdapterKind = Literal["auto", "structured_dataset", "apcs_doc_bundle"]
@@ -1230,6 +1236,16 @@ except ImportError:
 if _commits_router is not None:
     app.include_router(_commits_router)
 
+try:
+    from .releases_bridge import router as _releases_router  # type: ignore
+except ImportError:
+    try:
+        from releases_bridge import router as _releases_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _releases_router = None
+if _releases_router is not None:
+    app.include_router(_releases_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
@@ -1488,4 +1504,24 @@ def run_pr_review(req: PRReviewInput) -> PRReviewOutput:
     try:
         return runner.run(req)
     except PRReviewError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/agents/vdd-drafter/run", response_model=VDDDraftOutput)
+def run_vdd_drafter(req: VDDDraftInput) -> VDDDraftOutput:
+    """Generate a full Version Description Document for a release.
+
+    Standalone agent — invoked by the wayside-monitor `deploy-prod`
+    workflow on `release: published`. Output is a markdown document
+    intended to be committed under `VDDs/VDD-<tag>.md`.
+    """
+    runner = VDDDrafterRunner.from_env()
+    if runner is None:
+        raise HTTPException(
+            status_code=503,
+            detail="VDD drafter is not configured. Set OPENROUTER_API_KEY.",
+        )
+    try:
+        return runner.run(req)
+    except VDDDrafterError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc

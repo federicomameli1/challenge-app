@@ -418,6 +418,15 @@ export async function fetchCommits(repo, { branch = "main", limit = 20 } = {}) {
   };
 }
 
+export async function fetchReleases(repo, { limit = 20 } = {}) {
+  const params = new URLSearchParams({ repo, limit: String(limit) });
+  const data = await requestJson(`/releases?${params.toString()}`);
+  return {
+    repo: data?.repo || repo,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,

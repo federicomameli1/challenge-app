@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchCommits } from "./dashboardApi.js";
+import { fetchCommits, fetchReleases } from "./dashboardApi.js";
 import StatusPill from "./StatusPill.jsx";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -103,8 +103,91 @@ function CommitCard({ commit }) {
   );
 }
 
+function ReleaseCard({ release }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasVdd = Boolean(release.vdd_url);
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-theme duration-200 dark:border-slate-700 dark:bg-slate-900">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-sm dark:bg-slate-800">
+              {release.tag}
+            </code>
+            {release.name && release.name !== release.tag ? (
+              <span className="ml-2 font-normal">{release.name}</span>
+            ) : null}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            by <span className="font-medium text-slate-700 dark:text-slate-300">{release.author || "n/a"}</span>
+            {release.published_at ? (
+              <>
+                {" · "}
+                <span title={release.published_at}>{timeAgo(release.published_at)}</span>
+              </>
+            ) : null}
+            {release.prerelease ? " · prerelease" : ""}
+          </p>
+        </div>
+        <StatusPill
+          tone={hasVdd ? "info" : "pending"}
+          label={hasVdd ? "VDD ready" : "VDD pending"}
+          emoji={hasVdd ? "✎" : "…"}
+        />
+      </header>
+
+      {release.body ? (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
+          >
+            <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+            <span>{expanded ? "Hide release notes" : "Show release notes"}</span>
+          </button>
+          {expanded ? (
+            <pre className="mt-3 max-h-[300px] overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+{release.body}
+            </pre>
+          ) : null}
+        </div>
+      ) : null}
+
+      <footer className="mt-4 flex flex-wrap items-center gap-2">
+        {release.vdd_url ? (
+          <a
+            href={release.vdd_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            ↗ Open VDD
+          </a>
+        ) : (
+          <span
+            className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+            title="VDD is auto-drafted by the deploy-prod workflow shortly after release"
+          >
+            VDD pending…
+          </span>
+        )}
+        <a
+          href={release.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          ↗ Release on GitHub
+        </a>
+      </footer>
+    </article>
+  );
+}
+
 export default function ReleasesPage({ subjectRepo }) {
   const [commits, setCommits] = useState([]);
+  const [releases, setReleases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshedAt, setRefreshedAt] = useState(null);
@@ -119,9 +202,13 @@ export default function ReleasesPage({ subjectRepo }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchCommits(subjectRepo, { branch: "main", limit: 20 });
+      const [commitsResp, releasesResp] = await Promise.all([
+        fetchCommits(subjectRepo, { branch: "main", limit: 20 }),
+        fetchReleases(subjectRepo, { limit: 10 }),
+      ]);
       if (!isMountedRef.current) return;
-      setCommits(data.items);
+      setCommits(commitsResp.items);
+      setReleases(releasesResp.items);
       setError(null);
       setRefreshedAt(new Date());
     } catch (exc) {
@@ -189,21 +276,35 @@ export default function ReleasesPage({ subjectRepo }) {
         </div>
       ) : null}
 
-      {!loading && !error && commits.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-          No commits found on main.
-        </p>
+      {releases.length > 0 ? (
+        <div className="mt-2">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Released versions ({releases.length})
+          </h3>
+          <div className="flex flex-col gap-4">
+            {releases.map((release) => (
+              <ReleaseCard key={release.tag} release={release} />
+            ))}
+          </div>
+        </div>
       ) : null}
 
-      <div className="flex flex-col gap-4">
-        {commits.map((commit) => (
-          <CommitCard key={commit.sha} commit={commit} />
-        ))}
-      </div>
+      <div className="mt-4">
+        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Recent builds on main ({commits.length})
+        </h3>
+        {!loading && !error && commits.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            No commits found on main.
+          </p>
+        ) : null}
 
-      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-        Tagged releases with VDD will appear here once Phase D is in place.
-      </p>
+        <div className="flex flex-col gap-4">
+          {commits.map((commit) => (
+            <CommitCard key={commit.sha} commit={commit} />
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
