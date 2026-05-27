@@ -98,3 +98,36 @@ This document captures the **why** behind the architecture. It complements [arch
 **Why.** The Verdict pod runs on CrownLabs behind a private NodePort. Exposing it publicly would require a tunnel (Cloudflare/ngrok), add auth, and create a permanent network surface. Pulling the result via GitHub API is asymmetric — Verdict can call out, but nothing needs to call in. This keeps the security posture minimal at the cost of duplicating compute (which is free on GH-hosted runners).
 
 **Consequence for reviewers.** Do not add inbound webhooks to Verdict for subject-repo events. If a new analysis is needed, prefer "compute on the runner + persist as PR comment / artifact / commit". The Verdict pod's role is to read GitHub state and present it.
+
+## D13 — Approvals are unified in one panel
+
+**Decision.** The Verdict UI surface for "things waiting for my approval" hosts both **pull-request LLM reviews** and **GitHub Actions environment-gate approvals** (the deployments stuck in `status: waiting` because an Environment has a required reviewer). The sidebar entry is called *Approvals*, not *PR Review*.
+
+**Why.** Treating these as two separate surfaces forced the reviewer to context-switch to GitHub Actions for every promotion. Both are "human gate, one click, decision derived from prior evidence" — semantically the same task. Verdict already had the backend wiring for both (`pulls_bridge` for PRs, the new `deployments_bridge` for environment gates) authenticated by the same `SUBJECT_REPO_TOKEN`. Putting them under one panel eliminates the GitHub trip.
+
+**Consequence for reviewers.** Future work that adds a new gate (e.g. release-candidate sign-off, manual hotfix override) belongs in this same panel. Don't create yet another sidebar entry — keep the Approvals surface as the canonical "what needs my decision now" view.
+
+## D14 — Cluster health is push-based, not polled
+
+**Decision.** The Cluster Health page is fed by ArgoCD's `notifications-controller` posting events to `POST /webhooks/argocd` inside the cluster, then streamed to the browser via SSE on `GET /health/stream`. There is **no polling loop** in the Verdict backend or frontend.
+
+**Why.**
+1. **Real-time without round-trip pressure**: every transition is visible in the UI within hundreds of milliseconds. Polling at 30s would have shown stale state during the most demo-critical moments (a release going Degraded as it rolls).
+2. **The ArgoCD notifications-controller already exists** in the standard install — only the ConfigMap had to be authored (`deploy/argocd/notifications-cm.yaml`). No new controller to deploy or maintain.
+3. **No public exposure required**: ArgoCD on mgmt → Verdict on mgmt is an in-cluster service URL (`verdict.verdict.svc.cluster.local`). The webhook never leaves the cluster.
+4. **Stateless backend**: the in-memory snapshot is rebuilt within seconds of any controller re-emit, so a Verdict restart loses at most one update cycle.
+
+**Consequence for reviewers.** Don't add a polling fallback "just in case" — it would mask broken notifications config instead of surfacing it. If ArgoCD events stop arriving, the UI's "Live (SSE connected)" indicator dropping to "Offline" is the intended signal. Logs in `argocd-notifications-controller` are the authoritative diagnosis path.
+
+## D15 — Every LLM-driven agent passes its output through a shared sanitization layer
+
+**Decision.** Every standalone agent that produces user-facing output (`agents/pr_review`, `agents/subject_pipeline`, `agents/vdd_drafter`) calls into `agents/_sanitize.py` to apply, at minimum:
+
+1. **Output size cap** (`cap_string`) per-field AND on the final rendered markdown — defense-in-depth against a runaway response.
+2. **Enum strictness** (`validate_choice`) on every decision-typed field (`verdict`, `decision`). Subject pipeline soft-falls-back to `HOLD` on corruption; pr_review raises and the workflow surfaces the error.
+3. **Identifier cross-check** (`unverified_ids` + `annotate_unverified`). Every `REQ-WMS-N` / `TC-WMS-N` reference the model cites is checked against the input context (retrieved chunks + diff for pr_review, full APCS bundle + diff for subject_pipeline). References the model invented get tagged inline as `[unverified citation]`. Idempotent.
+4. **Prompt-injection guardrail** (`SECURITY_GUARDRAIL` prefix in every system prompt) instructing the model that user-provided content (diff, docs, release notes, commit messages, email threads) is DATA, not instructions.
+
+**Why.** Without these, the LLM output is trusted by default. The risks: a fabricated REQ-WMS-N looks authoritative in a PR comment; a runaway response fills a committed file in the repo or chokes the dashboard; an embedded "ignore previous instructions" in a PR body steers the verdict; an unknown value in `verdict` corrupts the UI's state machine. All four are realistic with current free-tier models and observed in early demos.
+
+**Consequence for reviewers.** Any new agent that emits LLM-derived content for users **must** route its output through `_sanitize.py` — adding a new agent without these guards is treated as a structural violation, on the same footing as adding a non-deterministic decision path under D1. The guardrail prefix and identifier cross-check are not optional polish — they are the difference between "advisory LLM assistant" and "system that can mislead a release decision".

@@ -59,10 +59,23 @@ A single FastAPI module that:
 | POST   | `/datasets/custom-sets` | Upload a new APCS bundle |
 | DELETE | `/datasets/custom-sets/{set_id}` | Remove a user-uploaded bundle |
 | POST   | `/agents/pr-review/run` | Standalone PR-review agent (diff + docs → GO/HOLD report) |
-| GET    | `/pulls?repo=...` | List PRs on a subject repo with last Verdict comment (PR review loop) |
-| POST   | `/pulls/{n}/approve` | Submit APPROVE review + optional auto-merge |
+| POST   | `/agents/vdd-drafter/run` | Standalone VDD drafter (release metadata + diff + docs → full markdown VDD) |
+| GET    | `/pulls?repo=...` | List PRs on a subject repo with last `[Verdict] LLM Review` comment parsed |
+| POST   | `/pulls/{n}/approve` | Submit APPROVE review + optional auto-merge (handles GitHub's self-approval 422) |
 | POST   | `/pulls/{n}/reject` | Submit REQUEST_CHANGES review |
-| GET    | `/ci/...` | CI bridge endpoints (runs, artifacts, deployment approvals) |
+| GET    | `/commits?repo=...&branch=main` | List recent commits with last `[Verdict] Test Evidence` commit comment parsed |
+| GET    | `/releases?repo=...` | List GitHub releases + detect committed VDD file under `VDDs/VDD-<tag>.md` |
+| GET    | `/issues?repo=...&state=...` | List GitHub Issues on the subject repo (PRs filtered out) |
+| POST   | `/issues` | Create a new ticket on the subject repo |
+| PATCH  | `/issues/{n}` | Update ticket state (close/reopen), labels, title, body |
+| GET    | `/deployments?repo=...` | Aggregate pending GitHub Environment approvals (Actions runs in `waiting`) |
+| POST   | `/deployments/approve` | Approve pending environment review |
+| POST   | `/deployments/reject` | Reject pending environment review (body required) |
+| POST   | `/webhooks/argocd` | Receive ArgoCD `notifications-controller` events |
+| GET    | `/health/apps` | Current Cluster Health snapshot (apps + rollup counts) |
+| GET    | `/health/events/recent` | Last 64 raw ArgoCD events received (debug) |
+| GET    | `/health/stream` | Server-Sent Events stream — bootstrap snapshot then per-event updates |
+| GET    | `/ci/...` | Legacy CI bridge endpoints (runs, artifacts, deployment approvals, single-repo via `CI_BRIDGE_REPO`) |
 
 ### Agent kinds and aliases
 
@@ -126,6 +139,17 @@ Shared, dependency-free building blocks used by agents that need to ground LLM r
 - `hf_embeddings.py` — HuggingFace Inference API client targeting the **router-based endpoint** (`router.huggingface.co/hf-inference/models/.../pipeline/feature-extraction`). Configurable model via `HF_EMBEDDING_MODEL`, requires `HUGGINGFACE_TOKEN`.
 - `retrieval.py` — pure-Python cosine similarity + `top_k` ranking (no numpy).
 
+### `agents/_sanitize.py` — Shared LLM-output guardrails (D15)
+
+Every standalone agent passes its LLM output through this layer before surfacing it to users or persisting it:
+
+- `cap_string(text, max_chars, label)` — bounded output size with a visible truncation marker, applied per-field AND on the final rendered markdown.
+- `validate_choice(value, allowed, field_name)` — strict enum check; raises `SanitizationError` instead of corrupting downstream state.
+- `extract_known_ids` / `unverified_ids` / `annotate_unverified` — regex-extract every `REQ-WMS-N` / `TC-WMS-N` reference from the LLM output, cross-check against the input context (retrieved chunks + diff + doc bundle), and inline-tag any identifier the model invented as `[unverified citation]`. Idempotent.
+- `SECURITY_GUARDRAIL` — paragraph prepended to every system prompt. Tells the model that user-provided content (diff, docs, release notes, commit messages, email threads) is DATA, not instructions, and that embedded directives like *"ignore previous instructions"* must be ignored.
+
+See [D15 in design-decisions.md](design-decisions.md) for the policy.
+
 ### `agents/pr_review/` — Cross-repo PR review agent (Phase B)
 
 Standalone LLM-driven GO/HOLD analyzer for a pull-request diff against a project's documentation. Does **not** conform to the `BrainStage` interface (the input shape is fundamentally different from scenario-based agents; a brain adapter can be added later if chaining is needed).
@@ -149,6 +173,49 @@ Used from two execution sites:
 
 1. **Verdict backend** via `POST /agents/pr-review/run` (the endpoint runs the pipeline inside the Verdict pod on the mgmt cluster).
 2. **The subject repo's GitHub Actions runner** via `git clone` of the verdict repo + `python .github/scripts/run_pr_review.py` (lets the workflow do the LLM call without exposing the Verdict pod to the public internet — see *Cross-repo PR Review* section below).
+
+### `agents/vdd_drafter/` — VDD Drafting agent (Phase D)
+
+Standalone LLM-driven generator of a full Version Description Document following the Hitachi template **G-TMP S0203 rev.01** (the official `.docx` lives in `docs/hitachi-reference-docs/06. VDD/`).
+
+```
+release metadata + cumulative diff + APCS bundle + module versions
+    → build user prompt (release block, diff stat, full diff, docs, module table, section guide)
+    → OpenRouter (markdown output, max_tokens=2000)
+    → _strip_code_fences + cap_string to 80 KB
+    → _audit_sections checks the seven canonical headings appear
+    → markdown ready to commit to VDDs/VDD-<tag>.md
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `models.py` | Pydantic input/output (`VDDDraftInput`, `VDDDraftOutput`, `ModuleVersion`) |
+| `prompts.py` | System prompt anchored to G-TMP S0203 rev.01 + sub-section hints |
+| `runner.py` | `VDDDrafterRunner` orchestrating the pipeline; `from_env()` factory |
+
+Canonical sections (from the Hitachi template):
+
+1. Introduction (Purpose / Applicability / Terms / Reference Documents / Description of Changes from Previous Revision)
+2. Version Description (Inventory of materials / Inventory of SCI contents)
+3. Documentation Related to the Baseline
+4. Sw Version Build
+5. Changes Incorporated (Accepted / Not accepted)
+6. Sw Version Limitation
+7. Installation Instructions
+
+Invoked from two sites mirroring `pr_review`:
+- **Verdict backend** via `POST /agents/vdd-drafter/run` (manual re-runs from UI/expert mode).
+- **wayside-monitor GH Actions runner** via `.github/scripts/run_vdd_drafter.py` in `deploy-prod.yml::generate-vdd`. Triggered when a release is published. Output is committed to `wayside-monitor/VDDs/VDD-<tag>.md` on `main`. Verdict UI Releases page detects the file via the GitHub Contents API and exposes an "Open VDD" link.
+
+### `agents/subject_pipeline.py` — Test Evidence agent (Phase C)
+
+The legacy `SubjectRepoPipeline` was wired into the Phase C flow as the Test Evidence agent. It is **not** a standalone module like `pr_review` and `vdd_drafter` — it lives at the top level of `agents/` for historical reasons (it predates the standalone pattern) — but it follows the same execution model:
+
+- **Hard pre-checks** (deterministic): any failing test → HOLD; missing APCS bundle → HOLD. No LLM call when these fire — saves tokens and avoids hallucinated GO when the evidence is already against the change.
+- **LLM synthesis** (when pre-checks pass): one OpenRouter call with the parsed pytest JSON + APCS bundle + commit info. System prompt anchored to Hitachi GBMS (REQ-WMS-007 model-revalidation pattern is an explicit HOLD rule).
+- **Sanitization**: passes through `_sanitize.py` — decision strict to {GO, HOLD} with safe HOLD fallback on corruption, identifier cross-check vs APCS bundle + diff stat, per-field caps.
+
+Invoked from the wayside-monitor GH Actions runner via `.github/scripts/run_test_evidence.py` in `deploy-test.yml::test-evidence`. The verdict is posted as a **commit comment** (not a PR comment) on the merged SHA via `gh api commits/{sha}/comments`. Verdict UI Releases page reads those comments via the GitHub API for the *Recent builds on main* section.
 
 ### `agents/brain/` — Orchestrator
 
@@ -271,29 +338,98 @@ Key design properties:
 - **No persistent storage in Verdict.** The PR history is GitHub; Verdict reads it on demand. Adding caching/persistence is straightforward later (Phase F-style).
 - **GO/HOLD is advisory.** The verdict drives the human reviewer's decision but does not enforce branch protection. The "Approve" button in the UI submits a GitHub PR review APPROVE and (by default) calls the merge API.
 
-Required GitHub repo secrets on `wayside-monitor` for the workflow:
+Required GitHub repo secrets on `wayside-monitor` for the workflows:
 
-| Secret | Purpose |
+| Secret / Variable | Purpose |
 |---|---|
-| `OPENROUTER_API_KEY` | LLM completion on the runner |
-| `HUGGINGFACE_TOKEN`  | Embedding calls on the runner (Inference Providers scope) |
-| `GITHUB_TOKEN` (auto) | `pull-requests: write` for the bot comment |
+| Secret `OPENROUTER_API_KEY` | LLM completion on the runner (pr_review, test_evidence, vdd_drafter) |
+| Secret `HUGGINGFACE_TOKEN`  | Embedding calls on the runner (Inference Providers scope, only pr_review uses RAG) |
+| Secret `GITOPS_TOKEN` | PAT scoped to `wayside-monitor-gitops` for the deploy workflows + scoped to `wayside-monitor` for the VDD commit |
+| Variable `OPENROUTER_MODEL` | Optional model override (default `z-ai/glm-4.5-air:free`); upgrade to `meta-llama/llama-3.3-70b-instruct:free` or similar for stricter output |
+| Secret `GITHUB_TOKEN` (auto) | `pull-requests: write`, `contents: write` for bot comments / VDD commit |
 
-Required Verdict pod env (mounted from the `challenge-app-secrets` K8s secret):
+Required Verdict pod env (mounted from the `challenge-app-secrets` K8s secret — name pre-dates the rename, see [feedback-chart-legacy-names](#) in memory):
 
 | Env var | Purpose |
 |---|---|
-| `OPENROUTER_API_KEY` | Same; for in-pod use of the agent endpoint (e.g. manual re-run from UI) |
-| `HUGGINGFACE_TOKEN`  | Same |
-| `SUBJECT_REPO_TOKEN` | Auth for `/pulls` GitHub calls; needs `Actions: R/W`, `Pull requests: R/W`, `Contents: Write` on the subject repo |
-| `CI_BRIDGE_REPO`, `CI_BRIDGE_TOKEN` | Default subject for the CI bridge endpoints |
+| `OPENROUTER_API_KEY` | LLM client (manual re-runs from `/agents/...` endpoints) |
+| `OPENROUTER_MODEL` | optional model override |
+| `HUGGINGFACE_TOKEN` | embeddings (manual pr_review re-runs); `optional: true` on the secret ref so the pod still starts without it |
+| `SUBJECT_REPO_TOKEN` | auth for `/pulls`, `/issues`, `/commits`, `/releases`, `/deployments`; needs `Actions: R/W`, `Pull requests: R/W`, `Contents: Write`, `Issues: R/W` on the subject repo |
+| `CI_BRIDGE_REPO`, `CI_BRIDGE_TOKEN` | default subject for the legacy `/ci/...` bridge endpoints |
+| `VERDICT_ALLOW_SELF_MERGE` | optional; `"true"` (default) silently skips GitHub's self-approval 422 and proceeds with the merge — flip to `"false"` for production |
+
+## Unified Approvals panel (D13)
+
+A single Verdict UI surface (`/pulls` route) hosts both human-gated decisions on the subject repo:
+
+```
+        ┌──────────────────────────────────────────────────────────┐
+        │  /api/pulls?repo=…    /api/deployments?repo=…            │
+        │       │                       │                          │
+        │       ▼                       ▼                          │
+        │  pulls_bridge.py        deployments_bridge.py             │
+        │       │                       │                          │
+        │       ▼                       ▼                          │
+        │  github /pulls           github /actions/runs?status=     │
+        │  + /issues/{n}/comments   waiting + /pending_deployments  │
+        │       (latest                                             │
+        │        [Verdict] LLM Review)                              │
+        └──────────────────────────────────────────────────────────┘
+```
+
+Approve / Reject are routed through the same `SUBJECT_REPO_TOKEN`:
+
+- PR `Approve & merge` → review APPROVE + merge API call (squash). The `VERDICT_ALLOW_SELF_MERGE` env var (default `true` for demo) decides whether GitHub's self-approval 422 is silently skipped to proceed with the merge or surfaced as an error.
+- PR `Request changes` → review REQUEST_CHANGES with required body.
+- Deployment `Approve deployment` → POST to `/actions/runs/{id}/pending_deployments` with `state=approved`.
+- Deployment `Reject` → same endpoint with `state=rejected` and required body.
+
+The same panel is exposed at `/api/pulls` and `/api/deployments` for programmatic clients (e.g. potential Slack/CLI integrations).
+
+## Tickets (Phase F)
+
+`backend/issues_bridge.py` mounted at `/issues`. List / create / patch GitHub Issues on the subject repo. The list endpoint filters out PRs because GitHub's `/issues` endpoint mixes them in. Requires `SUBJECT_REPO_TOKEN` extended with `Issues: Read and write`.
+
+`frontend/src/modules/frontend-ui/TicketsPage.jsx` renders the list as cards with luminance-aware label chips (so dark-blue labels get white text, light-yellow labels get black text), a "+ New ticket" modal, and per-card "Close ticket". Auto-refresh every 60s.
+
+## Cluster Health (Phase E — D14)
+
+Push-based dashboard for ArgoCD app state across mgmt / test / prod. **No polling.**
+
+```
+ArgoCD apps (on mgmt, test, prod managed by Argo CD on mgmt)
+        │   sync or health status changes
+        ▼
+argocd-notifications-controller (in ns argocd, already installed)
+        │   POST http://verdict.verdict.svc.cluster.local/api/webhooks/argocd
+        ▼
+backend/health_bridge.py
+   ├─ in-memory snapshot (Dict[app_name → AppHealthSnapshot])
+   ├─ rollup counters (apps_healthy, apps_degraded, apps_out_of_sync)
+   └─ async fan-out to every SSE subscriber
+        │   text/event-stream on /api/health/stream
+        ▼
+HealthPage.jsx (EventSource)
+   ├─ initial bootstrap snapshot event
+   ├─ per-event app_update messages
+   └─ grouped grid (one section per cluster)
+HomePage Cluster Health widget
+   └─ fetches snapshot once on mount; turns rose on any Degraded/OutOfSync
+```
+
+The webhook contract is defined by `deploy/argocd/notifications-cm.yaml` — a single template covering health, sync, and operation triggers with a default subscription that wires every existing AND future Argo CD Application without per-app annotations.
+
+The nginx config has a dedicated `location /api/health/stream` block with `proxy_buffering off` and 24h read/send timeouts so SSE actually streams through the proxy.
 
 ## Deployment (`deploy/`)
 
 - `deploy/docker/Dockerfile` builds the frontend into static assets and runs nginx + uvicorn together inside one image.
 - `deploy/docker/run_combined.py` is the container entrypoint.
-- `deploy/helm/` packages the Helm chart, auto-published to `oci://ghcr.io/<owner>/charts/verdict` by the `helm-publish` job whenever files under `deploy/helm/` change.
-- The container image references the secret `challenge-app-secrets` for `OPENROUTER_API_KEY`, `CI_BRIDGE_TOKEN`, `SUBJECT_REPO_TOKEN`, and (optional) `HUGGINGFACE_TOKEN`. The `huggingface_token` key is marked `optional: true` in the chart so the pod still starts when it is missing (the PR review endpoint then returns 503 until the key is added).
+- `deploy/docker/nginx/default.conf` proxies `/api/` → uvicorn on 8001 and serves the SPA fallback. Has a dedicated `location /api/health/stream` block with `proxy_buffering off` + 24h timeouts so SSE actually streams (D14).
+- `deploy/helm/` packages the Helm chart (currently `0.1.8`), auto-published to `oci://ghcr.io/<owner>/charts/verdict` by the `helm-publish` job whenever files under `deploy/helm/` change.
+- The container image references the secret `challenge-app-secrets` for `OPENROUTER_API_KEY`, `CI_BRIDGE_TOKEN`, `SUBJECT_REPO_TOKEN`, and (optional) `HUGGINGFACE_TOKEN`. The `huggingface_token` key is `optional: true` so the pod still starts when missing.
+- `deploy/argocd/notifications-cm.yaml` — ConfigMap applied **on the mgmt cluster** (`kubectl apply -f deploy/argocd/notifications-cm.yaml`) to wire ArgoCD's notifications-controller to Verdict's webhook. Defines one webhook service, one template, and three trigger groups (health / sync / operation) with a default subscription for every Application — no per-app annotation needed.
 
 ## Testing (`tests/`)
 
