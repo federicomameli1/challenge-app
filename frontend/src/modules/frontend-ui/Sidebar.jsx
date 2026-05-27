@@ -1,6 +1,6 @@
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: "◇" },
-  { id: "pulls", label: "PR Review", icon: "↪" },
+  { id: "pulls", label: "Approvals", icon: "↪" },
   { id: "releases", label: "Releases", icon: "▲" },
   { id: "health", label: "Health", icon: "♥" },
   { id: "tickets", label: "Tickets", icon: "◉" },

@@ -456,6 +456,45 @@ export async function updateIssue(number, { repo, state, state_reason, labels, t
   });
 }
 
+// --------------------------------------------------------------------------- //
+// Deployments bridge — GitHub Actions environment-gate approvals             //
+// --------------------------------------------------------------------------- //
+
+export async function fetchPendingDeployments(repo, { limit = 30 } = {}) {
+  const params = new URLSearchParams({ repo, limit: String(limit) });
+  const data = await requestJson(`/deployments?${params.toString()}`);
+  return {
+    repo: data?.repo || repo,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+export async function approveDeployment({ repo, runId, environmentIds, comment } = {}) {
+  return requestJson("/deployments/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repo,
+      run_id: runId,
+      environment_ids: environmentIds,
+      comment,
+    }),
+  });
+}
+
+export async function rejectDeployment({ repo, runId, environmentIds, comment } = {}) {
+  return requestJson("/deployments/reject", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repo,
+      run_id: runId,
+      environment_ids: environmentIds,
+      comment,
+    }),
+  });
+}
+
 export async function approveCiDeployment({
   runId,
   environmentIds,

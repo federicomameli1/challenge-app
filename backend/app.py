@@ -1256,6 +1256,16 @@ except ImportError:
 if _issues_router is not None:
     app.include_router(_issues_router)
 
+try:
+    from .deployments_bridge import router as _deployments_router  # type: ignore
+except ImportError:
+    try:
+        from deployments_bridge import router as _deployments_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _deployments_router = None
+if _deployments_router is not None:
+    app.include_router(_deployments_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:

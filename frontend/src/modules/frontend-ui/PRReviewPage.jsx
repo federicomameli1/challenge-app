@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  approveDeployment,
   approvePull,
+  fetchPendingDeployments,
   fetchPulls,
+  rejectDeployment,
   rejectPull,
 } from "./dashboardApi.js";
 import StatusPill from "./StatusPill.jsx";
@@ -127,6 +130,136 @@ function RejectDialog({ pr, busy, onConfirm, onCancel }) {
   );
 }
 
+function DeploymentRejectDialog({ target, busy, onCancel, onConfirm }) {
+  const [body, setBody] = useState("");
+  useEffect(() => {
+    setBody("");
+  }, [target?.run_id, target?.environment_id]);
+  if (!target) return null;
+  const canSubmit = body.trim().length >= 3;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4"
+    >
+      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          Reject deployment to <code className="rounded bg-slate-100 px-1 py-0.5 text-sm dark:bg-slate-800">{target.environment_name}</code>?
+        </h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Rejecting the gate marks the workflow as failed for this
+          environment. A reason is required.
+        </p>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={5}
+          placeholder="Why is this deployment being rejected…"
+          className="mt-3 w-full resize-vertical rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+        />
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(body.trim())}
+            disabled={!canSubmit || busy}
+            className="rounded-lg border border-rose-600 bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+          >
+            {busy ? "Rejecting…" : "Reject deployment"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeploymentCard({ deployment, onApprove, onReject }) {
+  const canApprove = deployment.current_user_can_approve;
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-theme duration-200 dark:border-slate-700 dark:bg-slate-900">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-sm dark:bg-slate-800">
+              {deployment.environment_name || "(unnamed env)"}
+            </code>
+            <span className="ml-2 font-normal">
+              {deployment.workflow_name || "workflow"} · run #{deployment.run_number}
+            </span>
+          </h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            event{" "}
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {deployment.event || "n/a"}
+            </span>
+            {" · "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] dark:bg-slate-800">
+              {deployment.head_branch || "n/a"}
+            </code>
+            {" @ "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] dark:bg-slate-800">
+              {(deployment.head_sha || "").slice(0, 8) || "n/a"}
+            </code>
+            {" · "}
+            <span title={deployment.updated_at}>{timeAgo(deployment.updated_at)}</span>
+          </p>
+          {deployment.head_commit_message ? (
+            <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+              {deployment.head_commit_message}
+            </p>
+          ) : null}
+        </div>
+        <StatusPill tone="pending" label="Awaiting" emoji="…" />
+      </header>
+
+      <footer className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onApprove(deployment)}
+          disabled={!canApprove}
+          title={
+            canApprove
+              ? "Approve the environment gate and let the workflow proceed"
+              : "Your PAT cannot approve this environment (check the GitHub Environment's required reviewers)"
+          }
+          className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:hover:bg-emerald-300 dark:disabled:border-emerald-900/60 dark:disabled:bg-emerald-900/60 dark:disabled:text-emerald-200/60"
+        >
+          Approve deployment
+        </button>
+        <button
+          type="button"
+          onClick={() => onReject(deployment)}
+          disabled={!canApprove}
+          className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-700/60 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/30"
+        >
+          Reject
+        </button>
+        <a
+          href={deployment.run_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          ↗ Open run on GitHub
+        </a>
+        {!canApprove ? (
+          <span className="ml-auto text-xs italic text-slate-500 dark:text-slate-400">
+            You are not a required reviewer for this environment.
+          </span>
+        ) : null}
+      </footer>
+    </article>
+  );
+}
+
 function PRCard({ pr, onApprove, onReject }) {
   const [expanded, setExpanded] = useState(false);
   const review = pr.last_review;
@@ -217,12 +350,14 @@ function PRCard({ pr, onApprove, onReject }) {
 
 export default function PRReviewPage({ subjectRepo }) {
   const [pulls, setPulls] = useState([]);
+  const [deployments, setDeployments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshedAt, setRefreshedAt] = useState(null);
 
   const [approveTarget, setApproveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [deployRejectTarget, setDeployRejectTarget] = useState(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
 
@@ -236,9 +371,13 @@ export default function PRReviewPage({ subjectRepo }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchPulls(subjectRepo, "open");
+      const [pullsResp, deploymentsResp] = await Promise.all([
+        fetchPulls(subjectRepo, "open"),
+        fetchPendingDeployments(subjectRepo),
+      ]);
       if (!isMountedRef.current) return;
-      setPulls(data.items);
+      setPulls(pullsResp.items);
+      setDeployments(deploymentsResp.items);
       setError(null);
       setRefreshedAt(new Date());
     } catch (exc) {
@@ -318,6 +457,58 @@ export default function PRReviewPage({ subjectRepo }) {
     [rejectTarget, load, subjectRepo]
   );
 
+  const handleApproveDeployment = useCallback(
+    async (deployment) => {
+      setActionBusy(true);
+      setActionMessage(null);
+      try {
+        await approveDeployment({
+          repo: subjectRepo,
+          runId: deployment.run_id,
+          environmentIds: [deployment.environment_id],
+          comment: "Approved via Verdict.",
+        });
+        setActionMessage({
+          kind: "success",
+          text: `Deployment to ${deployment.environment_name} approved (run #${deployment.run_number}).`,
+        });
+        await load();
+      } catch (exc) {
+        setActionMessage({ kind: "error", text: exc?.message || String(exc) });
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [subjectRepo, load]
+  );
+
+  const handleRejectDeployment = useCallback(
+    async (body) => {
+      if (!deployRejectTarget) return;
+      setActionBusy(true);
+      setActionMessage(null);
+      try {
+        await rejectDeployment({
+          repo: subjectRepo,
+          runId: deployRejectTarget.run_id,
+          environmentIds: [deployRejectTarget.environment_id],
+          comment: body,
+        });
+        setActionMessage({
+          kind: "success",
+          text: `Deployment to ${deployRejectTarget.environment_name} rejected (run #${deployRejectTarget.run_number}).`,
+        });
+        setDeployRejectTarget(null);
+        await load();
+      } catch (exc) {
+        setActionMessage({ kind: "error", text: exc?.message || String(exc) });
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [deployRejectTarget, subjectRepo, load]
+  );
+
   const counts = useMemo(() => {
     const go = pulls.filter((p) => p.last_review?.verdict === "GO").length;
     const hold = pulls.filter((p) => p.last_review?.verdict === "HOLD").length;
@@ -330,15 +521,13 @@ export default function PRReviewPage({ subjectRepo }) {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            PR Review
+            Approvals
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {subjectRepo} · {counts.total} open
-            {counts.total > 0 ? (
-              <span>
-                {" "}· {counts.go} GO · {counts.hold} HOLD · {counts.pending} pending
-              </span>
-            ) : null}
+            {subjectRepo} · {deployments.length} deployment{deployments.length === 1 ? "" : "s"} pending
+            {" · "}
+            {counts.total} PR{counts.total === 1 ? "" : "s"}
+            {counts.total > 0 ? ` (${counts.go} GO · ${counts.hold} HOLD · ${counts.pending} pending)` : null}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -386,21 +575,43 @@ export default function PRReviewPage({ subjectRepo }) {
         </div>
       ) : null}
 
-      {!loading && !error && pulls.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-          No open pull requests on {subjectRepo}.
-        </p>
+      {deployments.length > 0 ? (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Pending deployments ({deployments.length})
+          </h3>
+          <div className="flex flex-col gap-4">
+            {deployments.map((d) => (
+              <DeploymentCard
+                key={`${d.run_id}-${d.environment_id}`}
+                deployment={d}
+                onApprove={handleApproveDeployment}
+                onReject={setDeployRejectTarget}
+              />
+            ))}
+          </div>
+        </div>
       ) : null}
 
-      <div className="flex flex-col gap-4">
-        {pulls.map((pr) => (
-          <PRCard
-            key={pr.number}
-            pr={pr}
-            onApprove={setApproveTarget}
-            onReject={setRejectTarget}
-          />
-        ))}
+      <div>
+        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Pull requests ({pulls.length})
+        </h3>
+        {!loading && !error && pulls.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            No open pull requests on {subjectRepo}.
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-4">
+          {pulls.map((pr) => (
+            <PRCard
+              key={pr.number}
+              pr={pr}
+              onApprove={setApproveTarget}
+              onReject={setRejectTarget}
+            />
+          ))}
+        </div>
       </div>
 
       <ConfirmApproveDialog
@@ -414,6 +625,12 @@ export default function PRReviewPage({ subjectRepo }) {
         busy={actionBusy}
         onConfirm={handleReject}
         onCancel={() => setRejectTarget(null)}
+      />
+      <DeploymentRejectDialog
+        target={deployRejectTarget}
+        busy={actionBusy}
+        onConfirm={handleRejectDeployment}
+        onCancel={() => setDeployRejectTarget(null)}
       />
     </section>
   );

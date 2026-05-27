@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchIssues, fetchPulls } from "./dashboardApi.js";
+import { fetchIssues, fetchPendingDeployments, fetchPulls } from "./dashboardApi.js";
 
 function Widget({ title, body, footer, action }) {
   return (
@@ -28,7 +28,8 @@ function Widget({ title, body, footer, action }) {
 
 export default function HomePage({ subjectRepo, onNavigate }) {
   const [pullsCount, setPullsCount] = useState(null);
-  const [pullsError, setPullsError] = useState(null);
+  const [deploymentsCount, setDeploymentsCount] = useState(null);
+  const [approvalsError, setApprovalsError] = useState(null);
   const [issuesCount, setIssuesCount] = useState(null);
   const [issuesError, setIssuesError] = useState(null);
 
@@ -36,10 +37,15 @@ export default function HomePage({ subjectRepo, onNavigate }) {
     let alive = true;
     (async () => {
       try {
-        const data = await fetchPulls(subjectRepo, "open");
-        if (alive) setPullsCount(data.items.length);
+        const [pullsResp, deploymentsResp] = await Promise.all([
+          fetchPulls(subjectRepo, "open"),
+          fetchPendingDeployments(subjectRepo),
+        ]);
+        if (!alive) return;
+        setPullsCount(pullsResp.items.length);
+        setDeploymentsCount(deploymentsResp.items.length);
       } catch (exc) {
-        if (alive) setPullsError(exc?.message || String(exc));
+        if (alive) setApprovalsError(exc?.message || String(exc));
       }
     })();
     (async () => {
@@ -55,6 +61,10 @@ export default function HomePage({ subjectRepo, onNavigate }) {
     };
   }, [subjectRepo]);
 
+  const approvalsTotal =
+    (pullsCount === null ? 0 : pullsCount) +
+    (deploymentsCount === null ? 0 : deploymentsCount);
+
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-6">
       <header>
@@ -68,24 +78,31 @@ export default function HomePage({ subjectRepo, onNavigate }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Widget
-          title="PR Review"
+          title="Approvals"
           body={
-            pullsError ? (
-              <span className="text-rose-600 dark:text-rose-300">{pullsError}</span>
-            ) : pullsCount === null ? (
+            approvalsError ? (
+              <span className="text-rose-600 dark:text-rose-300">{approvalsError}</span>
+            ) : pullsCount === null || deploymentsCount === null ? (
               <span className="text-slate-500 dark:text-slate-400">Loading…</span>
-            ) : pullsCount === 0 ? (
-              <span>No PRs open right now.</span>
+            ) : approvalsTotal === 0 ? (
+              <span>Nothing waiting for you right now.</span>
             ) : (
               <span>
                 <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                  {pullsCount}
+                  {approvalsTotal}
                 </span>{" "}
-                pull request{pullsCount === 1 ? "" : "s"} to review.
+                awaiting review
+                {pullsCount > 0 || deploymentsCount > 0 ? (
+                  <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
+                    ({pullsCount} PR{pullsCount === 1 ? "" : "s"} ·{" "}
+                    {deploymentsCount} deployment
+                    {deploymentsCount === 1 ? "" : "s"})
+                  </span>
+                ) : null}
               </span>
             )
           }
-          footer="Updated on open"
+          footer="PRs + GitHub Actions environment gates"
           action={{ label: "Review now →", onClick: () => onNavigate("pulls") }}
         />
 
