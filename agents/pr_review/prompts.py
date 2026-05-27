@@ -9,10 +9,11 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+from agents._sanitize import SECURITY_GUARDRAIL
 from agents.rag import Chunk
 
 
-SYSTEM_PROMPT = """You are Verdict, an AI release readiness analyst for a
+SYSTEM_PROMPT = SECURITY_GUARDRAIL + "\n\n" + """You are Verdict, an AI release readiness analyst for a
 railway safety software project that follows the Hitachi Rail GBMS
 documentation framework. The project lifecycle is governed by the
 following authoritative artifacts (you do not have full access to

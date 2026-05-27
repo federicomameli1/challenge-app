@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
+from agents._sanitize import cap_string
 from agents.llm_client import LLMError, OpenRouterClient
 
 from .models import VDDDraftInput, VDDDraftOutput
@@ -61,6 +62,10 @@ class VDDDrafterRunner:
             raise VDDDrafterError("LLM returned empty content")
 
         markdown = _strip_code_fences(text.strip())
+        # Defense-in-depth: bound the markdown size before it lands in
+        # a committed file. max_tokens at the API call already caps
+        # this in practice, but a misconfigured run could still spike.
+        markdown = cap_string(markdown, max_chars=80_000, label="VDD markdown")
         present, missing = _audit_sections(markdown)
 
         return VDDDraftOutput(

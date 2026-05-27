@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+from agents._sanitize import SECURITY_GUARDRAIL
+
 
 CANONICAL_SECTIONS: Sequence[str] = (
     "Introduction",
@@ -69,7 +71,7 @@ SUB_SECTION_HINTS: Sequence[tuple] = (
 )
 
 
-SYSTEM_PROMPT = """You are Verdict, an AI assistant specialized in drafting
+SYSTEM_PROMPT = SECURITY_GUARDRAIL + "\n\n" + """You are Verdict, an AI assistant specialized in drafting
 Version Description Documents (VDDs) for railway safety software releases.
 
 The VDD you produce MUST follow the structure of the official Hitachi

@@ -14,6 +14,13 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
+from agents._sanitize import (
+    SanitizationError,
+    annotate_unverified,
+    cap_string,
+    unverified_ids,
+    validate_choice,
+)
 from agents.llm_client import LLMError, OpenRouterClient
 from agents.rag import (
     Chunk,
@@ -97,8 +104,16 @@ class PRReviewRunner:
         except LLMError as exc:
             raise PRReviewError(f"LLM call failed: {exc}") from exc
 
-        verdict, summary, highlights = _coerce_llm_payload(llm_payload)
+        verification_context = (
+            "\n\n".join(c.text for c, _ in retrieved)
+            + "\n\n"
+            + input.diff_unified
+        )
+        verdict, summary, highlights = _coerce_llm_payload(
+            llm_payload, verification_context=verification_context
+        )
         report_md = _render_markdown_report(input.pr_meta, verdict, summary, highlights, retrieved)
+        report_md = cap_string(report_md, label="PR review markdown")
 
         return PRReviewOutput(
             verdict=verdict,
@@ -129,34 +144,66 @@ class PRReviewRunner:
         return top_k(query_vector, chunks, chunk_vectors, k=k)
 
 
-def _coerce_llm_payload(payload: dict) -> tuple:
-    """Validate and coerce the LLM JSON payload to (Verdict, summary, [Highlight])."""
-    verdict_raw = str(payload.get("verdict", "")).strip().upper()
-    if verdict_raw not in {"GO", "HOLD"}:
-        raise PRReviewError(f"LLM returned invalid verdict: {verdict_raw!r}")
+def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
+    """Validate and coerce the LLM JSON payload to (Verdict, summary, [Highlight]).
+
+    Also flags REQ-WMS-*/TC-WMS-* identifiers that the model cited but
+    which do not appear in `verification_context` (the retrieved doc
+    chunks + diff). Unverified IDs get an inline `[unverified citation]`
+    marker so the reviewer is never misled by a fabricated reference."""
+    try:
+        verdict_raw = validate_choice(payload.get("verdict"), ["GO", "HOLD"], "verdict")
+    except SanitizationError as exc:
+        raise PRReviewError(str(exc)) from exc
     verdict = Verdict(verdict_raw)
 
-    summary = str(payload.get("summary", "")).strip()
-    if not summary:
-        summary = "(no summary provided)"
+    summary = cap_string(
+        str(payload.get("summary", "")).strip() or "(no summary provided)",
+        max_chars=2_000,
+        label="summary",
+    )
 
     highlights_raw = payload.get("highlights") or []
     if not isinstance(highlights_raw, list):
         raise PRReviewError("LLM 'highlights' is not a list")
 
+    # Cross-check every identifier the model cited against the input
+    # context. Any ID not found there is fabricated; tag it so the user
+    # cannot mistake it for a real reference.
+    cited_blob = summary + " " + " ".join(
+        " ".join(
+            str((h or {}).get(field) or "")
+            for field in ("title", "description", "file_ref", "doc_ref")
+        )
+        for h in highlights_raw
+        if isinstance(h, dict)
+    )
+    unverified = unverified_ids(cited_blob, verification_context)
+    summary = annotate_unverified(summary, unverified)
+
     highlights: List[Highlight] = []
-    for item in highlights_raw:
+    for item in highlights_raw[:50]:  # hard cap: 50 highlights is more than plenty
         if not isinstance(item, dict):
             continue
         try:
             severity = Severity(str(item.get("severity", "info")).strip().lower())
         except ValueError:
             severity = Severity.INFO
+        title = cap_string(
+            str(item.get("title", "")).strip() or "(untitled)",
+            max_chars=300,
+            label="highlight title",
+        )
+        description = cap_string(
+            annotate_unverified(str(item.get("description", "")).strip(), unverified),
+            max_chars=2_000,
+            label="highlight description",
+        )
         highlights.append(
             Highlight(
                 severity=severity,
-                title=str(item.get("title", "")).strip() or "(untitled)",
-                description=str(item.get("description", "")).strip(),
+                title=title,
+                description=description,
                 file_ref=_nullable_str(item.get("file_ref")),
                 doc_ref=_nullable_str(item.get("doc_ref")),
             )

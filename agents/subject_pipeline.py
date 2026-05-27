@@ -27,6 +27,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
+from ._sanitize import (
+    SECURITY_GUARDRAIL,
+    SanitizationError,
+    annotate_unverified,
+    cap_string,
+    unverified_ids,
+    validate_choice,
+)
 from .llm_client import LLMError, OpenRouterClient
 from .test_report_parser import format_test_summary_for_prompt
 
@@ -35,7 +43,7 @@ logger = logging.getLogger(__name__)
 _MAX_DOC_CHARS = 4_000   # per APCS doc — tighter budget to leave room for test/diff context
 _MAX_DIFF_CHARS = 2_000  # diff stat / changed files block
 
-_SYSTEM_PROMPT = """\
+_SYSTEM_PROMPT = SECURITY_GUARDRAIL + "\n\n" + """\
 You are a Test Evidence analyst for a Hitachi Rail railway safety \
 project. The reference subsystem is the Wayside Monitoring System \
 (WMS). The project follows the Hitachi Rail GBMS documentation \
@@ -141,7 +149,10 @@ class SubjectRepoPipeline:
         ]
         try:
             raw = self.client.complete_json(messages, max_tokens=900)
-            return _normalize(raw)
+            verification_context = "\n\n".join(bundle.values()) + "\n\n" + str(
+                commit_info.get("diff_stat") or ""
+            )
+            return _normalize(raw, verification_context=verification_context)
         except Exception as exc:
             logger.warning("LLM synthesis failed (%s) — falling back to deterministic result", exc)
             return _no_llm_result(test_summary)
@@ -309,9 +320,24 @@ def _error_result(message: str) -> Dict[str, Any]:
     }
 
 
-def _normalize(raw: Dict[str, Any]) -> Dict[str, Any]:
-    decision = str(raw.get("decision", "HOLD")).upper()
-    if decision not in ("GO", "HOLD"):
+def _normalize(raw: Dict[str, Any], verification_context: str = "") -> Dict[str, Any]:
+    """Validate and sanitize the LLM JSON.
+
+    - Decision must be in {GO, HOLD}; unknown values fall back to HOLD
+      (safer than letting them through).
+    - Confidence clipped to [0, 1] or set None.
+    - Findings list bounded (the model occasionally floods).
+    - REQ-WMS-* / TC-WMS-* identifiers cited by the model are
+      cross-checked against `verification_context` (APCS bundle +
+      commit diff stat). Unverified IDs get an inline tag so the
+      reviewer cannot mistake them for grounded references.
+    - Per-field length caps prevent runaway text.
+    """
+    try:
+        decision = validate_choice(raw.get("decision"), ["GO", "HOLD"], "decision")
+    except SanitizationError:
+        # Soft fallback: the surrounding CI pipeline must always have a
+        # decision; HOLD is the safe default when output is corrupt.
         decision = "HOLD"
 
     confidence = raw.get("confidence")
@@ -320,16 +346,56 @@ def _normalize(raw: Dict[str, Any]) -> Dict[str, Any]:
     except (TypeError, ValueError):
         confidence = None
 
-    findings = raw.get("findings", [])
-    if not isinstance(findings, list):
-        findings = []
+    findings_raw = raw.get("findings", [])
+    if not isinstance(findings_raw, list):
+        findings_raw = []
+
+    # Identifier verification — scan everything the model claimed.
+    cited_blob = " ".join(
+        str(raw.get(field) or "") for field in ("summary", "human_action")
+    ) + " " + " ".join(
+        " ".join(
+            str((f or {}).get(field) or "")
+            for field in ("rule", "detail", "status")
+        )
+        for f in findings_raw
+        if isinstance(f, dict)
+    )
+    unverified = unverified_ids(cited_blob, verification_context)
+
+    findings = []
+    for f in findings_raw[:50]:
+        if not isinstance(f, dict):
+            continue
+        findings.append(
+            {
+                "rule": cap_string(str(f.get("rule") or "Finding"), max_chars=200, label="rule"),
+                "status": cap_string(str(f.get("status") or "INFO"), max_chars=20, label="status"),
+                "detail": cap_string(
+                    annotate_unverified(str(f.get("detail") or ""), unverified),
+                    max_chars=2_000,
+                    label="finding detail",
+                ),
+            }
+        )
+
+    summary = cap_string(
+        annotate_unverified(str(raw.get("summary") or "No summary."), unverified),
+        max_chars=2_000,
+        label="summary",
+    )
+    human_action = cap_string(
+        str(raw.get("human_action") or "Review the analysis and approve manually."),
+        max_chars=1_000,
+        label="human_action",
+    )
 
     return {
         "decision": decision,
         "decision_type": "llm_synthesis",
         "confidence": confidence,
-        "summary": str(raw.get("summary", "No summary.")),
-        "human_action": str(raw.get("human_action", "Review the analysis and approve manually.")),
+        "summary": summary,
+        "human_action": human_action,
         "findings": findings,
         "reasons": [
             {
