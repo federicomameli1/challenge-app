@@ -1276,6 +1276,16 @@ except ImportError:
 if _health_router is not None:
     app.include_router(_health_router)
 
+try:
+    from .brain_wayside import router as _brain_wayside_router  # type: ignore
+except ImportError:
+    try:
+        from brain_wayside import router as _brain_wayside_router  # type: ignore
+    except Exception:  # pragma: no cover - defensive
+        _brain_wayside_router = None
+if _brain_wayside_router is not None:
+    app.include_router(_brain_wayside_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
