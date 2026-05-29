@@ -551,7 +551,7 @@ jobs:
       - name: Log in to GHCR for Helm
         if: steps.chart_changes.outputs.changed == 'true'
         run: |
-          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.HELM_PUSH_GHCR }}
 
       - name: Package and push Helm chart
         if: steps.chart_changes.outputs.changed == 'true'
