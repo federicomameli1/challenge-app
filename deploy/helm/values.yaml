@@ -19,7 +19,7 @@ service:
   # nodePort: 30080
 
 env:
-  openrouter_model: "z-ai/glm-4.5-air:free"
+  openrouter_model: "deepseek/deepseek-v4-flash:free"
   openrouter_app_title: "Verdict"
   ci_bridge_repo: "federicomameli1/challenge-app"
   # HuggingFace embedding model for RAG. Leave unset to use the runner's
