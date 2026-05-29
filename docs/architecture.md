@@ -55,6 +55,7 @@ A single FastAPI module that:
 | POST   | `/agents/run` | Run a single agent on a scenario |
 | GET    | `/brain/options` | List orchestration options |
 | POST   | `/brain/run` | Run the brain orchestrator (agent4 → agent5) |
+| POST   | `/brain/run-wayside` | Run Agent 4 against the real wayside-monitor repo — materializes APCS_*.txt from GitHub Contents API into a tempdir, then drives the brain orchestrator |
 | GET    | `/datasets/custom-sets` | List user-uploaded APCS bundles |
 | POST   | `/datasets/custom-sets` | Upload a new APCS bundle |
 | DELETE | `/datasets/custom-sets/{set_id}` | Remove a user-uploaded bundle |
@@ -65,6 +66,7 @@ A single FastAPI module that:
 | POST   | `/pulls/{n}/reject` | Submit REQUEST_CHANGES review |
 | GET    | `/commits?repo=...&branch=main` | List recent commits with last `[Verdict] Test Evidence` commit comment parsed |
 | GET    | `/releases?repo=...` | List GitHub releases + detect committed VDD file under `VDDs/VDD-<tag>.md` |
+| GET    | `/releases/vdd-content?repo=...&tag=...` | Return raw markdown of a committed VDD file — used by the UI's "Download PDF" button to generate a client-side print-to-PDF |
 | GET    | `/issues?repo=...&state=...` | List GitHub Issues on the subject repo (PRs filtered out) |
 | POST   | `/issues` | Create a new ticket on the subject repo |
 | PATCH  | `/issues/{n}` | Update ticket state (close/reopen), labels, title, body |
@@ -345,7 +347,7 @@ Required GitHub repo secrets on `wayside-monitor` for the workflows:
 | Secret `OPENROUTER_API_KEY` | LLM completion on the runner (pr_review, test_evidence, vdd_drafter) |
 | Secret `HUGGINGFACE_TOKEN`  | Embedding calls on the runner (Inference Providers scope, only pr_review uses RAG) |
 | Secret `GITOPS_TOKEN` | PAT scoped to `wayside-monitor-gitops` for the deploy workflows + scoped to `wayside-monitor` for the VDD commit |
-| Variable `OPENROUTER_MODEL` | Optional model override (default `z-ai/glm-4.5-air:free`); upgrade to `meta-llama/llama-3.3-70b-instruct:free` or similar for stricter output |
+| Variable `OPENROUTER_MODEL` | Optional model override (default `openai/gpt-oss-20b:free`, defined as `_DEFAULT_OPENROUTER_MODEL` in `backend/app.py`); set to `meta-llama/llama-3.3-70b-instruct:free` or similar for stricter output |
 | Secret `GITHUB_TOKEN` (auto) | `pull-requests: write`, `contents: write` for bot comments / VDD commit |
 
 Required Verdict pod env (mounted from the `challenge-app-secrets` K8s secret — name pre-dates the rename, see [feedback-chart-legacy-names](#) in memory):
