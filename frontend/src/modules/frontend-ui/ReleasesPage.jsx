@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchCommits, fetchReleases } from "./dashboardApi.js";
+import { fetchCommits, fetchReleases, fetchVddContent } from "./dashboardApi.js";
 import StatusPill from "./StatusPill.jsx";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -103,9 +103,57 @@ function CommitCard({ commit }) {
   );
 }
 
-function ReleaseCard({ release }) {
+function mdToHtml(md) {
+  return md
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*<\/li>(\n|$))+/g, (m) => `<ul>${m}</ul>`)
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/^(?!<[hul])(.+)$/gm, (line) => line ? line : "")
+    .replace(/^(<p>)?(.+?)(<\/p>)?$/gms, (_, a, b, c) =>
+      a || c ? `<p>${b}</p>` : b
+    );
+}
+
+function openVddPrintWindow(tag, markdown) {
+  const html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/>
+<title>VDD ${tag}</title>
+<style>
+  body{font-family:Georgia,serif;max-width:820px;margin:40px auto;color:#111;line-height:1.6;font-size:13pt}
+  h1{font-size:20pt;border-bottom:2px solid #222;padding-bottom:6px}
+  h2{font-size:15pt;margin-top:28px;border-bottom:1px solid #ccc;padding-bottom:4px}
+  h3{font-size:13pt;margin-top:18px}
+  ul{padding-left:20px}li{margin:3px 0}
+  strong{font-weight:700}
+  p{margin:8px 0}
+  @media print{body{margin:20mm}}
+</style>
+</head><body>
+${mdToHtml(markdown)}
+<script>window.onload=()=>{window.print()}<\/script>
+</body></html>`;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); }
+}
+
+function ReleaseCard({ release, subjectRepo }) {
   const [expanded, setExpanded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const hasVdd = Boolean(release.vdd_url);
+
+  async function handleDownloadPdf() {
+    setDownloading(true);
+    try {
+      const { content } = await fetchVddContent(subjectRepo, release.tag);
+      openVddPrintWindow(release.tag, content);
+    } finally {
+      setDownloading(false);
+    }
+  }
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-theme duration-200 dark:border-slate-700 dark:bg-slate-900">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -156,14 +204,24 @@ function ReleaseCard({ release }) {
 
       <footer className="mt-4 flex flex-wrap items-center gap-2">
         {release.vdd_url ? (
-          <a
-            href={release.vdd_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
-          >
-            ↗ Open VDD
-          </a>
+          <>
+            <a
+              href={release.vdd_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              ↗ Open VDD
+            </a>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="rounded-lg border border-emerald-600 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+            >
+              {downloading ? "Preparing…" : "⬇ PDF"}
+            </button>
+          </>
         ) : (
           <span
             className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
@@ -283,7 +341,7 @@ export default function ReleasesPage({ subjectRepo }) {
           </h3>
           <div className="flex flex-col gap-4">
             {releases.map((release) => (
-              <ReleaseCard key={release.tag} release={release} />
+              <ReleaseCard key={release.tag} release={release} subjectRepo={subjectRepo} />
             ))}
           </div>
         </div>

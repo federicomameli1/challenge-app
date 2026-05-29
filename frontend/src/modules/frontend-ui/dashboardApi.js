@@ -499,6 +499,10 @@ export async function rejectDeployment({ repo, runId, environmentIds, comment } 
 // Health bridge — ArgoCD cluster health (snapshot + SSE)                     //
 // --------------------------------------------------------------------------- //
 
+export async function fetchVddContent(repo, tag) {
+  return requestJson(`/releases/vdd-content?repo=${encodeURIComponent(repo)}&tag=${encodeURIComponent(tag)}`);
+}
+
 export async function fetchHealthSnapshot() {
   return requestJson("/health/apps");
 }

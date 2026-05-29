@@ -74,6 +74,32 @@ def _vdd_exists(cfg: CiBridgeConfig, tag: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+@router.get("/vdd-content")
+def get_vdd_content(repo: str, tag: str) -> dict:
+    """Return the raw markdown of a VDD file for client-side PDF rendering."""
+    if not repo or not tag:
+        raise HTTPException(status_code=400, detail="repo and tag are required")
+    cfg = CiBridgeConfig.for_subject_repo(repo)
+    if not cfg.token:
+        raise HTTPException(status_code=503, detail="SUBJECT_REPO_TOKEN not configured")
+
+    import base64
+    url = f"{GITHUB_API}/repos/{repo}/contents/VDDs/VDD-{tag}.md?ref=main"
+    status, body, _ = _http_get(url, cfg.headers())
+    if status == 404:
+        raise HTTPException(status_code=404, detail=f"VDD not found for tag {tag}")
+    if status != 200:
+        raise HTTPException(status_code=502, detail=f"GitHub returned {status}")
+    try:
+        payload = json.loads(body or b"{}")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail=f"Invalid JSON: {exc}") from exc
+    content = payload.get("content", "")
+    if payload.get("encoding") == "base64":
+        content = base64.b64decode(content).decode("utf-8", errors="replace")
+    return {"tag": tag, "content": content}
+
+
 @router.get("", response_model=ReleasesResponse)
 def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
     """List published GitHub releases with a pointer to the auto-drafted VDD."""

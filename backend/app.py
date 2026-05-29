@@ -200,6 +200,9 @@ def _optional_env(name: str, default: Optional[str] = None) -> Optional[str]:
     return normalized or default
 
 
+_DEFAULT_OPENROUTER_MODEL = "openai/gpt-oss-20b:free"
+
+
 def _openrouter_headers(api_key: str) -> Dict[str, str]:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -223,7 +226,7 @@ def _build_llm_generate() -> Optional[Any]:
     base_url = _optional_env(
         "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1/chat/completions"
     ) or "https://openrouter.ai/api/v1/chat/completions"
-    model = _optional_env("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
+    model = _optional_env("OPENROUTER_MODEL", _DEFAULT_OPENROUTER_MODEL)
     timeout_seconds = float(_optional_env("OPENROUTER_TIMEOUT_SECONDS", "45") or "45")
     max_tokens = int(_optional_env("OPENROUTER_MAX_TOKENS", "700") or "700")
     temperature = float(_optional_env("OPENROUTER_TEMPERATURE", "0.2") or "0.2")
@@ -1297,7 +1300,7 @@ def health() -> Dict[str, Any]:
         "llm": {
             "provider": "openrouter",
             "configured": LLM_GENERATE is not None,
-            "model": _optional_env("OPENROUTER_MODEL", "openai/gpt-oss-20b:free"),
+            "model": _optional_env("OPENROUTER_MODEL", _DEFAULT_OPENROUTER_MODEL),
         },
         "analysts": list(AGENT_METADATA.values()),
     }
