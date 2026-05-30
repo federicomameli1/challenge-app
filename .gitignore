@@ -7,6 +7,7 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+.verdict_env
 
 # Python cache and bytecode
 __pycache__/

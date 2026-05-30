@@ -26,11 +26,15 @@ status change, so a Verdict restart loses at most one update cycle.
 from __future__ import annotations
 
 import asyncio
+import http.client as _http_client
 import json
 import logging
+import os
+import ssl
 import time
 from collections import deque
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Deque, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -246,3 +250,119 @@ async def stream_health_events(request: Request) -> StreamingResponse:
 
 def _sse_format(payload: Dict[str, Any]) -> str:
     return f"data: {json.dumps(payload, default=str)}\n\n"
+
+
+# ---------------------------------------------------------------------------
+# Kubernetes-native ArgoCD poller
+# ---------------------------------------------------------------------------
+
+_K8S_SA_DIR = Path("/var/run/secrets/kubernetes.io/serviceaccount")
+_K8S_API_HOST = "kubernetes.default.svc"
+_POLL_TASK: Optional[asyncio.Task] = None
+
+
+def _k8s_fetch_argocd_apps() -> List[Dict[str, Any]]:
+    """Synchronous call to K8s API for all ArgoCD Application resources.
+
+    Uses the pod's mounted service-account token. Returns raw item dicts.
+    Returns [] when not running in-cluster or on any error.
+    """
+    token_file = _K8S_SA_DIR / "token"
+    ca_file = _K8S_SA_DIR / "ca.crt"
+    if not token_file.exists():
+        logger.debug("K8s SA token not found — not running in-cluster")
+        return []
+    token = token_file.read_text().strip()
+    ctx = ssl.create_default_context(cafile=str(ca_file) if ca_file.exists() else None)
+    conn = _http_client.HTTPSConnection(_K8S_API_HOST, 443, context=ctx, timeout=10)
+    try:
+        conn.request(
+            "GET",
+            "/apis/argoproj.io/v1alpha1/applications",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp = conn.getresponse()
+        if resp.status == 403:
+            logger.warning(
+                "K8s RBAC denied read access to ArgoCD applications — "
+                "ensure the ClusterRole is applied (deploy/helm/templates/rbac.yaml)"
+            )
+            return []
+        if resp.status != 200:
+            logger.warning("K8s API returned %d listing ArgoCD apps", resp.status)
+            return []
+        return json.loads(resp.read()).get("items", [])
+    except Exception as exc:
+        logger.warning("K8s ArgoCD app fetch failed: %s", exc)
+        return []
+    finally:
+        conn.close()
+
+
+def _item_to_snapshot(item: Dict[str, Any]) -> AppHealthSnapshot:
+    meta = item.get("metadata") or {}
+    spec = item.get("spec") or {}
+    status = item.get("status") or {}
+    dest = spec.get("destination") or {}
+    sync = status.get("sync") or {}
+    health = status.get("health") or {}
+    op = status.get("operationState") or {}
+    return AppHealthSnapshot(
+        app=str(meta.get("name") or ""),
+        cluster=str(dest.get("name") or ""),
+        namespace=str(dest.get("namespace") or ""),
+        sync_status=str(sync.get("status") or "Unknown"),
+        health_status=str(health.get("status") or "Unknown"),
+        operation_phase=str(op.get("phase") or ""),
+        revision=str(sync.get("revision") or ""),
+        received_at=_now_iso(),
+    )
+
+
+async def _sync_from_k8s() -> int:
+    """Fetch apps from K8s API, update state, broadcast to SSE subscribers."""
+    items = await asyncio.to_thread(_k8s_fetch_argocd_apps)
+    if not items:
+        return 0
+    snapshots = [_item_to_snapshot(it) for it in items]
+    async with _STATE_LOCK:
+        for snap in snapshots:
+            _STATE[snap.app] = snap
+    for snap in snapshots:
+        event = {"type": "app_update", "snapshot": snap.model_dump()}
+        _RECENT_EVENTS.append({**event, "received_at": snap.received_at})
+        await _broadcast(event)
+    return len(snapshots)
+
+
+async def _poll_loop(interval: int) -> None:
+    logger.info("ArgoCD health poller started (interval=%ds)", interval)
+    while True:
+        try:
+            count = await _sync_from_k8s()
+            if count:
+                logger.info("ArgoCD K8s sync: updated %d apps", count)
+        except Exception as exc:
+            logger.warning("ArgoCD K8s sync error: %s", exc)
+        await asyncio.sleep(interval)
+
+
+def start_argocd_poller() -> None:
+    """Launch the background polling task. Call once at app startup."""
+    global _POLL_TASK
+    interval = int(os.environ.get("ARGOCD_POLL_INTERVAL", "30") or "30")
+    if interval <= 0:
+        logger.info("ArgoCD poller disabled (ARGOCD_POLL_INTERVAL=0)")
+        return
+    _POLL_TASK = asyncio.get_event_loop().create_task(_poll_loop(interval))
+
+
+# ---------------------------------------------------------------------------
+# Manual sync endpoint
+# ---------------------------------------------------------------------------
+
+@router.post("/health/sync")
+async def sync_health() -> Dict[str, Any]:
+    """Manually pull current ArgoCD app state from the K8s API."""
+    count = await _sync_from_k8s()
+    return {"ok": True, "apps_synced": count}

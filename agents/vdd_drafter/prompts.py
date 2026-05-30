@@ -55,7 +55,7 @@ SUB_SECTION_HINTS: Sequence[tuple] = (
     (
         "Sw Version Build",
         [
-            "SW Configuration items list (source files)",
+            "SW Configuration items list (source files) — list only application source modules and configuration files that constitute the released software (e.g. Python packages, config files, Helm chart). Exclude CI/CD workflow files (.github/), deployment scripts, and test infrastructure.",
             "Build Environment for Reproducibility",
         ],
     ),

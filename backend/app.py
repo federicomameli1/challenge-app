@@ -1279,6 +1279,11 @@ except ImportError:
 if _health_router is not None:
     app.include_router(_health_router)
 
+    @app.on_event("startup")
+    async def _start_health_poller():
+        from .health_bridge import start_argocd_poller  # type: ignore
+        start_argocd_poller()
+
 try:
     from .brain_wayside import router as _brain_wayside_router  # type: ignore
 except ImportError:

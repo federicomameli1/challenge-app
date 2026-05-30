@@ -13,6 +13,7 @@ spec:
       labels:
         app: {{ .Values.deploymentName }}
     spec:
+      serviceAccountName: {{ .Values.name }}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}{{ if .Values.image.tag }}:{{ .Values.image.tag }}{{ end }}"
@@ -53,5 +54,7 @@ spec:
             - name: VERDICT_ALLOW_SELF_MERGE
               value: {{ .Values.env.allow_self_merge | quote }}
             {{- end }}
+            - name: ARGOCD_POLL_INTERVAL
+              value: {{ .Values.env.argocd_poll_interval | default "30" | quote }}
           ports:
             - containerPort: {{ .Values.containerPort }}
