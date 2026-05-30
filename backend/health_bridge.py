@@ -262,11 +262,47 @@ _POLL_TASK: Optional[asyncio.Task] = None
 
 
 def _k8s_fetch_argocd_apps() -> List[Dict[str, Any]]:
-    """Synchronous call to K8s API for all ArgoCD Application resources.
+    """Fetch ArgoCD Application resources.
 
-    Uses the pod's mounted service-account token. Returns raw item dicts.
-    Returns [] when not running in-cluster or on any error.
+    Tries two paths in order:
+    1. ArgoCD REST API — when ARGOCD_TOKEN is set (works locally via
+       kubectl port-forward and in-cluster alike).
+    2. Kubernetes API via mounted service-account token — works
+       automatically inside the pod without extra config.
     """
+    argocd_token = os.environ.get("ARGOCD_TOKEN", "").strip()
+    if argocd_token:
+        return _argocd_api_fetch(argocd_token)
+    return _k8s_sa_fetch()
+
+
+def _argocd_api_fetch(token: str) -> List[Dict[str, Any]]:
+    """Query the ArgoCD REST API at ARGOCD_SERVER (default localhost:8080)."""
+    server = os.environ.get("ARGOCD_SERVER", "localhost:8080").strip()
+    host, _, port_str = server.rpartition(":")
+    host = host or server
+    port = int(port_str) if port_str.isdigit() else 8080
+    ctx = ssl._create_unverified_context()
+    conn = _http_client.HTTPSConnection(host, port, context=ctx, timeout=10)
+    try:
+        conn.request(
+            "GET", "/api/v1/applications?limit=500",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        resp = conn.getresponse()
+        if resp.status != 200:
+            logger.warning("ArgoCD API returned %d", resp.status)
+            return []
+        return json.loads(resp.read()).get("items") or []
+    except Exception as exc:
+        logger.warning("ArgoCD API fetch failed: %s", exc)
+        return []
+    finally:
+        conn.close()
+
+
+def _k8s_sa_fetch() -> List[Dict[str, Any]]:
+    """Query K8s API using the pod's mounted service-account token."""
     token_file = _K8S_SA_DIR / "token"
     ca_file = _K8S_SA_DIR / "ca.crt"
     if not token_file.exists():
