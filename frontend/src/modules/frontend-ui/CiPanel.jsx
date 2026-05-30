@@ -173,7 +173,7 @@ function RunRow({ run, isSelected, onSelect }) {
 }
 
 export default function CiPanel({ standalone = false }) {
-  // Bridge (challenge-app) state
+  // CI bridge state
   const [status, setStatus] = useState(null);
   const [runs, setRuns] = useState([]);
   const [loadingRuns, setLoadingRuns] = useState(true);
@@ -629,10 +629,10 @@ export default function CiPanel({ standalone = false }) {
                     </div>
                   </div>
                   <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-300">
-                    <p className="font-semibold">Push to challenge-app?</p>
+                    <p className="font-semibold">Push to Verdict?</p>
                     <p className="mt-1 text-xs">
-                      If wayside-monitor's CI passes, it triggers a <code className="rounded bg-sky-100 px-1 dark:bg-sky-900/50">repository_dispatch</code> on challenge-app.
-                      Switch to the <strong>Challenge App</strong> tab and look for a run with event <code className="rounded bg-sky-100 px-1 dark:bg-sky-900/50">repository_dispatch</code>.
+                      If wayside-monitor's CI passes, it triggers a <code className="rounded bg-sky-100 px-1 dark:bg-sky-900/50">repository_dispatch</code> on Verdict.
+                      Switch to the <strong>Verdict</strong> tab and look for a run with event <code className="rounded bg-sky-100 px-1 dark:bg-sky-900/50">repository_dispatch</code>.
                     </p>
                   </div>
                 </div>

@@ -1,1 +1,1 @@
-# Backend package for challenge-app agent integration.
+# Backend package for Verdict.

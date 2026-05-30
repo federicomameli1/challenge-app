@@ -21,17 +21,12 @@ service:
 env:
   openrouter_model: "google/gemma-4-31b-it:free"
   openrouter_app_title: "Verdict"
-  ci_bridge_repo: "federicomameli1/challenge-app"
+  ci_bridge_repo: "federicomameli1/wayside-monitor"
   # HuggingFace embedding model for RAG. Leave unset to use the runner's
   # default (sentence-transformers/all-MiniLM-L6-v2). The token itself
-  # is read from the 'huggingface_token' key in the challenge-app-secrets
+  # is read from the 'huggingface_token' key in the verdict-secrets
   # secret (optional — endpoint returns 503 if missing).
   hf_embedding_model: ""
-  # DEMO AFFORDANCE — remove before going to production.
-  # When "true", the backend silently skips the GitHub APPROVE call when
-  # the PAT owner is also the PR author (GitHub returns 422 in that case)
-  # and proceeds straight to merge. Set to "false" in prod so a real
-  # reviewer is always required. Default in code is true.
   allow_self_merge: "true"
   # Seconds between K8s-native ArgoCD app polls. Set to "0" to disable
   # and rely purely on ArgoCD notifications webhooks.

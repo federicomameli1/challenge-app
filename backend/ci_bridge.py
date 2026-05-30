@@ -22,7 +22,7 @@ Design notes:
   block longer than a few seconds even on a slow network.
 
 Environment variables:
-    CI_BRIDGE_REPO        owner/repo (e.g. "federicomameli1/challenge-app")
+    CI_BRIDGE_REPO        owner/repo (e.g. "federicomameli1/wayside-monitor")
     CI_BRIDGE_TOKEN       GitHub fine-grained PAT with Actions: read &
                           write (only "read" is strictly needed for runs +
                           artifacts; write is needed for /ci/approve and
@@ -50,7 +50,7 @@ from pydantic import BaseModel
 _logger = logging.getLogger(__name__)
 
 GITHUB_API = "https://api.github.com"
-USER_AGENT = "challenge-app-ci-bridge/1.0"
+USER_AGENT = "verdict-ci-bridge/1.0"
 DEFAULT_TIMEOUT = 8  # seconds
 ARTIFACT_DOWNLOAD_TIMEOUT = 20  # GitHub redirects to blob storage which can be slow
 ARTIFACT_NAMES = {

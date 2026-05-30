@@ -442,8 +442,7 @@ def _candidate_roots() -> List[Path]:
 def _root_aliases() -> Dict[str, Path]:
     aliases = {
         REPO_ROOT.name.lower(): REPO_ROOT,
-        "challenge-app": REPO_ROOT,
-        "challenge_app": REPO_ROOT,
+        "verdict": REPO_ROOT,
     }
     if LEGACY_CORE_ROOT.exists():
         aliases[LEGACY_CORE_ROOT.name.lower()] = LEGACY_CORE_ROOT
@@ -1088,7 +1087,7 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
         stage_name="agent4",
         depends_on=(),
         enabled=True,
-        metadata={"managed_by": "challenge_app_backend"},
+        metadata={"managed_by": "verdict_backend"},
         llm_generate=LLM_GENERATE,
     )
 
@@ -1105,7 +1104,7 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
             ),
         ),
         enabled=True,
-        metadata={"managed_by": "challenge_app_backend"},
+        metadata={"managed_by": "verdict_backend"},
         require_agent4_handoff=True,
         expected_agent4_stage_name="agent4",
         llm_generate=LLM_GENERATE,
@@ -1125,7 +1124,7 @@ def _brain_registry(req: BrainRunRequestModel) -> Tuple[StageRegistry, Tuple[str
             ),
         ),
         enabled=True,
-        metadata={"managed_by": "challenge_app_backend"},
+        metadata={"managed_by": "verdict_backend"},
         require_agent4_handoff=True,
         require_agent5_handoff=True,
         expected_agent4_stage_name="agent4",
@@ -1181,7 +1180,7 @@ def _run_brain(req: BrainRunRequestModel) -> Dict[str, Any]:
             "allow_agent6_after_agent5_hold": bool(req.allow_agent6_after_agent5_hold),
         },
         metadata={
-            "runner": "challenge-app/backend/app.py",
+            "runner": "verdict/backend/app.py",
             "agent4_dataset_root": str(_resolve_repo_path(req.agent4_dataset_root)),
             "agent5_dataset_root": str(_resolve_repo_path(req.agent5_dataset_root)),
             "agent6_dataset_root": str(_resolve_repo_path(req.agent6_dataset_root)),
@@ -1193,7 +1192,7 @@ def _run_brain(req: BrainRunRequestModel) -> Dict[str, Any]:
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
-app = FastAPI(title="Challenge App Core Backend", version="0.2.0")
+app = FastAPI(title="Verdict", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,8 +1,8 @@
 """
 Multi-stage analysis pipeline for subject-repo (external repo) evaluation.
 
-This pipeline is used when challenge-app is asked to evaluate a third-party
-repository (e.g. wayside-monitor) rather than itself. It combines:
+This pipeline is used when Verdict is asked to evaluate a third-party
+repository (e.g. wayside-monitor). It combines:
 
   Stage 1 — Deterministic pre-checks
       Hard blockers that always produce HOLD regardless of LLM output:

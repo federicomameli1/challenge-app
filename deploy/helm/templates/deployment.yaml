@@ -22,7 +22,7 @@ spec:
             - name: OPENROUTER_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: challenge-app-secrets
+                  name: verdict-secrets
                   key: api_key
             - name: OPENROUTER_MODEL
               value: {{ .Values.env.openrouter_model | quote }}
@@ -33,17 +33,17 @@ spec:
             - name: CI_BRIDGE_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: challenge-app-secrets
+                  name: verdict-secrets
                   key: ci_bridge_token
             - name: SUBJECT_REPO_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: challenge-app-secrets
+                  name: verdict-secrets
                   key: subject_repo_token
             - name: HUGGINGFACE_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: challenge-app-secrets
+                  name: verdict-secrets
                   key: huggingface_token
                   optional: true
             {{- with .Values.env.hf_embedding_model }}

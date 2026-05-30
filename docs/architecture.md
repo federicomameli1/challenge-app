@@ -350,7 +350,7 @@ Required GitHub repo secrets on `wayside-monitor` for the workflows:
 | Variable `OPENROUTER_MODEL` | Optional model override (default `openai/gpt-oss-20b:free`, defined as `_DEFAULT_OPENROUTER_MODEL` in `backend/app.py`); set to `meta-llama/llama-3.3-70b-instruct:free` or similar for stricter output |
 | Secret `GITHUB_TOKEN` (auto) | `pull-requests: write`, `contents: write` for bot comments / VDD commit |
 
-Required Verdict pod env (mounted from the `challenge-app-secrets` K8s secret — name pre-dates the rename, see [feedback-chart-legacy-names](#) in memory):
+Required Verdict pod env (mounted from the `verdict-secrets` K8s secret):
 
 | Env var | Purpose |
 |---|---|
@@ -430,7 +430,7 @@ The nginx config has a dedicated `location /api/health/stream` block with `proxy
 - `deploy/docker/run_combined.py` is the container entrypoint.
 - `deploy/docker/nginx/default.conf` proxies `/api/` → uvicorn on 8001 and serves the SPA fallback. Has a dedicated `location /api/health/stream` block with `proxy_buffering off` + 24h timeouts so SSE actually streams (D14).
 - `deploy/helm/` packages the Helm chart (currently `0.1.8`), auto-published to `oci://ghcr.io/<owner>/charts/verdict` by the `helm-publish` job whenever files under `deploy/helm/` change.
-- The container image references the secret `challenge-app-secrets` for `OPENROUTER_API_KEY`, `CI_BRIDGE_TOKEN`, `SUBJECT_REPO_TOKEN`, and (optional) `HUGGINGFACE_TOKEN`. The `huggingface_token` key is `optional: true` so the pod still starts when missing.
+- The container image references the secret `verdict-secrets` for `OPENROUTER_API_KEY`, `CI_BRIDGE_TOKEN`, `SUBJECT_REPO_TOKEN`, and (optional) `HUGGINGFACE_TOKEN`. The `huggingface_token` key is `optional: true` so the pod still starts when missing.
 - `deploy/argocd/notifications-cm.yaml` — ConfigMap applied **on the mgmt cluster** (`kubectl apply -f deploy/argocd/notifications-cm.yaml`) to wire ArgoCD's notifications-controller to Verdict's webhook. Defines one webhook service, one template, and three trigger groups (health / sync / operation) with a default subscription for every Application — no per-app annotation needed.
 
 ## Testing (`tests/`)

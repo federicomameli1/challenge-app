@@ -681,7 +681,7 @@ def _github_headers() -> Dict[str, str]:
     headers: Dict[str, str] = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "challenge-app-ci-analysis/1.0",
+        "User-Agent": "verdict-ci-analysis/1.0",
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
