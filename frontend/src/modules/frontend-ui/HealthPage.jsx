@@ -245,10 +245,16 @@ export default function HealthPage() {
 
       {snapshot.apps.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-          No applications reported yet. Verdict starts collecting events
-          when Argo CD's <code className="rounded bg-slate-100 px-1 py-0.5 dark:bg-slate-800">notifications-controller</code> is
-          configured to POST to <code className="rounded bg-slate-100 px-1 py-0.5 dark:bg-slate-800">/webhooks/argocd</code>.
-          See docs/architecture.md for the configuration.
+          <p className="font-medium text-slate-700 dark:text-slate-200">No applications reported yet.</p>
+          <p className="mt-2">
+            When deployed on the management cluster, Verdict polls Argo CD automatically every 30 seconds.
+          </p>
+          <p className="mt-1">
+            Running locally? Seed the state with{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 dark:bg-slate-800">
+              python3 scripts/seed_health_local.py
+            </code>
+          </p>
         </div>
       ) : (
         groupedByCluster.map(([cluster, apps]) => (
