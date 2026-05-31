@@ -1,2 +1,0 @@
-scenario_id,release_id,defect_id,title,severity,status,owner
-DEMO-001,REL-DEMO-2026.05.01,DF-DEMO-001,Minor logging verbosity in startup,LOW,CLOSED,dev.backend

@@ -1,6 +1,0 @@
-release_id,scenario_id,environment,phase6_window_start,phase6_window_end,target_phase6_gate,agent4_scenario_id,agent5_scenario_id
-P6-REL-1.1.0,P6-001,RELEASE,2026-05-03T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase6_release_documentation,S4-001,P5-001
-P6-REL-1.1.1,P6-002,RELEASE,2026-05-03T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase6_release_documentation,S4-001,P5-002
-P6-REL-1.1.2,P6-003,RELEASE,2026-05-03T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase6_release_documentation,S4-001,P5-003
-P6-REL-1.1.3,P6-004,RELEASE,2026-05-03T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase6_release_documentation,S4-002,P5-004
-P6-REL-1.1.4,P6-005,RELEASE,2026-05-03T09:00:00+00:00,2026-05-03T18:00:00+00:00,phase6_release_documentation,S4-002,P5-005

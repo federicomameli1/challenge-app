@@ -1,6 +1,0 @@
-scenario_id,release_id,requirement_id,description,priority,module,mandatory_for_phase4,category,tag
-DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-001,Ingest telemetry from edge nodes every 30 seconds,HIGH,ingestion-gateway,true,telemetry,MUST
-DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-002,Route normalized telemetry to monitoring pipeline,HIGH,event-router,true,routing,MUST
-DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-003,Compute health KPIs and publish alarms under threshold breaches,HIGH,monitoring-core,true,alarms,MUST
-DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-004,Expose analytics summary REST endpoint for test dashboard,MEDIUM,analytics-api,true,analytics,OPTIONAL
-DEMO-001,REL-DEMO-2026.05.01,REQ-DEMO-005,Trigger warning and critical alarms when thresholds are breached,HIGH,alarm-engine,true,alarms,MUST

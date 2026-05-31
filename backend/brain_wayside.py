@@ -24,7 +24,6 @@ from __future__ import annotations
 import base64
 import json
 import logging
-import os
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -32,7 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .ci_bridge import CiBridgeConfig, _http_get  # noqa: F401
+from .ci_bridge import CiBridgeConfig, _http_get
 
 from agents.brain import (  # noqa: E402
     BrainOrchestrator,

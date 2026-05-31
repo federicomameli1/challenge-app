@@ -54,7 +54,7 @@ class GenericPhase4Ingestion:
     or with explicit adapter kind:
         ingestion = GenericPhase4Ingestion(
             GenericIngestionConfig(
-                source_root="external_sources/challenge-app/Dataset",
+                source_root="external_sources/verdict/Dataset",
                 adapter_kind="apcs_doc_bundle",
             )
         )

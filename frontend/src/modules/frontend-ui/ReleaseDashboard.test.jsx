@@ -249,7 +249,7 @@ describe("Release Dashboard", () => {
           })),
           backend: {
             agent4: {
-              datasetRoot: "challenge-app/datasets/apcs_bundles/custom/temp",
+              datasetRoot: "verdict/datasets/apcs_bundles/custom/temp",
               sourceAdapterKind: "apcs_doc_bundle",
               scenarioId: "APCS-S4-001",
             },

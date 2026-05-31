@@ -38,7 +38,7 @@ ALLOW_SELF_MERGE = _env_bool("VERDICT_ALLOW_SELF_MERGE", True)
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .ci_bridge import CiBridgeConfig, _http_get  # noqa: F401
+from .ci_bridge import CiBridgeConfig, _http_get
 
 
 def _http_request(

@@ -109,7 +109,7 @@ After feedback that the LLM output should be controlled / sanitized, added a sha
 
 ### Roadmap snapshot at end of session
 
-All six phases (A–F) plus the unification refactor are closed. The remaining work is the **pre-production cleanup checklist** tracked in the auto-memory: switching `VERDICT_ALLOW_SELF_MERGE` off, renaming the legacy `challenge-app-secrets` secret, retargeting `ci_bridge_repo` from `challenge-app` to `wayside-monitor`, swapping the OpenRouter model when budget allows, choosing a privacy-respecting LLM provider for Hitachi data residency, and re-aligning the scenario-based `agent4/5/6` legacy modules to Hitachi GBMS if they re-enter active use.
+All six phases (A–F) plus the unification refactor are closed. Pre-production cleanup completed 2026-05-30: `verdict-secrets` rename applied, `ci_bridge_repo` retargeted to `wayside-monitor`, all `challenge-app` legacy strings removed from active code. Remaining open items: `VERDICT_ALLOW_SELF_MERGE` still `true` (demo mode), EU LLM provider for Hitachi data residency TBD, `agent4/5/6` GBMS vocabulary alignment deferred.
 
 ## 2026-05-26 — PR review loop (Phase A foundation + Phase B steps 1-3)
 
@@ -128,7 +128,7 @@ Built the end-to-end loop that lets a developer push a PR to `wayside-monitor`, 
 - `backend/app.py` — wired both new routers (`/agents/pr-review/run`, `/pulls/*`).
 - `deploy/helm/Chart.yaml` — bumped to **0.1.7**.
 - `deploy/helm/templates/deployment.yaml`:
-  - Inject `HUGGINGFACE_TOKEN` from `challenge-app-secrets` with `optional: true` so the pod survives a missing key (endpoint returns 503 instead).
+  - Inject `HUGGINGFACE_TOKEN` from `verdict-secrets` with `optional: true` so the pod survives a missing key (endpoint returns 503 instead).
   - Optional `HF_EMBEDDING_MODEL` env var via `values.env.hf_embedding_model`.
   - Quote the image string and conditionally append the tag (fixes the pre-existing `helm template` failure with default values when the tag is empty / digest-pinned).
 - `.github/workflows/ci.yml` `helm-publish` job — push to `oci://ghcr.io/<owner>/charts` (was pushing to `<owner>/<repo>`, which created the abandoned `verdict/verdict` package on GHCR).
@@ -165,7 +165,7 @@ Built the end-to-end loop that lets a developer push a PR to `wayside-monitor`, 
   - `_run_pre_test_analysis()` now branches: fetches test artifact and calls subject pipeline for external repos; runs Agent 4 for self-review
   - SRP refactoring: split `_compute_heuristics()` → `_compute_local_heuristics()` + `_compute_subject_heuristics()`; extracted `_scan_event_markers()`, `_phase5_requirement_ids()`, `_run_agent_pipeline()` helper
   - Fixed Pylance `reportOptionalMemberAccess` errors (10) by assigning `.get()` to local vars before `isinstance` check
-- `.github/workflows/ci.yml` (challenge-app)
+- `.github/workflows/ci.yml` (verdict)
   - Added `SUBJECT_RUN_ID` extraction from `client_payload` in "Resolve subject repo" step
   - Passes `${SUBJECT_RUN_ID:+--subject-run-id "$SUBJECT_RUN_ID"}` to `run_ci_analysis.py`
   - Fixed redundant `&& github.event_name != 'repository_dispatch'` in `approve-prod` and `deploy-prod`

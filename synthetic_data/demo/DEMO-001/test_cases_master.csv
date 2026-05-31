@@ -1,7 +1,0 @@
-scenario_id,release_id,test_case_id,title,mapped_requirement_ids,criticality,test_owner
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-001,Telemetry ingestion validation,REQ-DEMO-001,HIGH,qa.ingestion
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-002,Telemetry routing verification,REQ-DEMO-002,HIGH,qa.routing
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-003,KPI computation accuracy,REQ-DEMO-003,HIGH,qa.kpi
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-004,Analytics endpoint smoke,REQ-DEMO-004,MEDIUM,qa.analytics
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-005,Alarm threshold triggers,REQ-DEMO-005,HIGH,qa.alarms
-DEMO-001,REL-DEMO-2026.05.01,TC-DEMO-006,End-to-end pipeline flow,REQ-DEMO-001,HIGH,qa.pipeline

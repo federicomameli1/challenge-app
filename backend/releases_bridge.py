@@ -13,7 +13,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .ci_bridge import CiBridgeConfig, _http_get  # noqa: F401
+from .ci_bridge import CiBridgeConfig, _http_get
 
 GITHUB_API = "https://api.github.com"
 
