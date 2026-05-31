@@ -92,6 +92,7 @@ class PRReviewRunner:
             diff_unified=input.diff_unified,
             pr_meta_lines=meta_lines,
             context_block=build_context_block(retrieved),
+            open_tickets=input.open_tickets or [],
         )
 
         try:
@@ -109,16 +110,21 @@ class PRReviewRunner:
             + "\n\n"
             + input.diff_unified
         )
-        verdict, summary, highlights = _coerce_llm_payload(
+        verdict, summary, highlights, tickets_addressed = _coerce_llm_payload(
             llm_payload, verification_context=verification_context
         )
-        report_md = _render_markdown_report(input.pr_meta, verdict, summary, highlights, retrieved)
+        report_md = _render_markdown_report(
+            input.pr_meta, verdict, summary, highlights, retrieved,
+            tickets_addressed=tickets_addressed,
+            open_tickets=input.open_tickets or [],
+        )
         report_md = cap_string(report_md, label="PR review markdown")
 
         return PRReviewOutput(
             verdict=verdict,
             summary=summary,
             highlights=highlights,
+            tickets_possibly_addressed=tickets_addressed,
             report_markdown=report_md,
             chunks_used=[chunk.id for chunk, _ in retrieved],
             model=self.llm.model,
@@ -145,6 +151,7 @@ class PRReviewRunner:
 
 
 def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
+    # Returns (verdict, summary, highlights, tickets_addressed)
     """Validate and coerce the LLM JSON payload to (Verdict, summary, [Highlight]).
 
     Also flags REQ-WMS-*/TC-WMS-* identifiers that the model cited but
@@ -208,7 +215,16 @@ def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
                 doc_ref=_nullable_str(item.get("doc_ref")),
             )
         )
-    return verdict, summary, highlights
+    tickets_raw = payload.get("tickets_possibly_addressed") or []
+    tickets_addressed: List[int] = []
+    if isinstance(tickets_raw, list):
+        for item in tickets_raw:
+            try:
+                tickets_addressed.append(int(item))
+            except (TypeError, ValueError):
+                pass
+
+    return verdict, summary, highlights, tickets_addressed
 
 
 def _nullable_str(value) -> Optional[str]:
@@ -233,6 +249,9 @@ def _render_markdown_report(
     summary: str,
     highlights: List[Highlight],
     retrieved: list,
+    *,
+    tickets_addressed: List[int] | None = None,
+    open_tickets=None,
 ) -> str:
     verdict_badge = "✅ **GO**" if verdict is Verdict.GO else "🟠 **HOLD**"
     parts: List[str] = [
@@ -261,6 +280,17 @@ def _render_markdown_report(
         parts.append("")
     else:
         parts.append("_No specific findings — the diff looks aligned with the documented requirements._")
+        parts.append("")
+
+    if tickets_addressed:
+        ticket_map = {t.number: t.title for t in (open_tickets or [])}
+        parts.append("### Tickets possibly addressed")
+        parts.append("")
+        parts.append("> ⚠️ Advisory only — verify before closing.")
+        parts.append("")
+        for n in tickets_addressed:
+            title = ticket_map.get(n, "")
+            parts.append(f"- #{n}{f': {title}' if title else ''}")
         parts.append("")
 
     if retrieved:

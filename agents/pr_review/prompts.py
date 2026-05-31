@@ -7,10 +7,13 @@ to instruct the model on markdown formatting (one less thing to get wrong).
 
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import List, Sequence, TYPE_CHECKING
 
 from agents._sanitize import SECURITY_GUARDRAIL
 from agents.rag import Chunk
+
+if TYPE_CHECKING:
+    from .models import OpenTicket
 
 
 SYSTEM_PROMPT = SECURITY_GUARDRAIL + "\n\n" + """You are Verdict, an AI release readiness analyst for a
@@ -69,14 +72,20 @@ markdown, no prose around it):
       "file_ref": "<file:line or null>",
       "doc_ref": "<doc_source#chunk_index or null>"
     }
-  ]
+  ],
+  "tickets_possibly_addressed": [<issue number>, ...]
 }
 
 Rules:
 - `highlights` may be empty (e.g. a trivially GO change).
 - Use `blocker` only when the verdict is HOLD AND the finding is the reason.
 - Refer to documentation chunks by their source path; only use refs that
-  appear in the 'Project context' section."""
+  appear in the 'Project context' section.
+- `tickets_possibly_addressed`: list ONLY issue numbers where the diff
+  contains clear, direct evidence (changed files, fixed logic, updated
+  config) that the ticket's problem is being resolved. Do NOT include
+  tickets that are merely related or tangentially mentioned. If no ticket
+  is clearly addressed, return an empty array."""
 
 
 def build_context_block(chunks_with_scores: Sequence[tuple]) -> str:
@@ -94,11 +103,27 @@ def build_context_block(chunks_with_scores: Sequence[tuple]) -> str:
     return "\n\n".join(parts)
 
 
+def _tickets_block(tickets: "List[OpenTicket]") -> str:
+    if not tickets:
+        return ""
+    lines = ["## Open tickets on this repository", ""]
+    for t in tickets[:30]:  # cap at 30 to avoid bloating the prompt
+        label_str = f" [{', '.join(t.labels)}]" if t.labels else ""
+        body_preview = ""
+        if t.body:
+            first_line = t.body.strip().splitlines()[0][:120]
+            body_preview = f" — {first_line}"
+        lines.append(f"- #{t.number}: {t.title}{label_str}{body_preview}")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build_user_prompt(
     diff_unified: str,
     pr_meta_lines: Sequence[str],
     context_block: str,
     *,
+    open_tickets: "List[OpenTicket] | None" = None,
     diff_max_chars: int = 12000,
 ) -> str:
     """Assemble the user-turn prompt."""
@@ -109,6 +134,7 @@ def build_user_prompt(
         diff_text = f"{head}\n\n... [diff truncated, {len(diff_unified) - diff_max_chars} chars omitted] ...\n\n{tail}"
 
     meta_block = "\n".join(f"- {line}" for line in pr_meta_lines) if pr_meta_lines else "_n/a_"
+    tickets_section = _tickets_block(open_tickets or [])
 
     return f"""## Pull Request metadata
 {meta_block}
@@ -116,7 +142,7 @@ def build_user_prompt(
 ## Project context (retrieved from docs)
 {context_block}
 
-## Diff
+{tickets_section}## Diff
 ```diff
 {diff_text}
 ```

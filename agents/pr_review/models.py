@@ -44,6 +44,14 @@ class PRMeta(BaseModel):
     head_sha: str = ""
 
 
+class OpenTicket(BaseModel):
+    """A GitHub Issue passed as context to the PR reviewer."""
+    number: int
+    title: str
+    body: Optional[str] = None
+    labels: List[str] = Field(default_factory=list)
+
+
 class PRReviewInput(BaseModel):
     diff_unified: str = Field(..., description="The unified diff of the PR")
     docs_dir: str = Field(..., description="Filesystem path to the docs directory to RAG over")
@@ -54,12 +62,20 @@ class PRReviewInput(BaseModel):
         default=None,
         description="Strip this prefix from chunk source paths in references",
     )
+    open_tickets: List[OpenTicket] = Field(
+        default_factory=list,
+        description="Open GitHub Issues on the subject repo — used to surface which tickets this PR may address",
+    )
 
 
 class PRReviewOutput(BaseModel):
     verdict: Verdict
     summary: str
     highlights: List[Highlight] = Field(default_factory=list)
+    tickets_possibly_addressed: List[int] = Field(
+        default_factory=list,
+        description="Issue numbers that the diff clearly appears to address",
+    )
     report_markdown: str = Field(..., description="Pre-rendered markdown ready to post as a PR comment")
     chunks_used: List[str] = Field(
         default_factory=list,
