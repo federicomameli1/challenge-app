@@ -279,11 +279,9 @@ def _submit_review(
         # GitHub explicitly forbids users from approving their own PRs.
         # For the dev/demo flow we surface a sentinel so the caller can
         # continue to the merge step instead of bailing out.
-        if (
-            status == 422
-            and event == "APPROVE"
-            and "approve your own pull request" in body_text.lower()
-            and ALLOW_SELF_MERGE
+        if status == 422 and ALLOW_SELF_MERGE and (
+            "approve your own pull request" in body_text.lower()
+            or event == "REQUEST_CHANGES"
         ):
             raise _SelfReviewSkipped(body_text)
         raise HTTPException(
@@ -411,7 +409,15 @@ def reject_pull(pr_number: int, req: RejectRequest) -> ActionResult:
     if not (req.body and req.body.strip()):
         raise HTTPException(status_code=400, detail="body is required for rejection")
 
-    review = _submit_review(cfg, pr_number, event="REQUEST_CHANGES", body=req.body)
+    try:
+        review = _submit_review(cfg, pr_number, event="REQUEST_CHANGES", body=req.body)
+    except _SelfReviewSkipped:
+        return ActionResult(
+            ok=True,
+            pr_number=pr_number,
+            review_state="SELF_REVIEW_SKIPPED",
+            message="GitHub does not allow requesting changes on your own PR — review skipped.",
+        )
 
     return ActionResult(
         ok=True,
