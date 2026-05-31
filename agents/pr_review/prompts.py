@@ -55,7 +55,14 @@ Hitachi vocabulary: REQ-WMS-XXX for requirements, TC-WMS-XXX for
 test cases, the actual module names (sensor-collector, anomaly-engine,
 alert-dispatcher). Do not invent file paths, requirement IDs, or
 documentation passages — only reference what is in the retrieved
-context."""
+context.
+
+Also flag any of the following operational risks when present in the diff:
+- In-memory state that is lost on process restart (flag if a requirement
+  implies the state must survive restarts).
+- Missing persistence or replay capability for safety-relevant data.
+- Configuration loaded at startup only, with no hot-reload when the
+  requirement mandates it (REQ-WMS-003 pattern)."""
 
 
 JSON_INSTRUCTION = """Return ONLY a JSON object with this exact schema (no
@@ -123,6 +130,7 @@ def build_user_prompt(
     pr_meta_lines: Sequence[str],
     context_block: str,
     *,
+    mandatory_context: str = "",
     open_tickets: "List[OpenTicket] | None" = None,
     diff_max_chars: int = 12000,
 ) -> str:
@@ -136,10 +144,16 @@ def build_user_prompt(
     meta_block = "\n".join(f"- {line}" for line in pr_meta_lines) if pr_meta_lines else "_n/a_"
     tickets_section = _tickets_block(open_tickets or [])
 
+    mandatory_section = (
+        f"## Requirements (full — authoritative)\n{mandatory_context}\n\n"
+        if mandatory_context.strip()
+        else ""
+    )
+
     return f"""## Pull Request metadata
 {meta_block}
 
-## Project context (retrieved from docs)
+{mandatory_section}## Additional context (retrieved from docs)
 {context_block}
 
 {tickets_section}## Diff

@@ -12,7 +12,10 @@ Pipeline:
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+import os
+import re
+from pathlib import Path
+from typing import List, Optional, Set
 
 from agents._sanitize import (
     SanitizationError,
@@ -81,6 +84,15 @@ class PRReviewRunner:
 
         retrieved = self._retrieve(chunks, input.diff_unified, input.top_k)
 
+        # Fix 2: keyword boost — always include chunks that contain REQ/TC IDs
+        # explicitly cited in the diff, regardless of cosine score.
+        retrieved = _boost_by_ids(input.diff_unified, chunks, retrieved)
+
+        # Fix 1: always include the full requirements doc as mandatory context.
+        # APCS_Requirements.txt is compact (~200 lines) and is the primary
+        # reference — RAG alone is too unreliable when relevance scores are low.
+        mandatory_context = _read_mandatory_context(input.docs_dir)
+
         meta_lines = [
             f"number: #{input.pr_meta.number}",
             f"title: {input.pr_meta.title}",
@@ -92,6 +104,7 @@ class PRReviewRunner:
             diff_unified=input.diff_unified,
             pr_meta_lines=meta_lines,
             context_block=build_context_block(retrieved),
+            mandatory_context=mandatory_context,
             open_tickets=input.open_tickets or [],
         )
 
@@ -148,6 +161,47 @@ class PRReviewRunner:
             raise PRReviewError(f"Embedding call failed: {exc}") from exc
 
         return top_k(query_vector, chunks, chunk_vectors, k=k)
+
+
+_ID_RE = re.compile(r"\b(REQ-WMS-\d+|TC-WMS-\d+)\b", re.IGNORECASE)
+_REQUIREMENTS_FILENAMES = ("APCS_Requirements.txt", "requirements.txt")
+
+
+def _read_mandatory_context(docs_dir: str) -> str:
+    """Return the full text of APCS_Requirements.txt if present, else empty."""
+    base = Path(docs_dir)
+    for name in _REQUIREMENTS_FILENAMES:
+        candidate = base / name
+        if candidate.exists():
+            try:
+                return candidate.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                pass
+    return ""
+
+
+def _boost_by_ids(diff: str, all_chunks: List[Chunk], retrieved: list) -> list:
+    """Ensure chunks containing REQ/TC IDs cited in the diff are always included.
+
+    Avoids situations where a requirement is mentioned in comments or variable
+    names in the diff but the corresponding doc chunk scored below top-k.
+    Deduplicated by chunk.id — no chunk appears twice.
+    """
+    ids_in_diff: Set[str] = {m.upper() for m in _ID_RE.findall(diff)}
+    if not ids_in_diff:
+        return retrieved
+
+    already: Set[str] = {chunk.id for chunk, _ in retrieved}
+    boosted = list(retrieved)
+    for chunk in all_chunks:
+        if chunk.id in already:
+            continue
+        ids_in_chunk = {m.upper() for m in _ID_RE.findall(chunk.text)}
+        if ids_in_diff & ids_in_chunk:
+            boosted.append((chunk, 0.0))  # score 0.0 = boosted, not retrieved by cosine
+            already.add(chunk.id)
+            logger.debug("Boosted chunk %s (contains %s)", chunk.id, ids_in_diff & ids_in_chunk)
+    return boosted
 
 
 def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
