@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 class Verdict(str, Enum):
     GO = "GO"
     HOLD = "HOLD"
+    GO_WITH_ACTIONS = "GO_WITH_ACTIONS"
 
 
 class Severity(str, Enum):
@@ -72,6 +73,10 @@ class PRReviewOutput(BaseModel):
     verdict: Verdict
     summary: str
     highlights: List[Highlight] = Field(default_factory=list)
+    required_actions: List[str] = Field(
+        default_factory=list,
+        description="Follow-up actions required before next release (only set when verdict is GO_WITH_ACTIONS)",
+    )
     tickets_possibly_addressed: List[int] = Field(
         default_factory=list,
         description="Issue numbers that the diff clearly appears to address",

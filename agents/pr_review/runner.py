@@ -105,6 +105,7 @@ class PRReviewRunner:
             pr_meta_lines=meta_lines,
             context_block=build_context_block(retrieved),
             mandatory_context=mandatory_context,
+            diff_summary=_summarize_diff(input.diff_unified),
             open_tickets=input.open_tickets or [],
         )
 
@@ -121,13 +122,16 @@ class PRReviewRunner:
         verification_context = (
             "\n\n".join(c.text for c, _ in retrieved)
             + "\n\n"
+            + mandatory_context
+            + "\n\n"
             + input.diff_unified
         )
-        verdict, summary, highlights, tickets_addressed = _coerce_llm_payload(
+        verdict, summary, highlights, required_actions, tickets_addressed = _coerce_llm_payload(
             llm_payload, verification_context=verification_context
         )
         report_md = _render_markdown_report(
             input.pr_meta, verdict, summary, highlights, retrieved,
+            required_actions=required_actions,
             tickets_addressed=tickets_addressed,
             open_tickets=input.open_tickets or [],
         )
@@ -137,6 +141,7 @@ class PRReviewRunner:
             verdict=verdict,
             summary=summary,
             highlights=highlights,
+            required_actions=required_actions,
             tickets_possibly_addressed=tickets_addressed,
             report_markdown=report_md,
             chunks_used=[chunk.id for chunk, _ in retrieved],
@@ -164,20 +169,88 @@ class PRReviewRunner:
 
 
 _ID_RE = re.compile(r"\b(REQ-WMS-\d+|TC-WMS-\d+)\b", re.IGNORECASE)
+_DIFF_FILE_RE = re.compile(r"^\+\+\+ b/(.+)$", re.MULTILINE)
 _REQUIREMENTS_FILENAMES = ("APCS_Requirements.txt", "requirements.txt")
+_TEST_PROCEDURE_FILENAMES = ("APCS_Test_Procedure.txt",)
+_SCHEMA_PATTERNS = re.compile(r"models\.py|schemas?/|schema\.py|_schema\.py", re.IGNORECASE)
+_CONFIG_PATTERNS = re.compile(r"\.(yaml|yml|json|cfg|ini|toml)$", re.IGNORECASE)
 
 
 def _read_mandatory_context(docs_dir: str) -> str:
-    """Return the full text of APCS_Requirements.txt if present, else empty."""
+    """Return Requirements + Test Procedure as a single mandatory context block.
+
+    Both docs are small and authoritative — always injecting them avoids the
+    RAG retrieval gap where critical requirements score below top-k.
+    """
     base = Path(docs_dir)
-    for name in _REQUIREMENTS_FILENAMES:
-        candidate = base / name
-        if candidate.exists():
-            try:
-                return candidate.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                pass
-    return ""
+    parts: List[str] = []
+    for names, label in (
+        (_REQUIREMENTS_FILENAMES, "REQUIREMENTS"),
+        (_TEST_PROCEDURE_FILENAMES, "TEST PROCEDURE"),
+    ):
+        for name in names:
+            candidate = base / name
+            if candidate.exists():
+                try:
+                    text = candidate.read_text(encoding="utf-8", errors="replace")
+                    parts.append(f"=== {label} ({name}) ===\n{text}")
+                    break
+                except OSError:
+                    pass
+    return "\n\n".join(parts)
+
+
+def _summarize_diff(diff: str) -> str:
+    """Extract a structured pre-processed summary of the diff for the LLM.
+
+    Surfaces changed files, detected file categories (config/schema/test/prod),
+    and schema change warnings so the LLM doesn't have to parse raw patch lines.
+    """
+    changed_files = _DIFF_FILE_RE.findall(diff)
+    if not changed_files:
+        return ""
+
+    prod_files, test_files, config_files, schema_files = [], [], [], []
+    for f in changed_files:
+        if re.search(r"tests?/|test_", f):
+            test_files.append(f)
+        elif _CONFIG_PATTERNS.search(f):
+            config_files.append(f)
+        elif _SCHEMA_PATTERNS.search(f):
+            schema_files.append(f)
+        else:
+            prod_files.append(f)
+
+    lines = [f"Changed files ({len(changed_files)} total):"]
+    if prod_files:
+        lines.append(f"  Production  : {', '.join(prod_files)}")
+    if test_files:
+        lines.append(f"  Tests       : {', '.join(test_files)}")
+    if config_files:
+        lines.append(f"  Config      : {', '.join(config_files)}")
+    if schema_files:
+        lines.append(f"  Schema/model: {', '.join(schema_files)}")
+
+    if prod_files and not test_files:
+        lines.append(
+            "⚠ No test files changed — verify each production change is covered "
+            "by existing tests or is non-behavioral."
+        )
+    if schema_files:
+        lines.append(
+            "⚠ Schema/model files changed — check backward compatibility "
+            "per REQ-WMS-018/019."
+        )
+    if config_files:
+        lines.append(
+            "⚠ Config files changed — if thresholds or model params are modified, "
+            "REQ-WMS-007 validation run may be required."
+        )
+
+    return "\n".join(lines)
+
+
+_MAX_BOOSTED = 5
 
 
 def _boost_by_ids(diff: str, all_chunks: List[Chunk], retrieved: list) -> list:
@@ -185,6 +258,7 @@ def _boost_by_ids(diff: str, all_chunks: List[Chunk], retrieved: list) -> list:
 
     Avoids situations where a requirement is mentioned in comments or variable
     names in the diff but the corresponding doc chunk scored below top-k.
+    Capped at _MAX_BOOSTED extra chunks to avoid token bloat.
     Deduplicated by chunk.id — no chunk appears twice.
     """
     ids_in_diff: Set[str] = {m.upper() for m in _ID_RE.findall(diff)}
@@ -193,27 +267,33 @@ def _boost_by_ids(diff: str, all_chunks: List[Chunk], retrieved: list) -> list:
 
     already: Set[str] = {chunk.id for chunk, _ in retrieved}
     boosted = list(retrieved)
+    n_boosted = 0
     for chunk in all_chunks:
+        if n_boosted >= _MAX_BOOSTED:
+            break
         if chunk.id in already:
             continue
         ids_in_chunk = {m.upper() for m in _ID_RE.findall(chunk.text)}
         if ids_in_diff & ids_in_chunk:
-            boosted.append((chunk, 0.0))  # score 0.0 = boosted, not retrieved by cosine
+            boosted.append((chunk, 0.0))
             already.add(chunk.id)
+            n_boosted += 1
             logger.debug("Boosted chunk %s (contains %s)", chunk.id, ids_in_diff & ids_in_chunk)
     return boosted
 
 
 def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
-    # Returns (verdict, summary, highlights, tickets_addressed)
-    """Validate and coerce the LLM JSON payload to (Verdict, summary, [Highlight]).
+    # Returns (verdict, summary, highlights, required_actions, tickets_addressed)
+    # Fix 1: reasoning field is consumed here and discarded — it drove the LLM's
+    # chain-of-thought but is not surfaced to users.
+    reasoning = payload.get("reasoning", "")
+    if reasoning:
+        logger.debug("LLM reasoning: %s", reasoning[:500])
 
-    Also flags REQ-WMS-*/TC-WMS-* identifiers that the model cited but
-    which do not appear in `verification_context` (the retrieved doc
-    chunks + diff). Unverified IDs get an inline `[unverified citation]`
-    marker so the reviewer is never misled by a fabricated reference."""
     try:
-        verdict_raw = validate_choice(payload.get("verdict"), ["GO", "HOLD"], "verdict")
+        verdict_raw = validate_choice(
+            payload.get("verdict"), ["GO", "HOLD", "GO_WITH_ACTIONS"], "verdict"
+        )
     except SanitizationError as exc:
         raise PRReviewError(str(exc)) from exc
     verdict = Verdict(verdict_raw)
@@ -269,6 +349,15 @@ def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
                 doc_ref=_nullable_str(item.get("doc_ref")),
             )
         )
+    # Fix 7: required_actions for GO_WITH_ACTIONS
+    required_actions_raw = payload.get("required_actions") or []
+    required_actions: List[str] = []
+    if isinstance(required_actions_raw, list):
+        for item in required_actions_raw[:10]:
+            s = cap_string(str(item).strip(), max_chars=500, label="required_action")
+            if s:
+                required_actions.append(s)
+
     tickets_raw = payload.get("tickets_possibly_addressed") or []
     tickets_addressed: List[int] = []
     if isinstance(tickets_raw, list):
@@ -278,7 +367,7 @@ def _coerce_llm_payload(payload: dict, verification_context: str = "") -> tuple:
             except (TypeError, ValueError):
                 pass
 
-    return verdict, summary, highlights, tickets_addressed
+    return verdict, summary, highlights, required_actions, tickets_addressed
 
 
 def _nullable_str(value) -> Optional[str]:
@@ -304,10 +393,16 @@ def _render_markdown_report(
     highlights: List[Highlight],
     retrieved: list,
     *,
+    required_actions: List[str] | None = None,
     tickets_addressed: List[int] | None = None,
     open_tickets=None,
 ) -> str:
-    verdict_badge = "✅ **GO**" if verdict is Verdict.GO else "🟠 **HOLD**"
+    if verdict is Verdict.GO:
+        verdict_badge = "✅ **GO**"
+    elif verdict is Verdict.GO_WITH_ACTIONS:
+        verdict_badge = "🔵 **GO WITH ACTIONS**"
+    else:
+        verdict_badge = "🟠 **HOLD**"
     parts: List[str] = [
         "## [Verdict] LLM Review",
         "",
@@ -336,6 +431,13 @@ def _render_markdown_report(
         parts.append("_No specific findings — the diff looks aligned with the documented requirements._")
         parts.append("")
 
+    if required_actions:
+        parts.append("### Required actions before next release")
+        parts.append("")
+        for action in required_actions:
+            parts.append(f"- [ ] {action}")
+        parts.append("")
+
     if tickets_addressed:
         ticket_map = {t.number: t.title for t in (open_tickets or [])}
         parts.append("### Tickets possibly addressed")
@@ -348,12 +450,23 @@ def _render_markdown_report(
         parts.append("")
 
     if retrieved:
+        rag_chunks = [(c, s) for c, s in retrieved if s > 0.0]
+        boosted_chunks = [(c, s) for c, s in retrieved if s == 0.0]
         parts.append("<details>")
-        parts.append("<summary>Documentation chunks consulted</summary>")
+        parts.append("<summary>Documentation context</summary>")
         parts.append("")
-        for chunk, score in retrieved:
-            parts.append(f"- `{chunk.id}` (relevance {score:.2f})")
-        parts.append("")
+        if rag_chunks:
+            parts.append("**Retrieved (RAG)**")
+            parts.append("")
+            for chunk, score in rag_chunks:
+                parts.append(f"- `{chunk.id}` (relevance {score:.2f})")
+            parts.append("")
+        if boosted_chunks:
+            parts.append("**Injected (keyword match)**")
+            parts.append("")
+            for chunk, _ in boosted_chunks:
+                parts.append(f"- `{chunk.id}`")
+            parts.append("")
         parts.append("</details>")
     parts.append("")
     parts.append(f"_PR #{pr_meta.number} · head `{pr_meta.head_sha[:8] if pr_meta.head_sha else 'n/a'}` · automated review_")
