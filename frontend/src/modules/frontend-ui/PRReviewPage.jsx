@@ -264,10 +264,18 @@ function PRCard({ pr, onApprove, onReject }) {
   const [expanded, setExpanded] = useState(false);
   const review = pr.last_review;
   const verdict = review?.verdict || null;
+  const isPending = !verdict;
   const summary = review?.summary || (review ? "" : "Awaiting Verdict review…");
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-theme duration-200 dark:border-slate-700 dark:bg-slate-900">
+    <div className="relative">
+      {isPending && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-emerald-400/70 animate-pulse dark:ring-emerald-500/60"
+        />
+      )}
+    <article className={`rounded-2xl border p-5 shadow-sm transition-theme duration-200 bg-white dark:bg-slate-900 ${isPending ? "border-emerald-400/50 dark:border-emerald-500/40" : "border-slate-200 dark:border-slate-700"}`}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -345,6 +353,7 @@ function PRCard({ pr, onApprove, onReject }) {
         ) : null}
       </footer>
     </article>
+    </div>
   );
 }
 
