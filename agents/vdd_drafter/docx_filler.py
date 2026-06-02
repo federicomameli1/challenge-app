@@ -63,15 +63,20 @@ def fill_vdd_template(
     # --- Prose sections -------------------------------------------------------
     intro = sections.get("Introduction", {})
     _fill_after_heading(doc, "Purpose",
-                        _clean(intro.get("Purpose", "")))
+                        _clean(_fuzzy_get(intro, "Purpose")))
     _fill_after_heading(doc, "Applicability",
-                        _clean(intro.get("Applicability", "")))
+                        _clean(_fuzzy_get(intro, "Applicability")))
     _fill_after_heading(doc, "Description of Changes from the Previous Revision",
-                        _clean(intro.get("Description of Changes from the Previous Revision", "")))
-    _fill_limitation_table(doc,
-                           _clean(sections.get("Sw Version Limitation", {}).get("_body", "")))
+                        _clean(_fuzzy_get(intro,
+                            "Description of Changes from the Previous Revision",
+                            "Description of Changes")))
+    lim_section = sections.get("Sw Version Limitation",
+                  sections.get("SW Version Limitation",
+                  sections.get("Sw Version Limitations", {})))
+    _fill_limitation_table(doc, _clean(_fuzzy_get(lim_section, "_body", "Limitation")))
+    inst_section = sections.get("Installation Instructions", {})
     _fill_after_heading(doc, "Installation Instructions",
-                        _clean(sections.get("Installation Instructions", {}).get("_body", "")))
+                        _clean(_fuzzy_get(inst_section, "_body", "Instructions")))
 
     # --- §2.2.1  SCI table  (header: "CI Description | CI Name | CI Version …") ---
     if module_versions:
@@ -84,37 +89,46 @@ def fill_vdd_template(
                 ])
 
     # --- §3  Documentation tables  (header: "document title | doc code tc …") ---
-    doc3 = sections.get("Documentation Related to the Baseline", {})
+    doc3 = sections.get("Documentation Related to the Baseline",
+           sections.get("Documentation related to the Baseline", {}))
     doc_tables = _find_tables_by_header(doc, ["document title", "doc code tc"])
     _subsections_to_tables(doc_tables, [
-        doc3.get("Requirements specification Documents", ""),
-        doc3.get("Software conception, design, programming Documents", ""),
-        doc3.get("Testing Documentation", ""),
-        doc3.get("Other documents", ""),
+        _fuzzy_get(doc3, "Requirements specification Documents",
+                         "Requirements specification documents",
+                         "Requirements specification"),
+        _fuzzy_get(doc3, "Software conception, design, programming Documents",
+                         "Software conception, design, programming",
+                         "Software conception"),
+        _fuzzy_get(doc3, "Testing Documentation", "Testing documentation", "Testing"),
+        _fuzzy_get(doc3, "Other documents", "Other"),
     ], cols=["Document title", "Doc code TC", "Revision", "TC Document Lifecycle state"])
 
     # --- §4  Build environment table  (header: "tool/script file | tool version …") ---
-    build = sections.get("Sw Version Build", {})
+    build = sections.get("Sw Version Build", sections.get("SW Version Build", {}))
     build_tables = _find_tables_by_header(doc, ["tool", "version"])
     if build_tables:
-        text = build.get("Build Environment for Reproducibility", "")
+        text = _fuzzy_get(build, "Build Environment for Reproducibility",
+                                  "Build Environment", "Build environment")
         for line in _bullet_lines(text):
             tool, _, ver = line.partition(":")
             _add_row(build_tables[0], [tool.strip(), ver.strip(), ""])
 
     # --- §5  Changes tables  (header: "identifier | title | status …") ---
-    changes = sections.get("Changes Incorporated", {})
+    changes = sections.get("Changes Incorporated",
+              sections.get("Changes incorporated", {}))
     change_tables = _find_tables_by_header(doc, ["identifier", "title"])
     if change_tables:
-        taken = _bullet_lines(
-            changes.get("List of changes taken into account in this SW version", "")
-        )
+        taken = _bullet_lines(_fuzzy_get(changes,
+            "List of changes taken into account in this SW version",
+            "List of changes taken into account",
+            "Changes taken"))
         for i, item in enumerate(taken, 1):
             _add_row(change_tables[0], [str(i), item, "Closed", "Verdict", "Change", "No"])
     if len(change_tables) > 1:
-        not_taken = _bullet_lines(
-            changes.get("List of changes not taken into account in this sw version", "")
-        )
+        not_taken = _bullet_lines(_fuzzy_get(changes,
+            "List of changes not taken into account in this sw version",
+            "List of changes not taken into account",
+            "Changes not taken"))
         for i, item in enumerate(not_taken, 1):
             _add_row(change_tables[1], [str(i), item, "Verdict", "Change", "No"])
 
@@ -204,11 +218,42 @@ def _clean(text: str) -> str:
 
 
 def _bullet_lines(text: str) -> List[str]:
-    return [
-        re.sub(r"^[-•*]\s*", "", l).strip()
-        for l in text.splitlines()
-        if l.strip() and not l.strip().startswith("#")
-    ]
+    """Extract bullet/numbered list items, stripping markdown list markers and bold markers."""
+    lines = []
+    for l in text.splitlines():
+        stripped = l.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        # Remove list markers (-, *, •, 1., 2. etc.) and bold (**text**)
+        cleaned = re.sub(r"^[-•*]\s*", "", stripped)
+        cleaned = re.sub(r"^\d+\.\s*", "", cleaned)
+        cleaned = re.sub(r"\*\*(.+?)\*\*", r"\1", cleaned)
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+def _fuzzy_get(d: dict, *keys: str, default: str = "") -> str:
+    """Case-insensitive, prefix-matching dict lookup.
+
+    Tries keys in order; for each key attempts exact match first,
+    then case-insensitive match, then checks if any dict key starts
+    with the first word of the query (for truncated LLM headings).
+    """
+    for key in keys:
+        if key in d:
+            return d[key]
+        key_lower = key.lower()
+        for k, v in d.items():
+            if k.lower() == key_lower:
+                return v
+        # Prefix match on first significant word
+        first_word = key_lower.split()[0] if key_lower.split() else ""
+        if first_word and len(first_word) > 4:
+            for k, v in d.items():
+                if k.lower().startswith(first_word):
+                    return v
+    return default
 
 
 def _parse_markdown(markdown: str) -> Dict[str, Dict[str, str]]:
