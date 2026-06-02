@@ -40,6 +40,11 @@ Thumbs.db
 hitachi-*/
 artifacts/
 
+# Exception: commit the official Hitachi VDD template needed by the VDD Drafter agent
+!docs/hitachi-reference-docs/
+!docs/hitachi-reference-docs/06. VDD/
+!docs/hitachi-reference-docs/06. VDD/G-TMP_S0203_01_EN.docx
+
 # Secrets / local certs
 *.pem
 *.key

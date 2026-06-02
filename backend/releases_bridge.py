@@ -1,14 +1,14 @@
-"""Read-only bridge for published GitHub releases on the subject repo.
+"""Bridge for published GitHub releases on the subject repo.
 
-Lists tag-based releases (`/repos/{owner}/{repo}/releases`) and points at
-the auto-drafted VDD file the deploy-prod workflow commits to
-`VDDs/VDD-<tag>.md`. Verdict UI shows these in the Releases page.
+Lists tag-based releases and points at the auto-drafted VDD file.
+Also exposes POST /releases to publish a new GitHub release from the UI.
 """
 
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+import urllib.request
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -158,3 +158,69 @@ def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
         )
 
     return ReleasesResponse(repo=repo, items=items)
+
+
+# ---------------------------------------------------------------------------
+# Create release
+# ---------------------------------------------------------------------------
+
+
+class CreateReleaseRequest(BaseModel):
+    repo: str
+    tag_name: str = Field(..., description="Git tag, e.g. 'v1.0.0'")
+    name: str = Field(default="", description="Release title (defaults to tag_name)")
+    body: str = Field(default="", description="Release notes (markdown)")
+    prerelease: bool = Field(default=False)
+    target_commitish: str = Field(default="main", description="Branch or SHA to tag")
+
+
+class CreateReleaseResponse(BaseModel):
+    id: int
+    tag_name: str
+    html_url: str
+    published_at: Optional[str] = None
+
+
+@router.post("", response_model=CreateReleaseResponse, status_code=201)
+def create_release(req: CreateReleaseRequest) -> CreateReleaseResponse:
+    """Publish a new GitHub release on the subject repository."""
+    cfg = CiBridgeConfig.for_subject_repo(req.repo)
+    if not cfg.token:
+        raise HTTPException(
+            status_code=503,
+            detail="SUBJECT_REPO_TOKEN is not configured in the backend env",
+        )
+    if not req.tag_name.strip():
+        raise HTTPException(status_code=400, detail="tag_name is required")
+
+    payload = json.dumps({
+        "tag_name": req.tag_name.strip(),
+        "name": req.name.strip() or req.tag_name.strip(),
+        "body": req.body.strip(),
+        "prerelease": req.prerelease,
+        "target_commitish": req.target_commitish.strip() or "main",
+    }).encode()
+
+    url = f"{GITHUB_API}/repos/{req.repo}/releases"
+    http_req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={**cfg.headers(), "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(http_req, timeout=15) as resp:
+            raw = json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        body = exc.read()[:400].decode("utf-8", errors="replace")
+        raise HTTPException(
+            status_code=exc.code,
+            detail=f"GitHub returned {exc.code} creating release: {body}",
+        ) from exc
+
+    return CreateReleaseResponse(
+        id=raw["id"],
+        tag_name=raw["tag_name"],
+        html_url=raw["html_url"],
+        published_at=raw.get("published_at"),
+    )
