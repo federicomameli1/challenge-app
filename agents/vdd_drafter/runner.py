@@ -62,14 +62,28 @@ class VDDDrafterRunner:
             raise VDDDrafterError("LLM returned empty content")
 
         markdown = _strip_code_fences(text.strip())
-        # Defense-in-depth: bound the markdown size before it lands in
-        # a committed file. max_tokens at the API call already caps
-        # this in practice, but a misconfigured run could still spike.
         markdown = cap_string(markdown, max_chars=80_000, label="VDD markdown")
         present, missing = _audit_sections(markdown)
 
+        # Attempt to fill the official Hitachi .docx template.
+        vdd_docx: Optional[bytes] = None
+        try:
+            from .docx_filler import fill_vdd_template
+            vdd_docx = fill_vdd_template(
+                markdown=markdown,
+                release_tag=input.release_tag,
+                repo=input.repo,
+                head_sha=input.head_sha,
+                module_versions=input.module_versions,
+            )
+            if vdd_docx:
+                logger.info("VDD .docx generated (%d bytes)", len(vdd_docx))
+        except Exception as exc:
+            logger.warning("VDD .docx generation failed (non-fatal): %s", exc)
+
         return VDDDraftOutput(
             vdd_markdown=markdown,
+            vdd_docx=vdd_docx,
             sections_present=present,
             sections_missing=missing,
             model=self.llm.model,

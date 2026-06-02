@@ -1,0 +1,106 @@
+3.4 ACCURATE DESCRIPTION OF THE SOLUTION
+
+VERDICT is a release readiness console designed for safety-critical software development environments. It
+sits between the CI/CD pipeline and the human approval gate, automating the preparation of compliance
+artifacts while preserving mandatory human authority over release decisions. The system is structured as
+three independent layers — a React-based frontend, a FastAPI orchestration backend, and a Python AI
+agents core — deployed on a Kubernetes cluster and integrated with GitHub via Actions workflows and API
+bridges.
+
+---
+
+System Architecture
+
+[IMAGE PROMPT: A three-layer architecture diagram. Left layer labeled "Frontend (React + Vite)" with
+icons for PRs, Releases, Health, Tickets. Center layer labeled "Backend (FastAPI)" showing REST API
+routes. Right layer labeled "AI Agents (Python)" with boxes for PR Review, Test Evidence, VDD Drafter,
+Brain Orchestrator. Arrows flow left-to-right. Below the backend, a box labeled "GitHub API Bridges"
+with arrows to a GitHub logo. Below the agents, a box labeled "OpenRouter LLM + HuggingFace
+Embeddings". Clean technical style, dark blue and white.]
+
+---
+
+Layer 1 — Frontend
+
+The frontend is a single-page application built with React 18, Vite, and Tailwind CSS. It communicates
+with the backend exclusively via a Vite proxy that routes all /api requests to the FastAPI backend,
+ensuring same-origin compatibility in both development and container deployments. The interface is
+organized around five task-oriented views: Home (summary dashboard), Approvals (PR reviews and
+environment gates), Releases (tagged versions with VDD links and downloadable PDFs), Health (live
+ArgoCD cluster status), and Tickets (GitHub Issues mirror). A sixth Console view — exposing the
+legacy scenario-based agent runner — is accessible via an expert mode toggle and hidden from
+end-users by default.
+
+Layer 2 — Backend
+
+The backend is a FastAPI application (Python 3.12) exposing approximately 40 HTTP endpoints grouped
+into functional routers: pulls_bridge, commits_bridge, releases_bridge, issues_bridge,
+deployments_bridge, health_bridge, brain_wayside, and a legacy ci_bridge for direct CI run
+artifact retrieval. Subject-repository bridges (pulls, commits, releases, issues, deployments, health, brain_wayside)
+authenticate outbound GitHub API calls using SUBJECT_REPO_TOKEN; the legacy ci_bridge uses a
+separate CI_BRIDGE_TOKEN scoped to the CI repository. The backend is stateless with two exceptions:
+the Cluster Health module maintains an in-memory snapshot of ArgoCD application states, refreshed
+every 30 seconds by polling the Kubernetes API using the pod's mounted service account token.
+
+Layer 3 — AI Agents
+
+The agents core (agents/) contains four distinct pipelines:
+
+PR Review Agent (agents/pr_review/): triggered on every pull request via a GitHub Actions workflow on
+the subject repository. The workflow clones the Verdict repository at runtime, imports the agent module,
+and runs the full pipeline locally on the Actions runner — no inbound network exposure of the Verdict
+pod is required. The pipeline chunks the project documentation directory, embeds all chunks and the PR
+diff using the HuggingFace Inference API (sentence-transformers/all-MiniLM-L6-v2 via
+router.huggingface.co), retrieves the top-k most relevant chunks via cosine similarity, injects the full
+requirements document as mandatory context, and calls an LLM via OpenRouter to produce a structured
+JSON verdict (GO / HOLD / GO_WITH_ACTIONS) with findings, required actions, and cross-checked
+requirement IDs. The LLM output is sanitized against the input context: any REQ-WMS-* or TC-WMS-*
+identifier not present in the source documents is tagged [unverified citation].
+
+Test Evidence Agent (agents/subject_pipeline.py): runs after each merge to the main branch of the
+subject repository. It applies deterministic pre-checks first (any failing test -> HOLD, missing APCS
+bundle -> HOLD) and only invokes the LLM when no hard blockers are detected. The resulting summary is
+posted as a commit comment and surfaced in the Verdict Releases page.
+
+VDD Drafter (agents/vdd_drafter/): triggered on release publication. It assembles a user prompt from
+the release metadata, cumulative diff, APCS document bundle, and module version inventory, then calls
+the LLM to generate a full Version Description Document following the Hitachi template G-TMP S0203
+rev.01 (seven canonical sections). The output is committed to VDDs/VDD-<tag>.md in the subject
+repository and made available for download as PDF directly from the Verdict UI.
+
+Brain Orchestrator (agents/brain/): a generic dependency-aware stage runtime that chains deterministic
+agents (Agent 4 — Release Readiness Analyst, Agent 5 — Test Evidence Analyst, Agent 6 — Cross-Phase
+Consistency Analyst) in a configurable order. Each stage declares dependency policies (require_go,
+require_success, allow_any); the orchestrator gates execution accordingly. In the current
+wayside-monitor integration, only Agent 4 runs against APCS document bundles fetched live from GitHub
+via the POST /brain/run-wayside endpoint.
+
+---
+
+Safety and Sanitization Layer
+
+All LLM-driven agents route their output through a shared sanitization module (agents/_sanitize.py)
+that enforces: output size caps (defense against runaway responses), strict enum validation on verdict
+fields (with safe HOLD fallback on corruption), identifier cross-checking (hallucinated requirement IDs
+are annotated inline), and a prompt injection guardrail prepended to every system prompt instructing
+the model to treat all user-provided content — diffs, documentation, emails, commit messages — as
+data, not instructions.
+
+---
+
+CI/CD Integration and Deployment
+
+[IMAGE PROMPT: A horizontal pipeline diagram showing: "Developer pushes PR" -> "GitHub Actions runner"
+(with three sub-steps: clone Verdict, run PR Review Agent, post comment) -> "Verdict UI on mgmt
+cluster" (shows PR card with GO/HOLD badge and Approve button) -> "GitHub merge". Below the pipeline,
+a separate flow: "Release published" -> "VDD Drafter (Actions)" -> "VDD committed to repo" -> "Verdict
+Releases page". Clean flowchart style, teal and dark blue.]
+
+Verdict is designed for deployment on any Kubernetes cluster (cloud or on-premise). For this challenge,
+it was deployed on a four-VM K3s cluster provided by CrownLabs (Politecnico di Torino): a management
+node hosting ArgoCD and the Verdict pod, and three application nodes (dev, test, prod) running the
+subject application (wayside-monitor). Continuous deployment is managed via Argo CD with a GitOps
+repository (verdict-gitops); the Helm chart is published automatically to GHCR OCI registry by the CI
+pipeline on every change to deploy/helm/. The container image packages the React frontend (served by
+nginx) and the FastAPI backend (uvicorn) in a single image, with nginx routing /api/ requests to the
+backend and serving the SPA fallback for all other paths.

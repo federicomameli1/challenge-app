@@ -47,6 +47,10 @@ class VDDDraftInput(BaseModel):
 
 class VDDDraftOutput(BaseModel):
     vdd_markdown: str = Field(..., description="The full markdown VDD ready to commit")
+    vdd_docx: Optional[bytes] = Field(
+        default=None,
+        description="Filled Hitachi G-TMP S0203 rev.01 template as .docx bytes; None if template not found",
+    )
     sections_present: List[str] = Field(
         default_factory=list,
         description="Which canonical sections the LLM populated (for QA)",

@@ -42,6 +42,10 @@ class ReleaseSummary(BaseModel):
         default=None,
         description="GitHub URL to the rendered VDD file on the main branch",
     )
+    vdd_docx_url: Optional[str] = Field(
+        default=None,
+        description="Raw GitHub URL to download the filled .docx template",
+    )
 
 
 class ReleasesResponse(BaseModel):
@@ -58,13 +62,13 @@ def _vdd_url(repo: str, tag: str) -> str:
     return f"https://github.com/{repo}/blob/main/VDDs/VDD-{tag}.md"
 
 
-def _vdd_exists(cfg: CiBridgeConfig, tag: str) -> bool:
-    """Probe the GitHub Contents API to confirm the VDD file is committed.
+def _vdd_docx_url(repo: str, tag: str) -> str:
+    return f"https://github.com/{repo}/raw/main/VDDs/VDD-{tag}.docx"
 
-    Returns false on any non-200 response, so the UI can fall back to
-    "VDD pending" until the auto-draft commit lands.
-    """
-    url = f"{GITHUB_API}/repos/{cfg.repo}/contents/VDDs/VDD-{tag}.md?ref=main"
+
+def _vdd_exists(cfg: CiBridgeConfig, tag: str, ext: str = ".md") -> bool:
+    """Probe the GitHub Contents API to confirm the VDD file is committed."""
+    url = f"{GITHUB_API}/repos/{cfg.repo}/contents/VDDs/VDD-{tag}{ext}?ref=main"
     status, _, _ = _http_get(url, cfg.headers())
     return status == 200
 
@@ -135,7 +139,8 @@ def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
         if not tag:
             continue
         vdd_path = f"VDDs/VDD-{tag}.md"
-        has_vdd = _vdd_exists(cfg, tag)
+        has_vdd = _vdd_exists(cfg, tag, ".md")
+        has_docx = _vdd_exists(cfg, tag, ".docx")
         items.append(
             ReleaseSummary(
                 tag=tag,
@@ -148,6 +153,7 @@ def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
                 prerelease=bool(raw.get("prerelease", False)),
                 vdd_path=vdd_path if has_vdd else None,
                 vdd_url=_vdd_url(repo, tag) if has_vdd else None,
+                vdd_docx_url=_vdd_docx_url(repo, tag) if has_docx else None,
             )
         )
 

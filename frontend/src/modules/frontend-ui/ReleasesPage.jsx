@@ -230,6 +230,15 @@ function ReleaseCard({ release, subjectRepo }) {
             VDD pending…
           </span>
         )}
+        {release.vdd_docx_url ? (
+          <a
+            href={release.vdd_docx_url}
+            download={`VDD-${release.tag}.docx`}
+            className="rounded-lg border border-sky-600 px-3 py-1.5 text-sm font-semibold text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/30"
+          >
+            ⬇ DOCX
+          </a>
+        ) : null}
         <a
           href={release.html_url}
           target="_blank"
