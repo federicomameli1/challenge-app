@@ -4,6 +4,7 @@ import {
   fetchIssues,
   fetchPendingDeployments,
   fetchPulls,
+  fetchReleases,
 } from "./dashboardApi.js";
 
 function Widget({ title, body, footer, action }) {
@@ -39,6 +40,8 @@ export default function HomePage({ subjectRepo, onNavigate }) {
   const [issuesError, setIssuesError] = useState(null);
   const [health, setHealth] = useState(null);
   const [healthError, setHealthError] = useState(null);
+  const [latestRelease, setLatestRelease] = useState(null);
+  const [releasesError, setReleasesError] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -69,6 +72,14 @@ export default function HomePage({ subjectRepo, onNavigate }) {
         if (alive) setHealth(data);
       } catch (exc) {
         if (alive) setHealthError(exc?.message || String(exc));
+      }
+    })();
+    (async () => {
+      try {
+        const data = await fetchReleases(subjectRepo, { limit: 1 });
+        if (alive) setLatestRelease(data.items?.[0] ?? null);
+      } catch (exc) {
+        if (alive) setReleasesError(exc?.message || String(exc));
       }
     })();
     return () => {
@@ -157,8 +168,33 @@ export default function HomePage({ subjectRepo, onNavigate }) {
 
         <Widget
           title="Releases"
-          body={<span className="text-slate-500 dark:text-slate-400">Coming soon (Phase D).</span>}
-          footer="VDDs auto-drafted"
+          body={
+            releasesError ? (
+              <span className="text-rose-600 dark:text-rose-300">{releasesError}</span>
+            ) : latestRelease === null ? (
+              <span className="text-slate-500 dark:text-slate-400">Loading…</span>
+            ) : !latestRelease ? (
+              <span className="text-slate-500 dark:text-slate-400">No releases yet.</span>
+            ) : (
+              <span>
+                Latest:{" "}
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {latestRelease.tag}
+                </span>
+                {latestRelease.vdd_url ? (
+                  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    VDD ready
+                  </span>
+                ) : (
+                  <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    VDD pending
+                  </span>
+                )}
+              </span>
+            )
+          }
+          footer="VDDs auto-drafted on release"
+          action={{ label: "See all →", onClick: () => onNavigate("releases") }}
         />
 
         <Widget
