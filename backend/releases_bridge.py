@@ -46,6 +46,10 @@ class ReleaseSummary(BaseModel):
         default=None,
         description="Raw GitHub URL to download the filled .docx template",
     )
+    vdd_pdf_url: Optional[str] = Field(
+        default=None,
+        description="Raw GitHub URL to download the PDF converted from the filled .docx",
+    )
 
 
 class ReleasesResponse(BaseModel):
@@ -64,6 +68,10 @@ def _vdd_url(repo: str, tag: str) -> str:
 
 def _vdd_docx_url(repo: str, tag: str) -> str:
     return f"https://github.com/{repo}/raw/main/VDDs/VDD-{tag}.docx"
+
+
+def _vdd_pdf_url(repo: str, tag: str) -> str:
+    return f"https://github.com/{repo}/raw/main/VDDs/VDD-{tag}.pdf"
 
 
 def _vdd_exists(cfg: CiBridgeConfig, tag: str, ext: str = ".md") -> bool:
@@ -141,6 +149,7 @@ def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
         vdd_path = f"VDDs/VDD-{tag}.md"
         has_vdd = _vdd_exists(cfg, tag, ".md")
         has_docx = _vdd_exists(cfg, tag, ".docx")
+        has_pdf = _vdd_exists(cfg, tag, ".pdf")
         items.append(
             ReleaseSummary(
                 tag=tag,
@@ -154,6 +163,7 @@ def list_releases(repo: str, limit: int = 20) -> ReleasesResponse:
                 vdd_path=vdd_path if has_vdd else None,
                 vdd_url=_vdd_url(repo, tag) if has_vdd else None,
                 vdd_docx_url=_vdd_docx_url(repo, tag) if has_docx else None,
+                vdd_pdf_url=_vdd_pdf_url(repo, tag) if has_pdf else None,
             )
         )
 

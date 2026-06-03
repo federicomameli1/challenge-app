@@ -146,6 +146,12 @@ function ReleaseCard({ release, subjectRepo }) {
   const hasVdd = Boolean(release.vdd_url);
 
   async function handleDownloadPdf() {
+    // If a PDF converted from the official DOCX is committed, open it directly.
+    // Fall back to client-side markdown print rendering when not available yet.
+    if (release.vdd_pdf_url) {
+      window.open(release.vdd_pdf_url, "_blank");
+      return;
+    }
     setDownloading(true);
     try {
       const { content } = await fetchVddContent(subjectRepo, release.tag);
