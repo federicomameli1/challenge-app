@@ -1293,6 +1293,16 @@ except ImportError:
 if _brain_wayside_router is not None:
     app.include_router(_brain_wayside_router)
 
+try:
+    from .agent7_bridge import router as _agent7_router  # type: ignore
+except ImportError:
+    try:
+        from agent7_bridge import router as _agent7_router  # type: ignore
+    except Exception:
+        _agent7_router = None
+if _agent7_router is not None:
+    app.include_router(_agent7_router)
+
 
 @app.get("/health")
 def health() -> Dict[str, Any]:

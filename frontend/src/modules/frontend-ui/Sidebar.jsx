@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { id: "releases", label: "Releases", icon: "▲" },
   { id: "health", label: "Health", icon: "♥" },
   { id: "tickets", label: "Tickets", icon: "◉" },
+  { id: "agent7", label: "Prod Monitor", icon: "⚡" },
 ];
 
 export default function Sidebar({
