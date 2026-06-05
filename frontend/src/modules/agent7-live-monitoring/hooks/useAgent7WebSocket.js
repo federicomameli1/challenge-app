@@ -46,7 +46,7 @@ export function useAgent7WebSocket(scenarioId, options = {}) {
     closedByUser.current = false;
 
     const es = new EventSource(
-      `/agent7/stream/${encodeURIComponent(scenarioId)}`,
+      `/api/agent7/stream/${encodeURIComponent(scenarioId)}`,
     );
     sourceRef.current = es;
 

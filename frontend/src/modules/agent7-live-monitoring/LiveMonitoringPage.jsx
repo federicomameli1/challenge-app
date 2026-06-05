@@ -114,7 +114,7 @@ export default function LiveMonitoringPage() {
   async function startDeployment() {
     setBusy("start");
     try {
-      await fetch("/agent7/deploy", {
+      await fetch("/api/agent7/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function LiveMonitoringPage() {
   async function inject(probeName) {
     setBusy(probeName);
     try {
-      await fetch("/agent7/demo/inject", {
+      await fetch("/api/agent7/demo/inject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -147,7 +147,7 @@ export default function LiveMonitoringPage() {
   async function resolve(probeName) {
     setBusy(probeName);
     try {
-      await fetch("/agent7/demo/resolve", {
+      await fetch("/api/agent7/demo/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +163,7 @@ export default function LiveMonitoringPage() {
   async function resolveAll() {
     setBusy("all");
     try {
-      await fetch("/agent7/demo/reset", {
+      await fetch("/api/agent7/demo/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenario_id: scenarioId }),
