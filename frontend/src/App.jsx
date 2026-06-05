@@ -7,6 +7,7 @@ import PlaceholderPage from "./modules/frontend-ui/PlaceholderPage.jsx";
 import ReleasesPage from "./modules/frontend-ui/ReleasesPage.jsx";
 import Sidebar from "./modules/frontend-ui/Sidebar.jsx";
 import TicketsPage from "./modules/frontend-ui/TicketsPage.jsx";
+import LiveMonitoringPage from "./modules/agent7-live-monitoring/index.js";
 
 const DEFAULT_SUBJECT_REPO = "federicomameli1/wayside-monitor";
 
@@ -77,6 +78,7 @@ export default function App() {
             {view === "health" && "Health"}
             {view === "tickets" && "Tickets"}
             {view === "console" && "Expert mode"}
+            {view === "live-monitoring" && "Live Monitoring"}
           </h2>
           <button
             type="button"
@@ -98,6 +100,7 @@ export default function App() {
           {view === "health" && <HealthPage />}
           {view === "tickets" && <TicketsPage subjectRepo={subjectRepo} />}
           {view === "console" && <ExpertConsole />}
+          {view === "live-monitoring" && <LiveMonitoringPage />}
         </main>
       </div>
     </div>
