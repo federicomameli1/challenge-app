@@ -1,9 +1,9 @@
 /**
- * Agent 7 Live Monitoring — WebSocket hook
+ * Agent 7 Live Monitoring — SSE hook
  *
- * Connects to the Agent 7 backend at
- *   WS <apiBase>/api/agent7/ws/{scenarioId}
- * and streams MonitoringSnapshot frames.
+ * Connects to the Verdict backend at
+ *   GET /agent7/stream/{scenarioId}
+ * and streams MonitoringSnapshot frames via Server-Sent Events.
  *
  * Returns:
  *   { snapshot, history, connected, error, reconnect }
@@ -11,89 +11,87 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const DEFAULT_API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_AGENT7_API_BASE) ||
-  "http://127.0.0.1:8001";
-
 const HISTORY_CAP = 200;
 
-function apiToWs(apiBase) {
-  return String(apiBase).replace(/^http/i, "ws");
+function deriveMetrics(probe_results = []) {
+  const total = probe_results.length;
+  const bad = probe_results.filter(
+    (p) => p.status === "unhealthy" || p.status === "degraded",
+  ).length;
+  const latencies = probe_results
+    .map((p) => p.response_time_ms)
+    .filter(Boolean);
+  return {
+    error_rate_percent: total > 0 ? Math.round((bad / total) * 100) : 0,
+    p99_latency_ms:
+      latencies.length > 0 ? Math.round(Math.max(...latencies)) : null,
+    active_instances: probe_results.filter((p) => p.status === "healthy").length,
+  };
 }
 
 export function useAgent7WebSocket(scenarioId, options = {}) {
-  const {
-    apiBase = DEFAULT_API_BASE,
-    autoConnect = true,
-    reconnect: shouldReconnect = true,
-  } = options;
+  const { autoConnect = true, reconnect: shouldReconnect = true } = options;
 
   const [snapshot, setSnapshot] = useState(null);
   const [history, setHistory] = useState([]);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState(null);
 
-  const wsRef = useRef(null);
+  const sourceRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const closedByUser = useRef(false);
-
-  const buildUrl = useCallback(
-    (sid) => `${apiToWs(apiBase)}/api/agent7/ws/${encodeURIComponent(sid)}`,
-    [apiBase],
-  );
 
   const connect = useCallback(() => {
     if (!scenarioId) return;
     closedByUser.current = false;
-    try {
-      const ws = new WebSocket(buildUrl(scenarioId));
-      wsRef.current = ws;
 
-      ws.onopen = () => {
-        setConnected(true);
-        setError(null);
-      };
+    const es = new EventSource(
+      `/agent7/stream/${encodeURIComponent(scenarioId)}`,
+    );
+    sourceRef.current = es;
 
-      ws.onmessage = (event) => {
-        try {
-          const frame = JSON.parse(event.data);
-          if (frame.type === "snapshot" && frame.data) {
-            const s = frame.data;
-            setSnapshot(s);
-            setHistory((prev) => {
-              const next = [...prev, s];
-              return next.length > HISTORY_CAP ? next.slice(-HISTORY_CAP) : next;
-            });
-          }
-        } catch {
-          // Ignore malformed frames.
+    es.onopen = () => {
+      setConnected(true);
+      setError(null);
+    };
+
+    es.onmessage = (event) => {
+      try {
+        const frame = JSON.parse(event.data);
+        if (frame.error) {
+          setError(frame.error);
+          return;
         }
-      };
-
-      ws.onerror = () => {
-        setError("WebSocket error");
-      };
-
-      ws.onclose = () => {
-        setConnected(false);
-        if (shouldReconnect && !closedByUser.current) {
-          reconnectTimerRef.current = window.setTimeout(connect, 2000);
+        if (frame.type === "snapshot") {
+          const s = { ...frame, ...deriveMetrics(frame.probe_results) };
+          setSnapshot(s);
+          setHistory((prev) => {
+            const next = [...prev, s];
+            return next.length > HISTORY_CAP ? next.slice(-HISTORY_CAP) : next;
+          });
         }
-      };
-    } catch (e) {
-      setError(String(e?.message ?? e));
-    }
-  }, [scenarioId, buildUrl, shouldReconnect]);
+      } catch {
+        // ignore malformed frames
+      }
+    };
+
+    es.onerror = () => {
+      setConnected(false);
+      es.close();
+      sourceRef.current = null;
+      if (shouldReconnect && !closedByUser.current) {
+        reconnectTimerRef.current = window.setTimeout(connect, 2000);
+      }
+    };
+  }, [scenarioId, shouldReconnect]);
 
   const reconnect = useCallback(() => {
-    if (wsRef.current) {
-      closedByUser.current = true;
-      wsRef.current.close();
+    closedByUser.current = true;
+    if (sourceRef.current) {
+      sourceRef.current.close();
+      sourceRef.current = null;
     }
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
+    clearTimeout(reconnectTimerRef.current);
     connect();
   }, [connect]);
 
@@ -102,12 +100,10 @@ export function useAgent7WebSocket(scenarioId, options = {}) {
     connect();
     return () => {
       closedByUser.current = true;
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-      if (wsRef.current) {
-        wsRef.current.close();
+      clearTimeout(reconnectTimerRef.current);
+      if (sourceRef.current) {
+        sourceRef.current.close();
+        sourceRef.current = null;
       }
     };
   }, [autoConnect, scenarioId, connect]);
