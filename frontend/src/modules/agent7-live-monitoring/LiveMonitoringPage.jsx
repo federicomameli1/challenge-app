@@ -4,15 +4,11 @@
  * Self-contained React component for the Agent 7 production deployment
  * live monitoring view. Reached from the Sidebar's "Live Monitoring" item.
  *
- * Backend: see agent7/api/server.py (FastAPI + WebSocket on port 8001).
+ * Backend: Verdict FastAPI at /agent7/* (SSE stream).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAgent7WebSocket } from "./hooks/useAgent7WebSocket.js";
-
-const DEFAULT_API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_AGENT7_API_BASE) ||
-  "http://127.0.0.1:8001";
 
 const STATUS_STYLES = {
   healthy: {
@@ -104,36 +100,13 @@ function SmallButton({ children, onClick, disabled, color = "red" }) {
   );
 }
 
-export default function LiveMonitoringPage({ apiBase = DEFAULT_API_BASE }) {
+export default function LiveMonitoringPage() {
   const [scenarioId, setScenarioId] = useState("P7-001");
   const [draftScenarioId, setDraftScenarioId] = useState("P7-001");
-  const [scenarios, setScenarios] = useState([]);
+  const [scenarios] = useState([]);
   const [busy, setBusy] = useState(null);
 
-  const { snapshot, history, connected, error, reconnect } = useAgent7WebSocket(
-    scenarioId,
-    { apiBase },
-  );
-
-  // Fetch available scenarios once on mount for the dropdown.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${apiBase}/api/agent7/scenarios`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) {
-          setScenarios(data.scenarios ?? []);
-        }
-      } catch {
-        // Backend not reachable — leave the list empty.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiBase]);
+  const { snapshot, history, connected, error, reconnect } = useAgent7WebSocket(scenarioId);
 
   const overall = snapshot?.overall_status ?? "unknown";
   const overallStyle = STATUS_STYLES[overall] ?? STATUS_STYLES.unknown;
@@ -141,12 +114,11 @@ export default function LiveMonitoringPage({ apiBase = DEFAULT_API_BASE }) {
   async function startDeployment() {
     setBusy("start");
     try {
-      await fetch(`${apiBase}/api/agent7/deploy/start`, {
+      await fetch("/agent7/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario_id: scenarioId,
-          version: "2.0.0",
           interval_seconds: 1.5,
         }),
       });
@@ -158,7 +130,7 @@ export default function LiveMonitoringPage({ apiBase = DEFAULT_API_BASE }) {
   async function inject(probeName) {
     setBusy(probeName);
     try {
-      await fetch(`${apiBase}/api/agent7/demo/inject-problem`, {
+      await fetch("/agent7/demo/inject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -175,7 +147,7 @@ export default function LiveMonitoringPage({ apiBase = DEFAULT_API_BASE }) {
   async function resolve(probeName) {
     setBusy(probeName);
     try {
-      await fetch(`${apiBase}/api/agent7/demo/resolve-problem`, {
+      await fetch("/agent7/demo/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -191,7 +163,7 @@ export default function LiveMonitoringPage({ apiBase = DEFAULT_API_BASE }) {
   async function resolveAll() {
     setBusy("all");
     try {
-      await fetch(`${apiBase}/api/agent7/demo/resolve-problem`, {
+      await fetch("/agent7/demo/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenario_id: scenarioId }),
