@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Agent7Page from "./modules/frontend-ui/Agent7Page.jsx";
 import ExpertConsole from "./modules/frontend-ui/ExpertConsole.jsx";
 import HealthPage from "./modules/frontend-ui/HealthPage.jsx";
 import HomePage from "./modules/frontend-ui/HomePage.jsx";
@@ -77,6 +78,7 @@ export default function App() {
             {view === "releases" && "Releases"}
             {view === "health" && "Health"}
             {view === "tickets" && "Tickets"}
+            {view === "agent7" && "Production Monitor"}
             {view === "console" && "Expert mode"}
             {view === "live-monitoring" && "Live Monitoring"}
           </h2>
@@ -99,6 +101,7 @@ export default function App() {
           {view === "releases" && <ReleasesPage subjectRepo={subjectRepo} />}
           {view === "health" && <HealthPage />}
           {view === "tickets" && <TicketsPage subjectRepo={subjectRepo} />}
+          {view === "agent7" && <Agent7Page />}
           {view === "console" && <ExpertConsole />}
           {view === "live-monitoring" && <LiveMonitoringPage />}
         </main>

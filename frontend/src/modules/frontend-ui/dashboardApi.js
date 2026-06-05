@@ -511,6 +511,60 @@ export async function fetchVddContent(repo, tag) {
   return requestJson(`/releases/vdd-content?repo=${encodeURIComponent(repo)}&tag=${encodeURIComponent(tag)}`);
 }
 
+// --------------------------------------------------------------------------- //
+// Agent 7 — Production Deployment & Live Monitoring                          //
+// --------------------------------------------------------------------------- //
+
+export async function agent7StartDeployment({ scenario_id, release_id, probe_names, stabilization_seconds, interval_seconds }) {
+  return requestJson("/agent7/deploy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenario_id, release_id, probe_names, stabilization_seconds, interval_seconds }),
+  });
+}
+
+export async function agent7GetStatus(scenario_id) {
+  return requestJson(`/agent7/status/${encodeURIComponent(scenario_id)}`);
+}
+
+export function agent7OpenStream(scenario_id, { onSnapshot, onError } = {}) {
+  const url = `${AGENT_BACKEND_URL}/agent7/stream/${encodeURIComponent(scenario_id)}`;
+  const source = new EventSource(url);
+  source.onmessage = (event) => {
+    if (!event?.data) return;
+    try {
+      const payload = JSON.parse(event.data);
+      if (onSnapshot) onSnapshot(payload);
+    } catch { /* ignore parse errors */ }
+  };
+  source.onerror = () => { if (onError) onError(); };
+  return source;
+}
+
+export async function agent7InjectProblem({ scenario_id, probe_name, status, error_message, response_time_ms }) {
+  return requestJson("/agent7/demo/inject", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenario_id, probe_name, status, error_message, response_time_ms }),
+  });
+}
+
+export async function agent7ResolveProblem({ scenario_id, probe_name }) {
+  return requestJson("/agent7/demo/resolve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenario_id, probe_name }),
+  });
+}
+
+export async function agent7Reset(scenario_id) {
+  return requestJson("/agent7/demo/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenario_id }),
+  });
+}
+
 export async function fetchHealthSnapshot() {
   return requestJson("/health/apps");
 }
