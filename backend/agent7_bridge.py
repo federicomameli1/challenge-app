@@ -46,7 +46,7 @@ class DeployRequest(BaseModel):
     scenario_id: str = Field(..., description="e.g. 'P7-001'")
     release_id: str = Field(default="REL-demo")
     probe_names: list = Field(
-        default=["api-gateway", "auth-service", "payment-service", "monitoring-core"]
+        default=["sensor-collector", "anomaly-engine", "alert-dispatcher", "redis-broker"]
     )
     stabilization_seconds: float = Field(default=30.0, ge=5.0, le=300.0)
     interval_seconds: float = Field(default=3.0, ge=1.0, le=30.0)

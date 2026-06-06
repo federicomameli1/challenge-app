@@ -185,10 +185,10 @@ export default function LiveMonitoringPage() {
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            Agent 7 — Live Monitoring
+            Live Monitoring
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Real-time production deployment health from Agent 7.
+            Real-time production deployment health.
           </p>
         </div>
         <div className="flex items-center gap-3">

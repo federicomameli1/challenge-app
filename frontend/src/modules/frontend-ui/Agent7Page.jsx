@@ -8,7 +8,7 @@ import {
 } from "./dashboardApi.js";
 
 const DEFAULT_SCENARIO = "P7-001";
-const DEFAULT_PROBES = ["api-gateway", "auth-service", "payment-service", "monitoring-core"];
+const DEFAULT_PROBES = ["sensor-collector", "anomaly-engine", "alert-dispatcher", "redis-broker"];
 
 function statusColor(status) {
   if (status === "healthy") return "text-emerald-700 dark:text-emerald-300";

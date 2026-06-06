@@ -251,7 +251,7 @@ export function normalizeBrainStageResponse(agentId, stageResult) {
 }
 
 async function requestJson(path, init = {}) {
-  const response = await fetch(`${AGENT_BACKEND_URL}${path}`, init);
+  const response = await fetch(`${AGENT_BACKEND_URL}${path}`, { cache: "no-store", ...init });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
