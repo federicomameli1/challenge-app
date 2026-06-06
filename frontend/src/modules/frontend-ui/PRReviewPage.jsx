@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   approveDeployment,
   approvePull,
@@ -310,9 +312,11 @@ function PRCard({ pr, onApprove, onReject }) {
             <span>{expanded ? "Hide full report" : "View full report"}</span>
           </button>
           {expanded ? (
-            <pre className="mt-3 max-h-[440px] overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
-{review.body_markdown}
-            </pre>
+            <div className="markdown-report mt-3 max-h-[440px] overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-950">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {review.body_markdown}
+              </ReactMarkdown>
+            </div>
           ) : null}
         </div>
       ) : null}
